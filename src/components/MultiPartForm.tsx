@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Camera, Check } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Camera, Check, ChevronDown, Edit, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import InfoTooltip from "./InfoToolTip";
 import CustomSelect from "./ui/CustomSelect";
@@ -11,6 +11,39 @@ const MultiPartForm = () => {
   const [step, setStep] = useState(1);
   const [showVariationForm, setShowVariationForm] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [variations, setVariations] = useState([]);
+  const [editingVariationId, setEditingVariationId] = useState(null);
+
+  // Funções para gerenciar localStorage
+  const saveVariationsToStorage = (variationsToSave) => {
+    try {
+      localStorage.setItem("tcc-variations", JSON.stringify(variationsToSave));
+    } catch (error) {
+      console.error("Erro ao salvar variações no localStorage:", error);
+    }
+  };
+
+  const loadVariationsFromStorage = () => {
+    try {
+      const saved = localStorage.getItem("tcc-variations");
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error("Erro ao carregar variações do localStorage:", error);
+      return [];
+    }
+  };
+
+  // Carregar variações do localStorage ao montar o componente
+  useEffect(() => {
+    const savedVariations = loadVariationsFromStorage();
+    setVariations(savedVariations);
+  }, []);
+
+  // Sincronizar variações com localStorage sempre que houver mudanças
+  useEffect(() => {
+    saveVariationsToStorage(variations);
+  }, [variations]);
+
   const [formData, setFormData] = useState({
     titulo: "",
     estoque: "",
@@ -32,10 +65,11 @@ const MultiPartForm = () => {
     idiomasLegendaTroca: "",
     idiomasInterfaceTroca: "",
 
-    imagens: [],
+    imagens: Array(5).fill(null),
   });
 
   const [variationData, setVariationData] = useState({
+    titulo: "",
     tipoCartucho: "",
     estadoPreservacao: "",
     regiao: "",
@@ -44,6 +78,7 @@ const MultiPartForm = () => {
     idiomaInterface: "",
     preco: "",
     estoque: "",
+    imagens: Array(4).fill(null),
   });
 
   const handleSelectChange = (name: string, value: string) => {
@@ -68,9 +103,50 @@ const MultiPartForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => {
     const files = Array.from(e.target.files || []);
-    setFormData((prev) => ({ ...prev, imagens: [...prev.imagens, ...files] }));
+    if (files.length > 0) {
+      const file = files[0]; // Pega apenas o primeiro arquivo
+      setFormData((prev) => {
+        const newImagens = [...prev.imagens];
+        newImagens[index] = file; // Substitui o arquivo na posição específica
+        return { ...prev, imagens: newImagens };
+      });
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setFormData((prev) => {
+      const newImagens = [...prev.imagens];
+      newImagens[index] = null; // Remove a imagem da posição
+      return { ...prev, imagens: newImagens };
+    });
+  };
+
+  const handleVariationFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      const file = files[0]; // Pega apenas o primeiro arquivo
+      setVariationData((prev) => {
+        const newImagens = [...prev.imagens];
+        newImagens[index] = file; // Substitui o arquivo na posição específica
+        return { ...prev, imagens: newImagens };
+      });
+    }
+  };
+
+  const removeVariationImage = (index: number) => {
+    setVariationData((prev) => {
+      const newImagens = [...prev.imagens];
+      newImagens[index] = null; // Remove a imagem da posição
+      return { ...prev, imagens: newImagens };
+    });
   };
 
   const nextStep = () => {
@@ -86,10 +162,96 @@ const MultiPartForm = () => {
     // Aqui você pode adicionar a lógica de envio do formulário
     // Por exemplo, validações, chamadas para API, etc.
 
+    // Incluir as variações no envio
+    const formDataWithVariations = {
+      ...formData,
+      variations: variations,
+    };
+
     // Simular envio bem-sucedido
-    console.log("Formulário enviado:", formData);
+    console.log("Formulário enviado:", formDataWithVariations);
+    console.log("Variações incluídas:", variations);
+
     setShowSuccessMessage(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSaveVariation = () => {
+    if (
+      variationData.tipoCartucho &&
+      variationData.estadoPreservacao &&
+      variationData.regiao &&
+      variationData.idiomaAudio &&
+      variationData.estoque
+    ) {
+      if (editingVariationId) {
+        // Editando variação existente
+        setVariations((prev) =>
+          prev.map((v) =>
+            v.id === editingVariationId
+              ? {
+                  ...v,
+                  ...variationData,
+                  titulo:
+                    variationData.titulo ||
+                    formData.titulo ||
+                    "Troco Cartucho Super Mario Bros Usado.",
+                  descricao: `${variationData.tipoCartucho} - ${variationData.estadoPreservacao} - ${variationData.regiao} - ${variationData.idiomaAudio}`,
+                }
+              : v
+          )
+        );
+        setEditingVariationId(null);
+      } else {
+        // Criando nova variação
+        const newVariation = {
+          id: Date.now(),
+          ...variationData,
+          titulo:
+            variationData.titulo ||
+            formData.titulo ||
+            "Troca Cartucho Super Mario Bros Usado.",
+          descricao: `${variationData.tipoCartucho} - ${variationData.estadoPreservacao} - ${variationData.regiao} - ${variationData.idiomaAudio}`,
+        };
+
+        setVariations((prev) => [...prev, newVariation]);
+      }
+
+      setShowVariationForm(false);
+
+      // Resetar o formulário de variação
+      setVariationData({
+        titulo: "",
+        tipoCartucho: "",
+        estadoPreservacao: "",
+        regiao: "",
+        idiomaAudio: "",
+        idiomaLegenda: "",
+        idiomaInterface: "",
+        preco: "",
+        estoque: "",
+        imagens: Array(4).fill(null),
+      });
+    }
+  };
+
+  const handleDeleteVariation = (id) => {
+    setVariations((prev) => prev.filter((v) => v.id !== id));
+  };
+
+  const handleEditVariation = (variation) => {
+    setVariationData(variation);
+    setEditingVariationId(variation.id);
+    setShowVariationForm(true);
+  };
+
+  const clearVariationsStorage = () => {
+    try {
+      localStorage.removeItem("tcc-variations");
+      setVariations([]);
+    } catch (error) {
+      console.error("Erro ao limpar variações do localStorage:", error);
+    }
   };
 
   // =================== Opções para os selects ===================
@@ -166,7 +328,6 @@ const MultiPartForm = () => {
 
   return (
     <>
-      
       <ModalAlert
         isOpen={showSuccessMessage}
         onClose={() => setShowSuccessMessage(false)}
@@ -343,6 +504,14 @@ const MultiPartForm = () => {
                   placeholder="Selecione o idioma da interface"
                 />
               </div>
+              <p className="text-sm">
+                Acesse o guia{" "}
+                <a href="#" className="text-blue-600 underline">
+                  Como identificar as informações no seu cartucho
+                </a>{" "}
+                para descobrir onde encontrar as informações corretamente antes
+                de enviar.
+              </p>
             </div>
           </>
         )}
@@ -488,24 +657,46 @@ const MultiPartForm = () => {
 
                 {/* input file */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <label
-                      key={i}
-                      className="w-full aspect-square border-2 border-dashed border-purple-400 rounded-lg
-                         flex flex-col items-center justify-center cursor-pointer text-center text-sm text-gray-600
-                         hover:bg-purple-50 hover:border-purple-600 hover:text-purple-600 transition"
-                    >
-                      <Camera className="w-6 h-6 mb-1 text-purple-500" />
-                      Incluir Fotos e Vídeos
-                      <input
-                        type="file"
-                        accept="image/*,video/*"
-                        multiple
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                    </label>
-                  ))}
+                  {[...Array(5)].map((_, i) => {
+                    const hasImage = formData.imagens[i];
+                    return (
+                      <div key={i} className="relative">
+                        {hasImage ? (
+                          // Botão com imagem (não clicável)
+                          <div className="w-full aspect-square border-2 border-solid border-purple-400 rounded-lg overflow-hidden bg-gray-100">
+                            <img
+                              src={URL.createObjectURL(hasImage)}
+                              alt={`Imagem ${i + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                            <button
+                              onClick={() => removeImage(i)}
+                              className="absolute top-2 right-2 w-6 h-6 text-[#483D9E] flex items-center justify-center text-2xl hover:text-[#211C49] transition-colors font-bold"
+                              title="Remover imagem"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          // Botão vazio (clicável)
+                          <label
+                            className="w-full aspect-square border-2 border-dashed border-purple-400 rounded-lg
+                              flex flex-col items-center justify-center cursor-pointer text-center text-sm text-gray-600
+                              hover:bg-purple-50 hover:border-purple-600 hover:text-purple-600 transition"
+                          >
+                            <Camera className="w-6 h-6 mb-1 text-purple-500" />
+                            Incluir Fotos e Vídeos
+                            <input
+                              type="file"
+                              accept="image/*,video/*"
+                              onChange={(e) => handleFileChange(e, i)}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Aviso */}
@@ -533,7 +724,92 @@ const MultiPartForm = () => {
               subtitle="Tem mais de um cartucho do mesmo jogo para anunciar?"
               step={step - 1}
             />
-            <div className="p-6">
+            <div className="p-6 space-y-6">
+              {/* Lista de variações existentes - sempre visível */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Variações do Anúncio
+                  </h3>
+                  {variations.length > 0 && (
+                    <button
+                      onClick={clearVariationsStorage}
+                      className="px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md border border-red-200 hover:border-red-300 transition-colors"
+                    >
+                      Limpar Todas
+                    </button>
+                  )}
+                </div>
+
+                {variations.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>Nenhuma variação criada ainda.</p>
+                    <p className="text-sm">
+                      Clique em "Adicionar nova variação" para começar.
+                    </p>
+                  </div>
+                ) : (
+                  variations.map((variation, index) => (
+                    <div
+                      key={variation.id}
+                      className="border border-gray-200 rounded-lg overflow-hidden"
+                    >
+                      {/* Cabeçalho roxo claro */}
+                      <div className="bg-purple-100 px-4 py-3 flex items-center justify-between">
+                        <span className="font-medium text-gray-800">
+                          Variação {index + 1}
+                        </span>
+                        <ChevronDown className="w-5 h-5 text-gray-600" />
+                      </div>
+
+                      {/* Conteúdo da variação */}
+                      <div className="bg-white p-4">
+                        <div className="flex items-start space-x-4">
+                          {/* Imagem da variação ou placeholder */}
+                          <div className="w-16 h-16 rounded flex-shrink-0 overflow-hidden">
+                            {variation.imagens && variation.imagens[0] ? (
+                              <img
+                                src={URL.createObjectURL(variation.imagens[0])}
+                                alt={`Imagem da variação ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-200 rounded"></div>
+                            )}
+                          </div>
+
+                          {/* Informações do produto */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-800 leading-relaxed">
+                              {variation.titulo} - {variation.descricao}
+                            </p>
+                          </div>
+
+                          {/* Ícones de ação */}
+                          <div className="flex items-center space-x-2 flex-shrink-0">
+                            <button
+                              onClick={() => handleEditVariation(variation)}
+                              className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleDeleteVariation(variation.id)
+                              }
+                              className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Botão para adicionar nova variação ou formulário */}
               {!showVariationForm ? (
                 <button
                   onClick={() => setShowVariationForm(true)}
@@ -545,10 +821,27 @@ const MultiPartForm = () => {
                 <div className="bg-white border border-gray-300 rounded-lg p-6 space-y-4">
                   <div className="flex items-center justify-between border-b pb-3">
                     <h3 className="text-lg font-semibold text-gray-800">
-                      Variação 1
+                      {editingVariationId
+                        ? "Editar Variação"
+                        : `Variação ${variations.length + 1}`}
                     </h3>
                     <button
-                      onClick={() => setShowVariationForm(false)}
+                      onClick={() => {
+                        setShowVariationForm(false);
+                        setEditingVariationId(null);
+                        setVariationData({
+                          titulo: "",
+                          tipoCartucho: "",
+                          estadoPreservacao: "",
+                          regiao: "",
+                          idiomaAudio: "",
+                          idiomaLegenda: "",
+                          idiomaInterface: "",
+                          preco: "",
+                          estoque: "",
+                          imagens: Array(4).fill(null),
+                        });
+                      }}
                       className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700"
                     >
                       ✕
@@ -558,15 +851,15 @@ const MultiPartForm = () => {
                   <div className="space-y-3">
                     <div className="flex items-center">
                       <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0">
-                        Título do Anúncio:
+                        Título da Variação:
                       </label>
                       <input
                         type="text"
                         name="titulo"
-                        value={formData.titulo}
+                        value={variationData.titulo}
+                        onChange={handleVariationInputChange}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Vendo ou troco Cartucho Super Mario Bros Usado."
-                        readOnly
+                        placeholder="Ex: Troco Cartucho Super Mario Bros Usado - Repro"
                       />
                     </div>
 
@@ -671,47 +964,44 @@ const MultiPartForm = () => {
                         Imagens e Vídeos:
                       </label>
                       <div className="flex-1">
-                        <div className="grid grid-cols-5 gap-2">
-                          {[...Array(4)].map((_, i) => (
-                            <label
-                              key={i}
-                              className="aspect-square bg-gray-200 rounded border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors"
-                            >
-                              <Camera className="w-6 h-6 text-gray-400" />
-                              <input
-                                type="file"
-                                accept="image/*,video/*"
-                                className="hidden"
-                                onChange={(e) => {
-                                  // Aqui você pode adicionar a lógica para lidar com o arquivo
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    console.log(
-                                      "Arquivo selecionado:",
-                                      file.name
-                                    );
-                                  }
-                                }}
-                              />
-                            </label>
-                          ))}
-                          <label className="aspect-square bg-gray-100 rounded border flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
-                            <span className="text-gray-500 text-lg">+</span>
-                            <input
-                              type="file"
-                              accept="image/*,video/*"
-                              multiple
-                              className="hidden"
-                              onChange={(e) => {
-                                // Lógica para adicionar múltiplos arquivos
-                                const files = Array.from(e.target.files || []);
-                                console.log(
-                                  "Arquivos adicionados:",
-                                  files.map((f) => f.name)
-                                );
-                              }}
-                            />
-                          </label>
+                        <div className="grid grid-cols-4 gap-2">
+                          {[...Array(4)].map((_, i) => {
+                            const hasImage = variationData.imagens[i];
+                            return (
+                              <div key={i} className="relative">
+                                {hasImage ? (
+                                  // Botão com imagem (não clicável)
+                                  <div className="aspect-square border-2 border-solid border-purple-400 rounded overflow-hidden bg-gray-100">
+                                    <img
+                                      src={URL.createObjectURL(hasImage)}
+                                      alt={`Imagem da variação ${i + 1}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <button
+                                      onClick={() => removeVariationImage(i)}
+                                      className="absolute top-1 right-1 w-5 h-5 text-[#483D9E] flex items-center justify-center text-lg hover:text-[#211C49] transition-colors font-bold shadow-sm"
+                                      title="Remover imagem"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                ) : (
+                                  // Botão vazio (clicável)
+                                  <label className="aspect-square bg-gray-200 rounded border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors">
+                                    <Camera className="w-6 h-6 text-gray-400" />
+                                    <input
+                                      type="file"
+                                      accept="image/*,video/*"
+                                      className="hidden"
+                                      onChange={(e) =>
+                                        handleVariationFileChange(e, i)
+                                      }
+                                    />
+                                  </label>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
@@ -719,18 +1009,11 @@ const MultiPartForm = () => {
 
                   <div className="flex justify-end gap-2 pt-4 border-t">
                     <button
-                      onClick={() => setShowVariationForm(false)}
-                      className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                    <ConfirmButton
                       onClick={() => {
-                        // Aqui você pode adicionar a lógica para salvar a variação
-                        console.log("Variação salva:", variationData);
                         setShowVariationForm(false);
-                        // Resetar o formulário de variação
+                        setEditingVariationId(null);
                         setVariationData({
+                          titulo: "",
                           tipoCartucho: "",
                           estadoPreservacao: "",
                           regiao: "",
@@ -739,9 +1022,14 @@ const MultiPartForm = () => {
                           idiomaInterface: "",
                           preco: "",
                           estoque: "",
+                          imagens: Array(4).fill(null),
                         });
                       }}
+                      className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
                     >
+                      Cancelar
+                    </button>
+                    <ConfirmButton onClick={handleSaveVariation}>
                       Salvar Variação
                     </ConfirmButton>
                   </div>
