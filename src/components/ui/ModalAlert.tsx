@@ -39,19 +39,11 @@ const ModalAlert: React.FC<ModalAlertProps> = ({
     }
   };
 
-  const handleClose = () => {
-    setIsVisible(false);
-    setTimeout(() => {
-      onClose();
-    }, 300);
-  };
-
   return (
     <div
       className={`fixed inset-0 flex items-center justify-center z-50 transition-all duration-300 ease-in-out ${
         isVisible ? "bg-black bg-opacity-50" : "bg-black bg-opacity-0"
       }`}
-      onClick={handleClose}
     >
       <div
         className={`bg-white border border-[#5baf65] rounded-md p-6 mx-4 w-full max-w-4xl shadow-lg transform transition-all duration-300 ease-in-out ${

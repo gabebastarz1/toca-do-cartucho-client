@@ -8,6 +8,8 @@ import {
   NotFound,
   CadastroParaAnunciar,
   CreateAdvertisementOnlyTrade,
+  CreateAdvertisementSaleAndTrade,
+  CreateAdvertisementSaleOnly,
 } from "./pages";
 import "./App.css";
 
@@ -23,6 +25,8 @@ function App() {
           <Route path="/perfil" element={<Profile />} />
           <Route path="/criar-conta" element={<CadastroParaAnunciar />} />
           <Route path="/criar-anuncio/apenas-troca" element={<CreateAdvertisementOnlyTrade />} />
+          <Route path="/criar-anuncio/venda-e-troca" element={<CreateAdvertisementSaleAndTrade />} />
+          <Route path="/criar-anuncio/apenas-venda" element={<CreateAdvertisementSaleOnly />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>

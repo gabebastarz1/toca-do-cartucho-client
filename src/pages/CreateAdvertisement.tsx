@@ -54,12 +54,12 @@ export default function CreateAdvertisementPp() {
             <OptionCard
               title="Somente Venda"
               icon={<img src="/venda.svg" alt="Venda" className="w-20 h-14" />}
-              onClick={() => navigate("/criar-anuncio")}
+              onClick={() => navigate("/criar-anuncio/apenas-venda")}
             />
             <OptionCard
               title="Venda ou Troca"
               icon={<img src="/vendaoutroca.svg" alt="Venda" className="w-20 h-14" />}
-              onClick={() => navigate("/criar-anuncio")}
+              onClick={() => navigate("/criar-anuncio/venda-e-troca")}
             />
             <OptionCard
               title="Somente Troca"

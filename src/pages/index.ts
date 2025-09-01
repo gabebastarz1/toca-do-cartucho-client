@@ -6,3 +6,5 @@ export { default as Profile } from './Profile';
 export { default as NotFound } from './NotFound';
 export { default as CreateAdvertisementOnlyTrade } from './CreateAdvertisementOnlyTrade';
 export { default as CadastroParaAnunciar } from './CreateAccount';
+export { default as CreateAdvertisementSaleAndTrade } from './CreateAdvertisementSaleAndTrade';
+export { default as CreateAdvertisementSaleOnly } from './CreateAdvertisementSaleOnly';

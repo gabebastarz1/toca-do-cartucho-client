@@ -12,6 +12,8 @@ interface CustomSelectProps {
   onChange?: (value: Option) => void;
   placeholder?: string;
   className?: string;
+  required?: boolean;
+  showValidation?: boolean;
 }
 
 export default function CustomSelect({
@@ -20,6 +22,8 @@ export default function CustomSelect({
   onChange,
   placeholder = "Selecione...",
   className,
+  required = false,
+  showValidation = false,
 }: CustomSelectProps) {
   const [selected, setSelected] = useState<Option | null>(value || null);
   const [query, setQuery] = useState("");
@@ -37,7 +41,14 @@ export default function CustomSelect({
     <div className={`w-full ${className || ""}`}>
       <Listbox value={selected} onChange={handleChange}>
         <div className="relative w-full">
-          <Listbox.Button className="w-full opacity-70 border border-gray-300 rounded-md bg-white py-2 px-3 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 hover:border-blue-400">
+          <Listbox.Button
+            className={`w-full opacity-70 border rounded-md bg-white py-2 px-3 text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 hover:border-blue-400 ${
+              (required && showValidation && !value) ||
+              className?.includes("border-red-500")
+                ? "border-red-500"
+                : "border-gray-300"
+            }`}
+          >
             {selected ? selected.label : placeholder}
           </Listbox.Button>
 
@@ -78,6 +89,11 @@ export default function CustomSelect({
           </Listbox.Options>
         </div>
       </Listbox>
+
+      {/* Mensagem de validação */}
+      {required && showValidation && !value && (
+        <p className="text-red-500 text-xs mt-1">*Campo obrigatório</p>
+      )}
     </div>
   );
 }
