@@ -6,6 +6,7 @@ import CustomSelect from "./ui/CustomSelect";
 import ConfirmButton from "./ui/ConfirmButton";
 import ModalAlert from "./ui/ModalAlert";
 import CustomCheckbox from "./ui/CustomCheckbox";
+import Head from "./Head";
 
 const MultiPartFormSaleAndTrade = () => {
   const navigate = useNavigate();
@@ -15,6 +16,8 @@ const MultiPartFormSaleAndTrade = () => {
   const [variations, setVariations] = useState([]);
   const [editingVariationId, setEditingVariationId] = useState(null);
   const [checkboxConfirmed, setCheckboxConfirmed] = useState(false);
+  const [showMainAd, setShowMainAd] = useState(false);
+  const [expandedVariations, setExpandedVariations] = useState({});
   const [showValidation, setShowValidation] = useState({
     step1: false,
     step2: false,
@@ -268,6 +271,13 @@ const MultiPartFormSaleAndTrade = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const toggleVariation = (variationId) => {
+    setExpandedVariations((prev) => ({
+      ...prev,
+      [variationId]: !prev[variationId],
+    }));
+  };
+
   const handleSaveVariation = () => {
     // Ativar validação apenas do step 5
     setShowValidation((prev) => ({ ...prev, step5: true }));
@@ -432,6 +442,7 @@ const MultiPartFormSaleAndTrade = () => {
 
   return (
     <>
+    <Head title="Cadastrar anúncio - Venda e troca" />
       <ModalAlert
         isOpen={showSuccessMessage}
         onClose={() => setShowSuccessMessage(false)}
@@ -856,10 +867,10 @@ const MultiPartFormSaleAndTrade = () => {
                           <label
                             className="w-full aspect-square border-2 border-dashed border-purple-400 rounded-lg
                               flex flex-col items-center justify-center cursor-pointer text-center text-sm text-gray-600
-                              hover:bg-purple-50 hover:border-purple-600 hover:text-purple-600 transition"
+                              hover:bg-purple-50 hover:border-purple-600 hover:text-purple-600 transition p-2"
                           >
                             <Camera className="w-6 h-6 mb-1 text-purple-500" />
-                            Incluir Fotos e Vídeos para Venda
+                            Incluir Fotos e Vídeos
                             <input
                               type="file"
                               accept="image/*,video/*"
@@ -894,7 +905,7 @@ const MultiPartFormSaleAndTrade = () => {
         {step === 5 && (
           <>
             <StepHeader
-              title="Adicionar Variação de Venda"
+              title="Adicionar Variações"
               subtitle="Tem mais de um cartucho do mesmo jogo para vender?"
               step={4}
             />
@@ -903,7 +914,7 @@ const MultiPartFormSaleAndTrade = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-800">
-                    Variações de Venda do Anúncio
+                    Variações do Anúncio
                   </h3>
                   {variations.length > 0 && (
                     <button
@@ -917,9 +928,9 @@ const MultiPartFormSaleAndTrade = () => {
 
                 {variations.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    <p>Nenhuma variação de venda criada ainda.</p>
+                    <p>Nenhuma variação criada ainda.</p>
                     <p className="text-sm">
-                      Clique em "Adicionar nova variação de venda" para começar.
+                      Clique em "Adicionar nova variação" para começar.
                     </p>
                   </div>
                 ) : (
@@ -929,15 +940,15 @@ const MultiPartFormSaleAndTrade = () => {
                       className="border border-gray-200 rounded-lg overflow-hidden"
                     >
                       {/* Cabeçalho roxo claro */}
-                      <div className="bg-purple-100 px-4 py-3 flex items-center justify-between">
+                      <div className="bg-[#EDECF7] px-4 py-3 flex items-center justify-between">
                         <span className="font-medium text-gray-800">
-                          Variação de Venda {index + 1}
+                          Variação {index + 1}
                         </span>
                         <ChevronDown className="w-5 h-5 text-gray-600" />
                       </div>
 
                       {/* Conteúdo da variação */}
-                      <div className="bg-white p-4">
+                      <div className="bg-white p-4 border-x-8 border-[#EDECF7] border-b-8">
                         <div className="flex items-start space-x-4">
                           {/* Imagem da variação ou placeholder */}
                           <div className="w-16 h-16 rounded flex-shrink-0 overflow-hidden">
@@ -989,15 +1000,15 @@ const MultiPartFormSaleAndTrade = () => {
                   onClick={() => setShowVariationForm(true)}
                   className="w-full border-2 border-dashed border-purple-400 p-6 rounded-lg text-purple-600 hover:bg-purple-50 hover:border-purple-600 transition-colors"
                 >
-                  + Adicionar nova variação de venda
+                  + Adicionar nova variação
                 </button>
               ) : (
-                <div className="bg-white border border-gray-300 rounded-lg p-6 space-y-4">
+                <div className="bg-[#EDECF7] border border-gray-300 rounded-lg p-6 space-y-4">
                   <div className="flex items-center justify-between border-b pb-3">
                     <h3 className="text-lg font-semibold text-gray-800">
                       {editingVariationId
-                        ? "Editar Variação de Venda"
-                        : `Variação de Venda ${variations.length + 1}`}
+                        ? "Editar Variação"
+                        : `Variação ${variations.length + 1}`}
                     </h3>
 
                     <button
@@ -1032,7 +1043,7 @@ const MultiPartFormSaleAndTrade = () => {
                     </button>
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-3 bg-white p-4 rounded rounded-lg">
                     <h4 className="text-sm font-semibold text-gray-800 mb-3 text-center">
                       Detalhes do anúncio de venda
                     </h4>
@@ -1486,9 +1497,11 @@ const MultiPartFormSaleAndTrade = () => {
         {/* STEP 6 - Publicar Anúncio */}
         {step === 6 && (
           <>
-            <div className="bg-[#38307C] text-white p-4 rounded-t-sm text-center">
-              <h2 className="text-lg">Publicar Anúncio de Venda</h2>
-            </div>
+            <StepHeader
+              title="Publicar Anúncio"
+              subtitle=""
+              step={6}
+            />
             <div className="p-8 text-center">
               {/* Mensagem central */}
               <p className="text-black font- text-lg mb-8 max-w-2xl mx-auto">
@@ -1534,291 +1547,498 @@ const MultiPartFormSaleAndTrade = () => {
           </>
         )}
 
-        {/* STEP 7 - Confirmação Final */}
+        
+        {/* STEP 7 - Revisão do Anúncio */}
         {step === 7 && (
           <>
-            <div className="bg-[#38307C] text-white p-4 rounded-t-sm text-center">
-              <h2 className="text-lg">Confirmação Final - Anúncio de Venda</h2>
-              <p className="text-sm">
-                Revise todas as informações do anúncio de venda antes de
-                finalizar
-              </p>
-            </div>
-            <div className="p-6 space-y-6">
-              {/* Resumo das informações básicas */}
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
-                  Informações Básicas - Venda e Troca
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Título do Anúncio
-                    </label>
-                    <p className="text-gray-800">
-                      {formData.titulo || "Não informado"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Estoque Disponível
-                    </label>
-                    <p className="text-gray-800">
-                      {formData.estoque || "Não informado"}
-                    </p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="text-sm font-medium text-gray-600">
-                      Descrição
-                    </label>
-                    <p className="text-gray-800">
-                      {formData.descricao || "Não informado"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Preço de Venda
-                    </label>
-                    <p className="text-gray-800">
-                      {formData.preco
-                        ? `R$ ${formData.preco}`
-                        : "Não informado"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Resumo dos detalhes do cartucho */}
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
-                  Detalhes do Cartucho
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Jogo
-                    </label>
-                    <p className="text-gray-800">
-                      {formData.jogo || "Não informado"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Tipo de Cartucho
-                    </label>
-                    <p className="text-gray-800">
-                      {formData.tipoCartucho || "Não informado"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Estado de Preservação
-                    </label>
-                    <p className="text-gray-800">
-                      {formData.estadoPreservacao || "Não informado"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Região
-                    </label>
-                    <p className="text-gray-800">
-                      {formData.regiao || "Não informado"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Idioma do Áudio
-                    </label>
-                    <p className="text-gray-800">
-                      {formData.idiomaAudio || "Não informado"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Idioma da Legenda
-                    </label>
-                    <p className="text-gray-800">
-                      {formData.idiomaLegenda || "Não informado"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Idioma da Interface
-                    </label>
-                    <p className="text-gray-800">
-                      {formData.idiomaInterface || "Não informado"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Resumo das condições de troca */}
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
-                  Condições de Troca
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Jogo Aceito
-                    </label>
-                    <p className="text-gray-800">
-                      {formData.jogosTroca || "Não informado"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Tipo de Cartucho Aceito
-                    </label>
-                    <p className="text-gray-800">
-                      {formData.tiposTroca || "Não informado"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Estado Mínimo Aceito
-                    </label>
-                    <p className="text-gray-800">
-                      {formData.estadosTroca || "Não informado"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Região Aceita
-                    </label>
-                    <p className="text-gray-800">
-                      {formData.regioesTroca || "Não informado"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Idioma de Áudio Aceito
-                    </label>
-                    <p className="text-gray-800">
-                      {formData.idiomasAudioTroca || "Não informado"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Idioma de Legenda Aceito
-                    </label>
-                    <p className="text-gray-800">
-                      {formData.idiomasLegendaTroca || "Não informado"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Idioma de Interface Aceito
-                    </label>
-                    <p className="text-gray-800">
-                      {formData.idiomasInterfaceTroca || "Não informado"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Resumo das imagens */}
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
-                  Imagens e Vídeos para Venda
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {formData.imagens.map((imagem, index) => (
-                    <div key={index} className="aspect-square">
-                      {imagem ? (
-                        <div className="w-full h-full border-2 border-solid border-purple-400 rounded-lg overflow-hidden bg-gray-100">
-                          <img
-                            src={URL.createObjectURL(imagem)}
-                            alt={`Imagem ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-full h-full border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex items-center justify-center">
-                          <span className="text-gray-400 text-xs">
-                            Sem imagem
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Resumo das variações */}
-              {variations.length > 0 && (
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
-                    Variações de Venda ({variations.length})
-                  </h3>
-                  <div className="space-y-3">
-                    {variations.map((variation, index) => (
-                      <div
-                        key={variation.id}
-                        className="border border-gray-200 rounded-lg p-3"
+            <StepHeader
+              title="Revisar Anúncio"
+              subtitle="Confirme se todas as informações estão corretas"
+              step={7}
+            />
+            <div className="p-8 bg-white">
+              <div className="space-y-4">
+                {/* Gaveta do Anúncio Principal */}
+                <div className="bg-white rounded-lg shadow-sm border-x-8 border-[#EDECF7] border-b-8 overflow-hidden">
+                  <div
+                    className="bg-[#EDECF7] px-6 py-4 cursor-pointer transition-colors"
+                    onClick={() => setShowMainAd(!showMainAd)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-lg font-semibold text-gray-800">
+                        Anúncio Principal
+                      </h2>
+                      <svg
+                        className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
+                          showMainAd ? "" : "rotate-180"
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
                       >
-                        <div className="flex items-start space-x-3">
-                          <div className="w-12 h-12 rounded flex-shrink-0 overflow-hidden">
-                            {variation.imagens && variation.imagens[0] ? (
-                              <img
-                                src={URL.createObjectURL(variation.imagens[0])}
-                                alt={`Imagem da variação de venda ${index + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gray-200 rounded"></div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-800">
-                              {variation.titulo}
-                            </p>
-                            <p className="text-xs text-gray-600">
-                              {variation.descricao}
-                            </p>
-                            <div className="mt-1 text-xs text-gray-500">
-                              <span>Estoque: {variation.estoque}</span>
-                              {variation.preco && (
-                                <span className="ml-2">
-                                  • Preço: R$ {variation.preco}
-                                </span>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 15l7-7 7 7"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Conteúdo do anúncio principal */}
+                  {showMainAd && (
+                    <div className="p-6 space-y-6">
+                      {/* Imagens */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-500">
+                          Imagens
+                        </label>
+                        <div className="flex space-x-3">
+                          {formData.imagens.slice(0, 3).map((imagem, index) => (
+                            <div
+                              key={index}
+                              className="w-20 h-20 bg-gray-200 rounded-lg overflow-hidden"
+                            >
+                              {imagem ? (
+                                <img
+                                  src={URL.createObjectURL(imagem)}
+                                  alt={`Imagem ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gray-200 rounded-lg"></div>
                               )}
                             </div>
+                          ))}
+                          {formData.imagens.length < 3 &&
+                            Array.from({
+                              length: 3 - formData.imagens.length,
+                            }).map((_, index) => (
+                              <div
+                                key={`empty-${index}`}
+                                className="w-20 h-20 bg-gray-200 rounded-lg"
+                              ></div>
+                            ))}
+                        </div>
+                      </div>
+
+                      {/* Título do Anúncio */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-500">
+                          Titulo do Anúncio
+                        </label>
+                        <p className="text-gray-800 font-medium">
+                          {formData.titulo || "Não informado"}
+                        </p>
+                      </div>
+
+                      {/* Tipo do Cartucho */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-500">
+                          Tipo do Cartucho
+                        </label>
+                        <p className="text-gray-800 font-medium">
+                          {formData.tipoCartucho || "Não informado"}
+                        </p>
+                      </div>
+
+                      {/* Jogo */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-500">
+                          Jogo
+                        </label>
+                        <p className="text-gray-800 font-medium">
+                          {formData.jogo || "Não informado"}
+                        </p>
+                      </div>
+
+                      {/* Estado de Preservação */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-500">
+                          Estado de Preservação
+                        </label>
+                        <p className="text-gray-800 font-medium">
+                          {formData.estadoPreservacao || "Não informado"}
+                        </p>
+                      </div>
+
+                      {/* Região do Cartucho */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-500">
+                          Região do Cartucho
+                        </label>
+                        <p className="text-gray-800 font-medium">
+                          {formData.regiao || "Não informado"}
+                        </p>
+                      </div>
+
+                      {/* Idiomas do Audio */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-500">
+                          Idiomas do Audio
+                        </label>
+                        <p className="text-gray-800 font-medium">
+                          {formData.idiomaAudio || "Não informado"}
+                        </p>
+                      </div>
+
+                      {/* Idiomas da Legenda */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-500">
+                          Idiomas da Legenda
+                        </label>
+                        <p className="text-gray-800 font-medium">
+                          {formData.idiomaLegenda || "Não informado"}
+                        </p>
+                      </div>
+
+                      {/* Idiomas da Interface */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-500">
+                          Idiomas da Interface
+                        </label>
+                        <p className="text-gray-800 font-medium">
+                          {formData.idiomaInterface || "Não informado"}
+                        </p>
+                      </div>
+
+                      {/* Descrição */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-500">
+                          Descrição
+                        </label>
+                        <p className="text-gray-800 font-medium">
+                          {formData.descricao || "Não informado"}
+                        </p>
+                      </div>
+
+                      {/* Condições */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-500">
+                          Condições
+                        </label>
+                        <p className="text-gray-800 font-medium">
+                          Venda e Troca
+                        </p>
+                      </div>
+
+                      {/* Estoque disponível */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-500">
+                          Estoque disponível
+                        </label>
+                        <p className="text-gray-800 font-medium">
+                          {formData.estoque || "Não informado"}
+                        </p>
+                      </div>
+
+                      {/* Preço */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-500">
+                          Preço
+                        </label>
+                        <p className="text-gray-800 font-medium">R$ 80,00</p>
+                      </div>
+
+                      {/* Condições de Troca */}
+                      <div className="space-y-4">
+                        <label className="text-sm font-medium text-gray-500">
+                          Condições de Troca
+                        </label>
+
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-500">
+                              Jogos
+                            </label>
+                            <p className="text-gray-800 font-medium">
+                              {formData.jogosTroca || "Nome do Jogo"}
+                            </p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-500">
+                              Tipo de Cartucho Aceito
+                            </label>
+                            <p className="text-gray-800 font-medium">
+                              {formData.tiposTroca || "Não informado"}
+                            </p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-500">
+                              Estado Mínimo Aceito
+                            </label>
+                            <p className="text-gray-800 font-medium">
+                              {formData.estadosTroca || "Não informado"}
+                            </p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-500">
+                              Região Aceita
+                            </label>
+                            <p className="text-gray-800 font-medium">
+                              {formData.regioesTroca || "Não informado"}
+                            </p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-500">
+                              Idioma de Áudio Aceito
+                            </label>
+                            <p className="text-gray-800 font-medium">
+                              {formData.idiomasAudioTroca || "Não informado"}
+                            </p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-500">
+                              Idioma de Legenda Aceito
+                            </label>
+                            <p className="text-gray-800 font-medium">
+                              {formData.idiomasLegendaTroca || "Não informado"}
+                            </p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-500">
+                              Idioma de Interface Aceito
+                            </label>
+                            <p className="text-gray-800 font-medium">
+                              {formData.idiomasInterfaceTroca ||
+                                "Não informado"}
+                            </p>
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
-              )}
 
-              {/* Aviso final */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0">
-                    <svg
-                      className="w-5 h-5 text-blue-400"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
+                {/* Gavetas individuais para cada variação */}
+                {variations.map((variation, index) => (
+                  <div
+                    key={variation.id || index}
+                    className="bg-white rounded-lg shadow-sm border-x-8 border-[#EDECF7] border-b-8 overflow-hidden"
+                  >
+                    {/* Header da variação individual */}
+                    <div
+                      className="bg-[#EDECF7] px-6 py-4 cursor-pointer transition-colors"
+                      onClick={() => toggleVariation(variation.id || index)}
                     >
-                      <path
-                        fillRule="evenodd"
-                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-200">
+                            {variation.imagens &&
+                            variation.imagens[0] &&
+                            variation.imagens[0] instanceof File ? (
+                              <img
+                                src={URL.createObjectURL(variation.imagens[0])}
+                                alt={`Imagem da variação ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-200 rounded-lg"></div>
+                            )}
+                          </div>
+                          <div>
+                            <h2 className="text-lg font-semibold text-gray-800">
+                              {variation.titulo || `Variação ${index + 1}`}
+                            </h2>
+                            <p className="text-sm text-gray-600">
+                              {variation.tipoCartucho || "N/A"} -{" "}
+                              {variation.estadoPreservacao || "N/A"} -{" "}
+                              {variation.regiao || "N/A"} -{" "}
+                              {variation.idiomaAudio || "N/A"}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Estoque: {variation.estoque || "N/A"}
+                            </p>
+                          </div>
+                        </div>
+                        <svg
+                          className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
+                            expandedVariations[variation.id || index]
+                              ? ""
+                              : "rotate-180"
+                          }`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 15l7-7 7 7"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Conteúdo expandido da variação */}
+                    {expandedVariations[variation.id || index] && (
+                      <div className="p-6 space-y-6">
+                        {/* Imagens da variação */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-500">
+                            Imagens
+                          </label>
+                          <div className="flex space-x-3">
+                            {variation.imagens &&
+                              variation.imagens
+                                .slice(0, 3)
+                                .map((imagem, imgIndex) => (
+                                  <div
+                                    key={imgIndex}
+                                    className="w-20 h-20 bg-gray-200 rounded-lg overflow-hidden"
+                                  >
+                                    {imagem && imagem instanceof File ? (
+                                      <img
+                                        src={URL.createObjectURL(imagem)}
+                                        alt={`Imagem ${imgIndex + 1}`}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full bg-gray-200 rounded-lg"></div>
+                                    )}
+                                  </div>
+                                ))}
+                            {(!variation.imagens ||
+                              variation.imagens.length < 3) &&
+                              Array.from({
+                                length:
+                                  3 -
+                                  (variation.imagens
+                                    ? variation.imagens.length
+                                    : 0),
+                              }).map((_, imgIndex) => (
+                                <div
+                                  key={`empty-${imgIndex}`}
+                                  className="w-20 h-20 bg-gray-200 rounded-lg"
+                                ></div>
+                              ))}
+                          </div>
+                        </div>
+
+                        {/* Título da variação */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-500">
+                            Título da Variação
+                          </label>
+                          <p className="text-gray-800 font-medium">
+                            {variation.titulo || "Não informado"}
+                          </p>
+                        </div>
+
+                        {/* Tipo do Cartucho */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-500">
+                            Tipo do Cartucho
+                          </label>
+                          <p className="text-gray-800 font-medium">
+                            {variation.tipoCartucho || "Não informado"}
+                          </p>
+                        </div>
+
+                        {/* Jogo */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-500">
+                            Jogo
+                          </label>
+                          <p className="text-gray-800 font-medium">
+                            {variation.jogo || "Não informado"}
+                          </p>
+                        </div>
+
+                        {/* Estado de Preservação */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-500">
+                            Estado de Preservação
+                          </label>
+                          <p className="text-gray-800 font-medium">
+                            {variation.estadoPreservacao || "Não informado"}
+                          </p>
+                        </div>
+
+                        {/* Região */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-500">
+                            Região
+                          </label>
+                          <p className="text-gray-800 font-medium">
+                            {variation.regiao || "Não informado"}
+                          </p>
+                        </div>
+
+                        {/* Idiomas */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-500">
+                            Idiomas do Áudio
+                          </label>
+                          <p className="text-gray-800 font-medium">
+                            {variation.idiomaAudio || "Não informado"}
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-500">
+                            Idiomas da Legenda
+                          </label>
+                          <p className="text-gray-800 font-medium">
+                            {variation.idiomaLegenda || "Não informado"}
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-500">
+                            Idiomas da Interface
+                          </label>
+                          <p className="text-gray-800 font-medium">
+                            {variation.idiomaInterface || "Não informado"}
+                          </p>
+                        </div>
+
+                        {/* Descrição */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-500">
+                            Descrição
+                          </label>
+                          <p className="text-gray-800 font-medium">
+                            {variation.descricao || "Não informado"}
+                          </p>
+                        </div>
+
+                        {/* Estoque */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-500">
+                            Estoque Disponível
+                          </label>
+                          <p className="text-gray-800 font-medium">
+                            {variation.estoque || "Não informado"}
+                          </p>
+                        </div>
+
+                        {/* Preço (se aplicável) */}
+                        {variation.preco && (
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-500">
+                              Preço
+                            </label>
+                            <p className="text-gray-800 font-medium">
+                              R${" "}
+                              {variation.preco.toLocaleString("pt-BR", {
+                                minimumFractionDigits: 2,
+                              })}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-blue-800">
-                      Confirmação Final - Anúncio de Venda
-                    </h4>
-                    <p className="text-sm text-blue-700 mt-1">
-                      Revise todas as informações acima. Após confirmar, seu
-                      anúncio de venda será publicado e não poderá ser editado.
-                    </p>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </>

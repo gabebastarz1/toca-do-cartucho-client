@@ -10,7 +10,9 @@ import {
   CreateAdvertisementOnlyTrade,
   CreateAdvertisementSaleAndTrade,
   CreateAdvertisementSaleOnly,
+  ProductListing,
 } from "./pages";
+
 import "./App.css";
 
 function App() {
@@ -24,9 +26,19 @@ function App() {
           <Route path="/criar-anuncio" element={<CreateAdvertisement />} />
           <Route path="/perfil" element={<Profile />} />
           <Route path="/criar-conta" element={<CadastroParaAnunciar />} />
-          <Route path="/criar-anuncio/apenas-troca" element={<CreateAdvertisementOnlyTrade />} />
-          <Route path="/criar-anuncio/venda-e-troca" element={<CreateAdvertisementSaleAndTrade />} />
-          <Route path="/criar-anuncio/apenas-venda" element={<CreateAdvertisementSaleOnly />} />
+          <Route
+            path="/criar-anuncio/apenas-troca"
+            element={<CreateAdvertisementOnlyTrade />}
+          />
+          <Route
+            path="/criar-anuncio/venda-e-troca"
+            element={<CreateAdvertisementSaleAndTrade />}
+          />
+          <Route
+            path="/criar-anuncio/apenas-venda"
+            element={<CreateAdvertisementSaleOnly />}
+          />
+          <Route path="/produtos" element={<ProductListing />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>

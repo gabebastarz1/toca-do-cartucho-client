@@ -8,3 +8,4 @@ export { default as CreateAdvertisementOnlyTrade } from './CreateAdvertisementOn
 export { default as CadastroParaAnunciar } from './CreateAccount';
 export { default as CreateAdvertisementSaleAndTrade } from './CreateAdvertisementSaleAndTrade';
 export { default as CreateAdvertisementSaleOnly } from './CreateAdvertisementSaleOnly';
+export { default as ProductListing } from './ProductListing';

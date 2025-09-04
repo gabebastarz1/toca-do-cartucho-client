@@ -6,6 +6,7 @@ import CustomSelect from "./ui/CustomSelect";
 import ConfirmButton from "./ui/ConfirmButton";
 import ModalAlert from "./ui/ModalAlert";
 import CustomCheckbox from "./ui/CustomCheckbox";
+import Head from "./Head";
 
 const MultiPartForm = () => {
   const navigate = useNavigate();
@@ -388,6 +389,7 @@ const MultiPartForm = () => {
 
   return (
     <>
+    <Head title="Cadastrar anúncio - Apenas Troca" />
       <ModalAlert
         isOpen={showSuccessMessage}
         onClose={() => setShowSuccessMessage(false)}
@@ -770,7 +772,7 @@ const MultiPartForm = () => {
                           <label
                             className="w-full aspect-square border-2 border-dashed border-purple-400 rounded-lg
                               flex flex-col items-center justify-center cursor-pointer text-center text-sm text-gray-600
-                              hover:bg-purple-50 hover:border-purple-600 hover:text-purple-600 transition"
+                              hover:bg-purple-50 hover:border-purple-600 hover:text-purple-600 transition p-2"
                           >
                             <Camera className="w-6 h-6 mb-1 text-purple-500" />
                             Incluir Fotos e Vídeos
@@ -906,7 +908,7 @@ const MultiPartForm = () => {
                   + Adicionar nova variação
                 </button>
               ) : (
-                <div className="bg-white border border-gray-300 rounded-lg p-6 space-y-4">
+                <div className="bg-[#EDECF7] border border-gray-300 rounded-lg p-6 space-y-4">
                   <div className="flex items-center justify-between border-b pb-3">
                     <h3 className="text-lg font-semibold text-gray-800">
                       {editingVariationId
@@ -946,7 +948,7 @@ const MultiPartForm = () => {
                     </button>
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-3 bg-white p-4 rounded rounded-lg">
                     <h4 className="text-sm font-semibold text-gray-800 mb-3 text-center">
                       Detalhes do anúncio
                     </h4>
@@ -1381,9 +1383,11 @@ const MultiPartForm = () => {
         {/* STEP 6 - Publicar Anúncio */}
         {step === 6 && (
           <>
-            <div className="bg-[#38307C] text-white p-4 rounded-t-sm text-center">
-              <h2 className="text-lg">Publicar Anúncio</h2>
-            </div>
+            <StepHeader
+              title="Publicar Anúncio"
+              subtitle=""
+              step={7}
+            />
             <div className="p-8 text-center">
               {/* Mensagem central */}
               <p className="text-black font- text-lg mb-8 max-w-2xl mx-auto">
@@ -1431,9 +1435,11 @@ const MultiPartForm = () => {
         {/* STEP 7 - Revisão do Anúncio */}
         {step === 7 && (
           <>
-            <div className="bg-[#38307C] text-white p-4 rounded-t-sm text-center">
-              <h2 className="text-lg">Publicar Anúncio</h2>
-            </div>
+            <StepHeader
+              title="Revisar Anúncio"
+              subtitle="Confirme se todas as informações estão corretas"
+              step={7}
+            />
             <div className="p-8 bg-white">
               <div className="space-y-4">
                 {/* Gaveta do Anúncio Principal */}
@@ -1448,7 +1454,7 @@ const MultiPartForm = () => {
                       </h2>
                       <svg
                         className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
-                          showMainAd ? "rotate-180" : ""
+                          showMainAd ? "" : "rotate-180"
                         }`}
                         fill="none"
                         stroke="currentColor"
@@ -1739,8 +1745,8 @@ const MultiPartForm = () => {
                         <svg
                           className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
                             expandedVariations[variation.id || index]
-                              ? "rotate-180"
-                              : ""
+                              ? ""
+                              : "rotate-180"
                           }`}
                           fill="none"
                           stroke="currentColor"

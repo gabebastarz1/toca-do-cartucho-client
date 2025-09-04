@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import TopBar from "../components/TopBar";
 import { useNavigate } from "react-router-dom";
 import React from "react";
-
+import Head from "../components/Head";
 
 
 function OptionCard({
@@ -34,6 +34,9 @@ function OptionCard({
 export default function CreateAdvertisementPp() {
   const navigate = useNavigate();
   return (
+    <>
+    <Head title="Cadastrar anúncio" />
+    
     <div className="min-h-screen w-full bg-[#f4f3f5] flex flex-col">
       <TopBar 
         rightButtonText="Meus Anúncios" 
@@ -70,5 +73,6 @@ export default function CreateAdvertisementPp() {
         </div>
       </div>
     </div>
+    </>
   );
 }
