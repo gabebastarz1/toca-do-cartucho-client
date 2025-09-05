@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ChevronDown, X } from "lucide-react";
-import { useCategories } from "./CategoryDataProvider";
+import { useCategories } from "../components/CategoryDataProvider";
 
 interface FilterOption {
   id: string;
@@ -18,41 +18,86 @@ interface FilterSection {
 interface FilterSidebarProps {
   onFiltersChange?: (filters: Record<string, string[]>) => void;
   loading?: boolean;
+  initialFilters?: Record<string, string[]>;
+  initialPriceRange?: { min: string; max: string };
 }
 
 const FilterSidebar: React.FC<FilterSidebarProps> = ({
   onFiltersChange,
   loading = false,
+  initialFilters = {},
+  initialPriceRange = { min: "", max: "" },
 }) => {
   const { genres, themes, loading: categoriesLoading } = useCategories();
 
-  const [filters, setFilters] = useState<Record<string, FilterSection>>({
+  // Função para criar estado inicial dos filtros
+  const createInitialFilters = () => ({
     conditions: {
       id: "conditions",
       title: "Condições:",
       options: [
-        { id: "sale-only", label: "Somente Venda", checked: false },
-        { id: "trade-only", label: "Somente Troca", checked: false },
-        { id: "sale-trade", label: "Venda e Troca", checked: false },
+        {
+          id: "sale-only",
+          label: "Somente Venda",
+          checked: initialFilters.conditions?.includes("sale-only") || false,
+        },
+        {
+          id: "trade-only",
+          label: "Somente Troca",
+          checked: initialFilters.conditions?.includes("trade-only") || false,
+        },
+        {
+          id: "sale-trade",
+          label: "Venda e Troca",
+          checked: initialFilters.conditions?.includes("sale-trade") || false,
+        },
       ],
     },
     preservation: {
       id: "preservation",
       title: "Estado de Preservação:",
       options: [
-        { id: "new", label: "Novo", checked: false },
-        { id: "semi-new", label: "Seminovo", checked: false },
-        { id: "good", label: "Bom", checked: false },
-        { id: "normal", label: "Normal", checked: false },
-        { id: "damaged", label: "Danificado", checked: false },
+        {
+          id: "new",
+          label: "Novo",
+          checked: initialFilters.preservation?.includes("new") || false,
+        },
+        {
+          id: "semi-new",
+          label: "Seminovo",
+          checked: initialFilters.preservation?.includes("semi-new") || false,
+        },
+        {
+          id: "good",
+          label: "Bom",
+          checked: initialFilters.preservation?.includes("good") || false,
+        },
+        {
+          id: "normal",
+          label: "Normal",
+          checked: initialFilters.preservation?.includes("normal") || false,
+        },
+        {
+          id: "damaged",
+          label: "Danificado",
+          checked: initialFilters.preservation?.includes("damaged") || false,
+        },
       ],
     },
     cartridgeType: {
       id: "cartridgeType",
       title: "Tipo do Cartucho:",
       options: [
-        { id: "retro", label: "Retrô", checked: false },
-        { id: "repro", label: "Reprô", checked: false },
+        {
+          id: "retro",
+          label: "Retrô",
+          checked: initialFilters.cartridgeType?.includes("retro") || false,
+        },
+        {
+          id: "repro",
+          label: "Reprô",
+          checked: initialFilters.cartridgeType?.includes("repro") || false,
+        },
       ],
     },
     price: {
@@ -66,7 +111,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
       options: themes.map((theme) => ({
         id: theme.id,
         label: theme.name,
-        checked: false,
+        checked: initialFilters.theme?.includes(theme.id) || false,
       })),
       expanded: false,
     },
@@ -76,7 +121,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
       options: genres.map((genre) => ({
         id: genre.id,
         label: genre.name,
-        checked: false,
+        checked: initialFilters.genre?.includes(genre.id) || false,
       })),
       expanded: false,
     },
@@ -84,84 +129,396 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
       id: "gameMode",
       title: "Modo de jogo:",
       options: [
-        { id: "singleplayer", label: "Singleplayer", checked: false },
-        { id: "multiplayer", label: "Multiplayer", checked: false },
+        {
+          id: "singleplayer",
+          label: "Singleplayer",
+          checked: initialFilters.gameMode?.includes("singleplayer") || false,
+        },
+        {
+          id: "multiplayer",
+          label: "Multiplayer",
+          checked: initialFilters.gameMode?.includes("multiplayer") || false,
+        },
       ],
     },
     audioLanguage: {
       id: "audioLanguage",
       title: "Idioma do Audio",
       options: [
-        { id: "english", label: "Inglês", checked: false },
-        { id: "portuguese", label: "Português", checked: false },
-        { id: "japanese", label: "Japonês", checked: false },
+        {
+          id: "english",
+          label: "Inglês",
+          checked: initialFilters.audioLanguage?.includes("english") || false,
+        },
+        {
+          id: "portuguese",
+          label: "Português",
+          checked:
+            initialFilters.audioLanguage?.includes("portuguese") || false,
+        },
+        {
+          id: "japanese",
+          label: "Japonês",
+          checked: initialFilters.audioLanguage?.includes("japanese") || false,
+        },
       ],
     },
     subtitleLanguage: {
       id: "subtitleLanguage",
       title: "Idioma da Legenda",
       options: [
-        { id: "english", label: "Inglês", checked: false },
-        { id: "portuguese", label: "Português", checked: false },
-        { id: "japanese", label: "Japonês", checked: false },
+        {
+          id: "english",
+          label: "Inglês",
+          checked:
+            initialFilters.subtitleLanguage?.includes("english") || false,
+        },
+        {
+          id: "portuguese",
+          label: "Português",
+          checked:
+            initialFilters.subtitleLanguage?.includes("portuguese") || false,
+        },
+        {
+          id: "japanese",
+          label: "Japonês",
+          checked:
+            initialFilters.subtitleLanguage?.includes("japanese") || false,
+        },
       ],
     },
     interfaceLanguage: {
       id: "interfaceLanguage",
       title: "Idioma da Interface",
       options: [
-        { id: "english", label: "Inglês", checked: false },
-        { id: "portuguese", label: "Português", checked: false },
-        { id: "japanese", label: "Japonês", checked: false },
+        {
+          id: "english",
+          label: "Inglês",
+          checked:
+            initialFilters.interfaceLanguage?.includes("english") || false,
+        },
+        {
+          id: "portuguese",
+          label: "Português",
+          checked:
+            initialFilters.interfaceLanguage?.includes("portuguese") || false,
+        },
+        {
+          id: "japanese",
+          label: "Japonês",
+          checked:
+            initialFilters.interfaceLanguage?.includes("japanese") || false,
+        },
       ],
     },
     region: {
       id: "region",
       title: "Região",
       options: [
-        { id: "australia", label: "Australia", checked: false },
-        { id: "brazil", label: "Brazil", checked: false },
-        { id: "europe", label: "Europe", checked: false },
-        { id: "north-america", label: "North America", checked: false },
-        { id: "korea", label: "Korea", checked: false },
+        {
+          id: "australia",
+          label: "Australia",
+          checked: initialFilters.region?.includes("australia") || false,
+        },
+        {
+          id: "brazil",
+          label: "Brazil",
+          checked: initialFilters.region?.includes("brazil") || false,
+        },
+        {
+          id: "europe",
+          label: "Europe",
+          checked: initialFilters.region?.includes("europe") || false,
+        },
+        {
+          id: "north-america",
+          label: "North America",
+          checked: initialFilters.region?.includes("north-america") || false,
+        },
+        {
+          id: "korea",
+          label: "Korea",
+          checked: initialFilters.region?.includes("korea") || false,
+        },
       ],
     },
   });
 
-  const [priceRange, setPriceRange] = useState({
-    min: "",
-    max: "",
-  });
+  const [filters, setFilters] =
+    useState<Record<string, FilterSection>>(createInitialFilters);
 
-  // Atualizar opções de gênero e temática quando os dados mudarem
+  const [priceRange, setPriceRange] = useState(initialPriceRange);
+
+  // Sincronizar com props iniciais quando elas mudarem
   useEffect(() => {
-    setFilters((prev) => ({
-      ...prev,
+    const createInitialFiltersFromProps = () => ({
+      conditions: {
+        id: "conditions",
+        title: "Condições:",
+        options: [
+          {
+            id: "sale-only",
+            label: "Somente Venda",
+            checked: initialFilters.conditions?.includes("sale-only") || false,
+          },
+          {
+            id: "trade-only",
+            label: "Somente Troca",
+            checked: initialFilters.conditions?.includes("trade-only") || false,
+          },
+          {
+            id: "sale-trade",
+            label: "Venda e Troca",
+            checked: initialFilters.conditions?.includes("sale-trade") || false,
+          },
+        ],
+      },
+      preservation: {
+        id: "preservation",
+        title: "Estado de Preservação:",
+        options: [
+          {
+            id: "new",
+            label: "Novo",
+            checked: initialFilters.preservation?.includes("new") || false,
+          },
+          {
+            id: "semi-new",
+            label: "Seminovo",
+            checked: initialFilters.preservation?.includes("semi-new") || false,
+          },
+          {
+            id: "good",
+            label: "Bom",
+            checked: initialFilters.preservation?.includes("good") || false,
+          },
+          {
+            id: "normal",
+            label: "Normal",
+            checked: initialFilters.preservation?.includes("normal") || false,
+          },
+          {
+            id: "damaged",
+            label: "Danificado",
+            checked: initialFilters.preservation?.includes("damaged") || false,
+          },
+        ],
+      },
+      cartridgeType: {
+        id: "cartridgeType",
+        title: "Tipo do Cartucho:",
+        options: [
+          {
+            id: "retro",
+            label: "Retrô",
+            checked: initialFilters.cartridgeType?.includes("retro") || false,
+          },
+          {
+            id: "repro",
+            label: "Reprô",
+            checked: initialFilters.cartridgeType?.includes("repro") || false,
+          },
+        ],
+      },
+      price: {
+        id: "price",
+        title: "Preço:",
+        options: [],
+      },
       theme: {
-        ...prev.theme,
+        id: "theme",
+        title: "Temática:",
         options: themes.map((theme) => ({
           id: theme.id,
           label: theme.name,
-          checked:
-            prev.theme.options.find((opt) => opt.id === theme.id)?.checked ||
-            false,
+          checked: initialFilters.theme?.includes(theme.id) || false,
         })),
+        expanded: false,
       },
       genre: {
-        ...prev.genre,
+        id: "genre",
+        title: "Gênero",
         options: genres.map((genre) => ({
           id: genre.id,
           label: genre.name,
-          checked:
-            prev.genre.options.find((opt) => opt.id === genre.id)?.checked ||
-            false,
+          checked: initialFilters.genre?.includes(genre.id) || false,
         })),
+        expanded: false,
       },
-    }));
+      gameMode: {
+        id: "gameMode",
+        title: "Modo de jogo:",
+        options: [
+          {
+            id: "singleplayer",
+            label: "Singleplayer",
+            checked: initialFilters.gameMode?.includes("singleplayer") || false,
+          },
+          {
+            id: "multiplayer",
+            label: "Multiplayer",
+            checked: initialFilters.gameMode?.includes("multiplayer") || false,
+          },
+        ],
+      },
+      audioLanguage: {
+        id: "audioLanguage",
+        title: "Idioma do Audio",
+        options: [
+          {
+            id: "english",
+            label: "Inglês",
+            checked: initialFilters.audioLanguage?.includes("english") || false,
+          },
+          {
+            id: "portuguese",
+            label: "Português",
+            checked:
+              initialFilters.audioLanguage?.includes("portuguese") || false,
+          },
+          {
+            id: "japanese",
+            label: "Japonês",
+            checked:
+              initialFilters.audioLanguage?.includes("japanese") || false,
+          },
+        ],
+      },
+      subtitleLanguage: {
+        id: "subtitleLanguage",
+        title: "Idioma da Legenda",
+        options: [
+          {
+            id: "english",
+            label: "Inglês",
+            checked:
+              initialFilters.subtitleLanguage?.includes("english") || false,
+          },
+          {
+            id: "portuguese",
+            label: "Português",
+            checked:
+              initialFilters.subtitleLanguage?.includes("portuguese") || false,
+          },
+          {
+            id: "japanese",
+            label: "Japonês",
+            checked:
+              initialFilters.subtitleLanguage?.includes("japanese") || false,
+          },
+        ],
+      },
+      interfaceLanguage: {
+        id: "interfaceLanguage",
+        title: "Idioma da Interface",
+        options: [
+          {
+            id: "english",
+            label: "Inglês",
+            checked:
+              initialFilters.interfaceLanguage?.includes("english") || false,
+          },
+          {
+            id: "portuguese",
+            label: "Português",
+            checked:
+              initialFilters.interfaceLanguage?.includes("portuguese") || false,
+          },
+          {
+            id: "japanese",
+            label: "Japonês",
+            checked:
+              initialFilters.interfaceLanguage?.includes("japanese") || false,
+          },
+        ],
+      },
+      region: {
+        id: "region",
+        title: "Região",
+        options: [
+          {
+            id: "australia",
+            label: "Australia",
+            checked: initialFilters.region?.includes("australia") || false,
+          },
+          {
+            id: "brazil",
+            label: "Brazil",
+            checked: initialFilters.region?.includes("brazil") || false,
+          },
+          {
+            id: "europe",
+            label: "Europe",
+            checked: initialFilters.region?.includes("europe") || false,
+          },
+          {
+            id: "north-america",
+            label: "North America",
+            checked: initialFilters.region?.includes("north-america") || false,
+          },
+          {
+            id: "korea",
+            label: "Korea",
+            checked: initialFilters.region?.includes("korea") || false,
+          },
+        ],
+      },
+    });
+
+    setFilters(createInitialFiltersFromProps);
+    setPriceRange(initialPriceRange);
+  }, [initialFilters, initialPriceRange, themes, genres]);
+
+  // Atualizar opções de gênero e temática quando os dados mudarem
+  useEffect(() => {
+    // Só atualiza se os dados realmente mudaram
+    if (genres.length === 0 && themes.length === 0) return;
+
+    setFilters((prev) => {
+      const newThemeOptions = themes.map((theme) => ({
+        id: theme.id,
+        label: theme.name,
+        checked:
+          prev.theme.options.find((opt) => opt.id === theme.id)?.checked ||
+          false,
+      }));
+
+      const newGenreOptions = genres.map((genre) => ({
+        id: genre.id,
+        label: genre.name,
+        checked:
+          prev.genre.options.find((opt) => opt.id === genre.id)?.checked ||
+          false,
+      }));
+
+      // Verifica se as opções realmente mudaram para evitar re-renderizações desnecessárias
+      const themeChanged =
+        JSON.stringify(prev.theme.options) !== JSON.stringify(newThemeOptions);
+      const genreChanged =
+        JSON.stringify(prev.genre.options) !== JSON.stringify(newGenreOptions);
+
+      if (!themeChanged && !genreChanged) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        theme: {
+          ...prev.theme,
+          options: newThemeOptions,
+        },
+        genre: {
+          ...prev.genre,
+          options: newGenreOptions,
+        },
+      };
+    });
   }, [genres, themes]);
 
   // Notificar mudanças de filtros
   useEffect(() => {
+    if (!onFiltersChange) return;
+
     const getActiveFilters = () => {
       const activeFilters: Record<string, string[]> = {};
 
@@ -183,7 +540,8 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
       return activeFilters;
     };
 
-    onFiltersChange?.(getActiveFilters());
+    const activeFilters = getActiveFilters();
+    onFiltersChange(activeFilters);
   }, [filters, priceRange, onFiltersChange]);
 
   const handleCheckboxChange = (sectionId: string, optionId: string) => {
@@ -392,7 +750,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
   const activeFiltersCount = getActiveFiltersCount();
 
   return (
-    <div className="w-64 bg-white p-4 rounded-lg shadow-sm">
+    <div className="w-full lg:w-64 bg-white p-4 rounded-lg shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-medium text-gray-900">Filtre por:</h2>
         {activeFiltersCount > 0 && (

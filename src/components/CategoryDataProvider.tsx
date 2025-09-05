@@ -46,7 +46,7 @@ const mockGenres: Genre[] = [
   { id: "romance", name: "Romance" },
   { id: "science-fiction", name: "Science fiction" },
   { id: "thriller", name: "Thriller" },
-  { id: "warfare", name: "Warfare" },
+  { id: "warfare", name: "TESTE" },
 ];
 
 const mockThemes: Theme[] = [

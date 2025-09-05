@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import FilterTopBar from "../components/FilterTopBar";
@@ -498,6 +498,7 @@ const ProductListing: React.FC = () => {
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>(
     {}
   );
+  const [priceRange, setPriceRange] = useState({ min: "", max: "" });
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearch = (query: string) => setSearchQuery(query);
@@ -508,12 +509,15 @@ const ProductListing: React.FC = () => {
   const handleCategoryClick = (category: string) => setActiveCategory(category);
 
   // Protege contra atualizações desnecessárias de estado
-  const handleFiltersChange = (filters: Record<string, string[]>) => {
-    setActiveFilters((prev) => {
-      if (JSON.stringify(prev) === JSON.stringify(filters)) return prev;
-      return filters;
-    });
-  };
+  const handleFiltersChange = useCallback(
+    (filters: Record<string, string[]>) => {
+      setActiveFilters((prev) => {
+        if (JSON.stringify(prev) === JSON.stringify(filters)) return prev;
+        return filters;
+      });
+    },
+    []
+  );
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -649,7 +653,11 @@ const ProductListing: React.FC = () => {
           <div className="flex gap-6">
             <div className="hidden lg:block">
               <div className="sticky top-32">
-                <FilterSidebar onFiltersChange={handleFiltersChange} />
+                <FilterSidebar
+                  onFiltersChange={handleFiltersChange}
+                  initialFilters={activeFilters}
+                  initialPriceRange={priceRange}
+                />
               </div>
             </div>
 
@@ -678,18 +686,6 @@ const ProductListing: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  {(searchQuery || Object.keys(activeFilters).length > 0) && (
-                    <button
-                      onClick={() => {
-                        setSearchQuery("");
-                        setActiveFilters({});
-                        setActiveCategory("all");
-                      }}
-                      className="text-sm text-purple-600 hover:text-purple-700 font-medium"
-                    >
-                      Limpar filtros
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -722,6 +718,7 @@ const ProductListing: React.FC = () => {
                     onClick={() => {
                       setSearchQuery("");
                       setActiveFilters({});
+                      setPriceRange({ min: "", max: "" });
                       setActiveCategory("all");
                     }}
                     className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
@@ -747,8 +744,8 @@ const ProductListing: React.FC = () => {
             className="absolute inset-0 bg-black bg-opacity-50"
             onClick={toggleSidebar}
           />
-          <div className="absolute left-0 top-0 h-full w-80 bg-white shadow-xl">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <div className="absolute left-0 top-0 h-full w-80 bg-white shadow-xl flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
               <h2 className="text-lg font-semibold">Filtros</h2>
               <button
                 onClick={toggleSidebar}
@@ -757,8 +754,12 @@ const ProductListing: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-4">
-              <FilterSidebar onFiltersChange={handleFiltersChange} />
+            <div className="flex-1 overflow-y-auto p-4">
+              <FilterSidebar
+                onFiltersChange={handleFiltersChange}
+                initialFilters={activeFilters}
+                initialPriceRange={priceRange}
+              />
             </div>
           </div>
         </div>
