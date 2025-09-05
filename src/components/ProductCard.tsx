@@ -109,11 +109,17 @@ const ProductCard: React.FC<ProductCardProps> = ({
     >
       {/* Imagem do produto */}
       <div className="relative h-48 bg-gray-100 overflow-hidden rounded-t-lg">
-        <img
-          src={image}
-          alt={title}
-          className="w-full h-full border-8 border-white rounded-lg"
-        />
+        {image && image.trim() !== "" ? (
+          <img
+            src={image}
+            alt={title}
+            className="w-full h-full border-8 border-white rounded-lg"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-200">
+            <span className="text-gray-400 text-sm">Sem imagem</span>
+          </div>
+        )}
       </div>
 
       {/* Conteúdo do card */}

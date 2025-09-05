@@ -109,11 +109,17 @@ const AdvertisementDetail: React.FC = () => {
             {/* Imagens */}
             <div className="space-y-4">
               <div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg">
-                <img
-                  src={advertisement.images[selectedImage].imageUrl}
-                  alt={advertisement.title}
-                  className="w-full h-96 object-cover"
-                />
+                {advertisement.images[selectedImage]?.imageUrl ? (
+                  <img
+                    src={advertisement.images[selectedImage].imageUrl}
+                    alt={advertisement.title}
+                    className="w-full h-96 object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-96 bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-400">Sem imagem</span>
+                  </div>
+                )}
               </div>
 
               {/* Thumbnails */}
@@ -129,11 +135,19 @@ const AdvertisementDetail: React.FC = () => {
                           : "hover:scale-105"
                       }`}
                     >
-                      <img
-                        src={image.imageUrl}
-                        alt={`${advertisement.title} ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
+                      {image.imageUrl ? (
+                        <img
+                          src={image.imageUrl}
+                          alt={`${advertisement.title} ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-400 text-xs">
+                            Sem imagem
+                          </span>
+                        </div>
+                      )}
                     </button>
                   ))}
                 </div>

@@ -12,37 +12,40 @@ import {
   CreateAdvertisementSaleOnly,
   ProductListing,
 } from "./pages";
+import { CategoryDataProvider } from "./components/CategoryDataProvider";
 
 import "./App.css";
 
 function App() {
   return (
-    <Router>
-      <div className="App">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/anuncio/:id" element={<AdvertisementDetail />} />
-          <Route path="/criar-anuncio" element={<CreateAdvertisement />} />
-          <Route path="/perfil" element={<Profile />} />
-          <Route path="/criar-conta" element={<CadastroParaAnunciar />} />
-          <Route
-            path="/criar-anuncio/apenas-troca"
-            element={<CreateAdvertisementOnlyTrade />}
-          />
-          <Route
-            path="/criar-anuncio/venda-e-troca"
-            element={<CreateAdvertisementSaleAndTrade />}
-          />
-          <Route
-            path="/criar-anuncio/apenas-venda"
-            element={<CreateAdvertisementSaleOnly />}
-          />
-          <Route path="/produtos" element={<ProductListing />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </div>
-    </Router>
+    <CategoryDataProvider useMockData={import.meta.env.DEV}>
+      <Router>
+        <div className="App">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/anuncio/:id" element={<AdvertisementDetail />} />
+            <Route path="/criar-anuncio" element={<CreateAdvertisement />} />
+            <Route path="/perfil" element={<Profile />} />
+            <Route path="/criar-conta" element={<CadastroParaAnunciar />} />
+            <Route
+              path="/criar-anuncio/apenas-troca"
+              element={<CreateAdvertisementOnlyTrade />}
+            />
+            <Route
+              path="/criar-anuncio/venda-e-troca"
+              element={<CreateAdvertisementSaleAndTrade />}
+            />
+            <Route
+              path="/criar-anuncio/apenas-venda"
+              element={<CreateAdvertisementSaleOnly />}
+            />
+            <Route path="/produtos" element={<ProductListing />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </div>
+      </Router>
+    </CategoryDataProvider>
   );
 }
 

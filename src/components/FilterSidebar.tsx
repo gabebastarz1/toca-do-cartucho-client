@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ChevronDown, X } from "lucide-react";
+import { useCategories } from "./CategoryDataProvider";
 
 interface FilterOption {
   id: string;
@@ -16,9 +17,15 @@ interface FilterSection {
 
 interface FilterSidebarProps {
   onFiltersChange?: (filters: Record<string, string[]>) => void;
+  loading?: boolean;
 }
 
-const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFiltersChange }) => {
+const FilterSidebar: React.FC<FilterSidebarProps> = ({
+  onFiltersChange,
+  loading = false,
+}) => {
+  const { genres, themes, loading: categoriesLoading } = useCategories();
+
   const [filters, setFilters] = useState<Record<string, FilterSection>>({
     conditions: {
       id: "conditions",
@@ -56,23 +63,21 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFiltersChange }) => {
     theme: {
       id: "theme",
       title: "Temática:",
-      options: [
-        { id: "action", label: "Ação", checked: false },
-        { id: "fantasy", label: "Fantasia", checked: false },
-        { id: "sci-fi", label: "Ficção Científica", checked: false },
-        { id: "party", label: "Party", checked: false },
-      ],
+      options: themes.map((theme) => ({
+        id: theme.id,
+        label: theme.name,
+        checked: false,
+      })),
       expanded: false,
     },
     genre: {
       id: "genre",
       title: "Gênero",
-      options: [
-        { id: "adventure", label: "Aventura", checked: false },
-        { id: "arcade", label: "Arcade", checked: false },
-        { id: "indie", label: "Indie", checked: false },
-        { id: "platform", label: "Plataforma", checked: false },
-      ],
+      options: genres.map((genre) => ({
+        id: genre.id,
+        label: genre.name,
+        checked: false,
+      })),
       expanded: false,
     },
     gameMode: {
@@ -128,6 +133,59 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFiltersChange }) => {
     max: "",
   });
 
+  // Atualizar opções de gênero e temática quando os dados mudarem
+  useEffect(() => {
+    setFilters((prev) => ({
+      ...prev,
+      theme: {
+        ...prev.theme,
+        options: themes.map((theme) => ({
+          id: theme.id,
+          label: theme.name,
+          checked:
+            prev.theme.options.find((opt) => opt.id === theme.id)?.checked ||
+            false,
+        })),
+      },
+      genre: {
+        ...prev.genre,
+        options: genres.map((genre) => ({
+          id: genre.id,
+          label: genre.name,
+          checked:
+            prev.genre.options.find((opt) => opt.id === genre.id)?.checked ||
+            false,
+        })),
+      },
+    }));
+  }, [genres, themes]);
+
+  // Notificar mudanças de filtros
+  useEffect(() => {
+    const getActiveFilters = () => {
+      const activeFilters: Record<string, string[]> = {};
+
+      Object.values(filters).forEach((section) => {
+        if (section.id === "price") {
+          if (priceRange.min || priceRange.max) {
+            activeFilters.price = [priceRange.min, priceRange.max];
+          }
+        } else {
+          const checkedOptions = section.options
+            .filter((option) => option.checked)
+            .map((option) => option.id);
+          if (checkedOptions.length > 0) {
+            activeFilters[section.id] = checkedOptions;
+          }
+        }
+      });
+
+      return activeFilters;
+    };
+
+    onFiltersChange?.(getActiveFilters());
+  }, [filters, priceRange, onFiltersChange]);
+
   const handleCheckboxChange = (sectionId: string, optionId: string) => {
     setFilters((prev) => ({
       ...prev,
@@ -159,9 +217,51 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFiltersChange }) => {
     }));
   };
 
-  const applyPriceFilter = () => {
-    // Implementar lógica de aplicação do filtro de preço
-    console.log("Aplicar filtro de preço:", priceRange);
+  const clearAllFilters = () => {
+    setFilters((prev) => {
+      const clearedFilters = { ...prev };
+      Object.keys(clearedFilters).forEach((key) => {
+        if (key === "price") return;
+        clearedFilters[key] = {
+          ...clearedFilters[key],
+          options: clearedFilters[key].options.map((option) => ({
+            ...option,
+            checked: false,
+          })),
+        };
+      });
+      return clearedFilters;
+    });
+    setPriceRange({ min: "", max: "" });
+  };
+
+  const clearSectionFilters = (sectionId: string) => {
+    if (sectionId === "price") {
+      setPriceRange({ min: "", max: "" });
+    } else {
+      setFilters((prev) => ({
+        ...prev,
+        [sectionId]: {
+          ...prev[sectionId],
+          options: prev[sectionId].options.map((option) => ({
+            ...option,
+            checked: false,
+          })),
+        },
+      }));
+    }
+  };
+
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    Object.values(filters).forEach((section) => {
+      if (section.id === "price") {
+        if (priceRange.min || priceRange.max) count++;
+      } else {
+        count += section.options.filter((option) => option.checked).length;
+      }
+    });
+    return count;
   };
 
   const renderCheckbox = (sectionId: string, option: FilterOption) => (
@@ -184,11 +284,23 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFiltersChange }) => {
 
   const renderSection = (section: FilterSection) => {
     if (section.id === "price") {
+      const hasPriceFilter = priceRange.min || priceRange.max;
       return (
         <div key={section.id} className="mb-6">
-          <h3 className="text-sm font-medium text-gray-900 mb-3">
-            {section.title}
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-900">
+              {section.title}
+            </h3>
+            {hasPriceFilter && (
+              <button
+                onClick={() => clearSectionFilters("price")}
+                className="text-red-500 hover:text-red-700 p-1"
+                title="Limpar filtro de preço"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
           <div className="flex space-x-2">
             <input
               type="number"
@@ -204,39 +316,63 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFiltersChange }) => {
               onChange={(e) => handlePriceChange("max", e.target.value)}
               className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
-            <button
-              onClick={applyPriceFilter}
-              className="px-3 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              Aplicar
-            </button>
           </div>
+          {hasPriceFilter && (
+            <div className="mt-2 text-xs text-purple-600">
+              R$ {priceRange.min || "0"} - R$ {priceRange.max || "∞"}
+            </div>
+          )}
         </div>
       );
     }
 
-    const hasExpandableOptions = section.options.length > 4;
+    const hasExpandableOptions = section.options.length > 5;
     const displayOptions =
       hasExpandableOptions && !section.expanded
-        ? section.options.slice(0, 4)
+        ? section.options.slice(0, 5)
         : section.options;
+
+    const activeOptionsCount = section.options.filter(
+      (option) => option.checked
+    ).length;
+    const hasActiveFilters = activeOptionsCount > 0;
 
     return (
       <div key={section.id} className="mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-gray-900">{section.title}</h3>
-          {hasExpandableOptions && (
-            <button
-              onClick={() => toggleSection(section.id)}
-              className="text-purple-600 hover:text-purple-700"
-            >
-              <ChevronDown
-                className={`w-4 h-4 transition-transform ${
-                  section.expanded ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-          )}
+          <div className="flex items-center space-x-2">
+            <h3 className="text-sm font-medium text-gray-900">
+              {section.title}
+            </h3>
+            {hasActiveFilters && (
+              <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
+                {activeOptionsCount}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center space-x-1">
+            {hasActiveFilters && (
+              <button
+                onClick={() => clearSectionFilters(section.id)}
+                className="text-red-500 hover:text-red-700 p-1"
+                title="Limpar filtros desta seção"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+            {hasExpandableOptions && (
+              <button
+                onClick={() => toggleSection(section.id)}
+                className="text-purple-600 hover:text-purple-700"
+              >
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${
+                    section.expanded ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+            )}
+          </div>
         </div>
         <div className="space-y-1">
           {displayOptions.map((option) => renderCheckbox(section.id, option))}
@@ -253,12 +389,37 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFiltersChange }) => {
     );
   };
 
+  const activeFiltersCount = getActiveFiltersCount();
+
   return (
     <div className="w-64 bg-white p-4 rounded-lg shadow-sm">
-      <h2 className="text-sm font-medium text-gray-900 mb-4">Filtre por:</h2>
-      <div className="space-y-4">
-        {Object.values(filters).map(renderSection)}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-medium text-gray-900">Filtre por:</h2>
+        {activeFiltersCount > 0 && (
+          <div className="flex items-center space-x-2">
+            <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
+              {activeFiltersCount}
+            </span>
+            <button
+              onClick={clearAllFilters}
+              className="text-red-500 hover:text-red-700 text-xs font-medium"
+              title="Limpar todos os filtros"
+            >
+              Limpar
+            </button>
+          </div>
+        )}
       </div>
+
+      {loading || categoriesLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-sm text-gray-500">Carregando filtros...</div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {Object.values(filters).map(renderSection)}
+        </div>
+      )}
     </div>
   );
 };
