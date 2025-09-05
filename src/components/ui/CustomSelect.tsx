@@ -38,7 +38,7 @@ export default function CustomSelect({
   );
 
   return (
-    <div className={`w-full ${className || ""}`}>
+    <div className={`w-full ${className || ""} relative`}>
       <Listbox value={selected} onChange={handleChange}>
         <div className="relative w-full">
           <Listbox.Button
@@ -52,7 +52,7 @@ export default function CustomSelect({
             {selected ? selected.label : placeholder}
           </Listbox.Button>
 
-          <Listbox.Options className="absolute mt-1 w-full rounded-md border border-gray-300 bg-white shadow-lg overflow-hidden z-10 max-h-60 overflow-y-auto">
+          <Listbox.Options className="absolute mt-1 w-full rounded-md border border-gray-300 bg-white shadow-lg overflow-hidden z-[9999] max-h-60 overflow-y-auto">
             <div className="p-2">
               <input
                 type="text"

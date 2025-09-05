@@ -1,64 +1,20 @@
 import React, { useState } from "react";
 import { ChevronDown } from "lucide-react";
-
-interface Genre {
-  id: string;
-  name: string;
-}
-
-interface Theme {
-  id: string;
-  name: string;
-}
+import { useCategories } from "./CategoryDataProvider";
 
 interface FilterTopBarProps {
   onCategoryClick?: (category: string) => void;
   onFavoritesClick?: () => void;
   activeCategory?: string;
-  genres?: Genre[];
-  themes?: Theme[];
-  loading?: boolean;
 }
 
 const FilterTopBar: React.FC<FilterTopBarProps> = ({
   onCategoryClick,
   onFavoritesClick,
   activeCategory = "all",
-  genres = [],
-  themes = [],
-  loading = false,
 }) => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-
-  // Gêneros mockados como fallback
-  const mockGenres: Genre[] = [
-    { id: "action", name: "Action" },
-    { id: "comedy", name: "Comedy" },
-    { id: "drama", name: "Drama" },
-    { id: "educational", name: "Educational" },
-    { id: "fantasy", name: "Fantasy" },
-    { id: "historical", name: "Historical" },
-    { id: "horror", name: "Horror" },
-    { id: "kids", name: "Kids" },
-    { id: "mystery", name: "Mystery" },
-    { id: "romance", name: "Romance" },
-    { id: "science-fiction", name: "Science fiction" },
-    { id: "thriller", name: "Thriller" },
-    { id: "warfare", name: "Warfare" },
-  ];
-
-  // Temas mockados como fallback
-  const mockThemes: Theme[] = [
-    { id: "fantasia", name: "Fantasia" },
-    { id: "futurista", name: "Futurista" },
-    { id: "historico", name: "Histórico" },
-    { id: "medieval", name: "Medieval" },
-    { id: "espacial", name: "Espacial" },
-  ];
-
-  // Usar dados do backend se disponíveis, senão usar mockados
-  const displayGenres = genres.length > 0 ? genres : mockGenres;
-  const displayThemes = themes.length > 0 ? themes : mockThemes;
+  const { genres, themes, loading } = useCategories();
 
   const categories = [
     { id: "all", label: "All" },
@@ -113,7 +69,7 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
                               Carregando...
                             </div>
                           ) : (
-                            displayGenres.map((genre) => (
+                            genres.map((genre) => (
                               <button
                                 key={genre.id}
                                 onClick={() => handleCategoryClick(genre.id)}
@@ -132,7 +88,7 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
                               Carregando...
                             </div>
                           ) : (
-                            displayThemes.map((theme) => (
+                            themes.map((theme) => (
                               <button
                                 key={theme.id}
                                 onClick={() => handleCategoryClick(theme.id)}

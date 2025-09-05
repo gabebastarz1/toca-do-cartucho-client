@@ -389,7 +389,7 @@ const MultiPartForm = () => {
 
   return (
     <>
-    <Head title="Cadastrar anúncio - Apenas Troca" />
+      <Head title="Cadastrar anúncio - Apenas Troca" />
       <ModalAlert
         isOpen={showSuccessMessage}
         onClose={() => setShowSuccessMessage(false)}
@@ -403,7 +403,7 @@ const MultiPartForm = () => {
         }}
       />
 
-      <div className="lg:mx-52 shadow-lg rounded-sm overflow-hidden border justify-center">
+      <div className="lg:mx-52 shadow-lg rounded-sm border justify-center">
         {/* STEP 1 */}
         {step === 1 && (
           <>
@@ -1383,11 +1383,7 @@ const MultiPartForm = () => {
         {/* STEP 6 - Publicar Anúncio */}
         {step === 6 && (
           <>
-            <StepHeader
-              title="Publicar Anúncio"
-              subtitle=""
-              step={7}
-            />
+            <StepHeader title="Publicar Anúncio" subtitle="" step={7} />
             <div className="p-8 text-center">
               {/* Mensagem central */}
               <p className="text-black font- text-lg mb-8 max-w-2xl mx-auto">

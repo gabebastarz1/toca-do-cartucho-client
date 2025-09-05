@@ -394,7 +394,10 @@ const MultiPartFormSaleOnly = () => {
 
   return (
     <>
-    <Head title="Cadastrar anúncio - Apenas Venda" iconHref="/logo-icon.svg" />
+      <Head
+        title="Cadastrar anúncio - Apenas Venda"
+        iconHref="/logo-icon.svg"
+      />
       <ModalAlert
         isOpen={showSuccessMessage}
         onClose={() => setShowSuccessMessage(false)}
@@ -408,7 +411,7 @@ const MultiPartFormSaleOnly = () => {
         }}
       />
 
-      <div className="lg:mx-52 shadow-lg rounded-sm overflow-hidden border justify-center">
+      <div className="lg:mx-52 shadow-lg rounded-sm border justify-center">
         {/* STEP 1 */}
         {step === 1 && (
           <>
@@ -1139,11 +1142,7 @@ const MultiPartFormSaleOnly = () => {
         {/* STEP 5 - Publicar Anúncio */}
         {step === 5 && (
           <>
-            <StepHeader
-              title="Publicar Anúncio"
-              subtitle=""
-              step={5}
-            />
+            <StepHeader title="Publicar Anúncio" subtitle="" step={5} />
             <div className="p-8 text-center">
               {/* Mensagem central */}
               <p className="text-black font- text-lg mb-8 max-w-2xl mx-auto">
@@ -1381,8 +1380,6 @@ const MultiPartFormSaleOnly = () => {
                         </label>
                         <p className="text-gray-800 font-medium">R$ 80,00</p>
                       </div>
-
-                     
                     </div>
                   )}
                 </div>
@@ -1400,11 +1397,9 @@ const MultiPartFormSaleOnly = () => {
                     >
                       <h2 className="text-lg font-semibold text-gray-800">
                         Variação
-                        </h2>
+                      </h2>
                       <div className="flex items-center justify-between">
-                        
                         <div className="flex items-center space-x-3">
-                        
                           <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-200">
                             {variation.imagens &&
                             variation.imagens[0] &&

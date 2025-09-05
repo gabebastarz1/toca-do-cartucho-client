@@ -442,7 +442,7 @@ const MultiPartFormSaleAndTrade = () => {
 
   return (
     <>
-    <Head title="Cadastrar anúncio - Venda e troca" />
+      <Head title="Cadastrar anúncio - Venda e troca" />
       <ModalAlert
         isOpen={showSuccessMessage}
         onClose={() => setShowSuccessMessage(false)}
@@ -456,7 +456,7 @@ const MultiPartFormSaleAndTrade = () => {
         }}
       />
 
-      <div className="lg:mx-52 shadow-lg rounded-sm overflow-hidden border justify-center">
+      <div className="lg:mx-52 shadow-lg rounded-sm border justify-center">
         {/* STEP 1 */}
         {step === 1 && (
           <>
@@ -1497,11 +1497,7 @@ const MultiPartFormSaleAndTrade = () => {
         {/* STEP 6 - Publicar Anúncio */}
         {step === 6 && (
           <>
-            <StepHeader
-              title="Publicar Anúncio"
-              subtitle=""
-              step={6}
-            />
+            <StepHeader title="Publicar Anúncio" subtitle="" step={6} />
             <div className="p-8 text-center">
               {/* Mensagem central */}
               <p className="text-black font- text-lg mb-8 max-w-2xl mx-auto">
@@ -1547,7 +1543,6 @@ const MultiPartFormSaleAndTrade = () => {
           </>
         )}
 
-        
         {/* STEP 7 - Revisão do Anúncio */}
         {step === 7 && (
           <>
