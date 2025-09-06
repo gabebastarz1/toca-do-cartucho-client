@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Camera, Check, ChevronDown, Edit, Trash2 } from "lucide-react";
+import { Camera, ChevronDown, Edit, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import InfoTooltip from "./InfoToolTip";
 import CustomSelect from "./ui/CustomSelect";
@@ -7,6 +7,11 @@ import ConfirmButton from "./ui/ConfirmButton";
 import ModalAlert from "./ui/ModalAlert";
 import CustomCheckbox from "./ui/CustomCheckbox";
 import Head from "./Head";
+import StepHeader from "./StepHeader";
+import { useIsMobile } from "../hooks/useIsMobile";
+
+const stepsArray = [1, 2, 3, 4];
+
 
 const MultiPartFormSaleOnly = () => {
   const navigate = useNavigate();
@@ -24,7 +29,7 @@ const MultiPartFormSaleOnly = () => {
     step3: false,
     step5: false,
   });
-
+  const isMobile = useIsMobile();
   // Funções para gerenciar localStorage
   const saveVariationsToStorage = (variationsToSave) => {
     try {
@@ -68,6 +73,7 @@ const MultiPartFormSaleOnly = () => {
     idiomaAudio: "",
     idiomaLegenda: "",
     idiomaInterface: "",
+    condicoes: "Venda",
 
     imagens: Array(5).fill(null),
   });
@@ -354,48 +360,12 @@ const MultiPartFormSaleOnly = () => {
     { label: "Português", value: "Português" },
   ];
 
-  const StepHeader = ({ title, subtitle, step }) => {
-    const steps = [1, 2, 3, 4]; // Step 5 não é contabilizado
-
-    return (
-      <div className="bg-[#38307C] text-white p-4 rounded-t-sm text-center">
-        <h2 className="text-lg">{title}</h2>
-        <p className="text-sm">{subtitle}</p>
-
-        <div className="flex items-center justify-center mt-3 w-full max-w-3xl mx-auto">
-          {steps.map((i, idx) => (
-            <React.Fragment key={i}>
-              <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold 
-                  ${
-                    i <= step
-                      ? "bg-[#211C49] text-white"
-                      : "bg-[#DDDDF3] text-[#38307C]"
-                  }`}
-              >
-                {i <= step ? <Check className="w-4 h-4" /> : i}
-              </div>
-              {idx < steps.length - 1 && (
-                <div className="flex-1 h-1 bg-[#DDDDF3] relative">
-                  <div
-                    className="absolute top-0 left-0 h-full bg-[#211C49] transition-all duration-500 ease-in-out"
-                    style={{
-                      width: i < step + 1 ? "100%" : "0%",
-                    }}
-                  />
-                </div>
-              )}
-            </React.Fragment>
-          ))}
-        </div>
-      </div>
-    );
-  };
+  
 
   return (
     <>
       <Head
-        title="Cadastrar anúncio - Apenas Venda"
+        title="Cadastrar anúncio"
         iconHref="/logo-icon.svg"
       />
       <ModalAlert
@@ -411,16 +381,24 @@ const MultiPartFormSaleOnly = () => {
         }}
       />
 
-      <div className="lg:mx-52 shadow-lg rounded-sm overflow-hidden border justify-center">
+      <div
+        className={`${
+          isMobile
+            ? "mx-0 shadow-none border-0"
+            : "lg:mx-52 shadow-lg rounded-sm border"
+        } justify-center`}
+      >
         {/* STEP 1 */}
         {step === 1 && (
           <>
             <StepHeader
-              title="Informações Básicas - Apenas Venda"
+              title="Informações Básicas"
               subtitle="Comece preenchendo as informações básicas sobre o anúncio de venda"
               step={step - 1}
+              steps={stepsArray}
+              onBack={''}
             />
-            <div className="p-6 space-y-4">
+            <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}>
               <div>
                 <label className="block mb-1 text-sm font-bold">
                   Título do Anúncio
@@ -515,8 +493,10 @@ const MultiPartFormSaleOnly = () => {
               title="Detalhes do Cartucho"
               subtitle="Agora adicione os detalhes sobre o cartucho"
               step={step - 1}
+              steps={stepsArray}
+              onBack={prevStep}
             />
-            <div className="p-6 space-y-4">
+            <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}>
               <div>
                 <label className="block mb-1 text-sm font-bold">Jogo</label>
                 <CustomSelect
@@ -649,6 +629,8 @@ const MultiPartFormSaleOnly = () => {
               title="Imagens e Vídeos"
               subtitle="Nós já estamos finalizando, envie fotos e vídeos do seu cartucho para venda"
               step={step - 1}
+              steps={stepsArray}
+              onBack={prevStep}
             />
 
             <div className="px-6 md:px-16 pt-8">
@@ -729,8 +711,10 @@ const MultiPartFormSaleOnly = () => {
               title="Adicionar Variações"
               subtitle="Tem mais de um cartucho do mesmo jogo para vender?"
               step={3}
+              steps={stepsArray}
+              onBack={prevStep}
             />
-            <div className="p-6 space-y-6">
+            <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-6`}>
               {/* Lista de variações existentes - sempre visível */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -819,12 +803,18 @@ const MultiPartFormSaleOnly = () => {
               {!showVariationForm ? (
                 <button
                   onClick={() => setShowVariationForm(true)}
-                  className="w-full border-2 border-dashed border-purple-400 p-6 rounded-lg text-purple-600 hover:bg-purple-50 hover:border-purple-600 transition-colors"
+                  className={`w-full border-2 border-dashed border-purple-400 ${
+                    isMobile ? "p-4" : "p-6"
+                  } rounded-lg text-purple-600 hover:bg-purple-50 hover:border-purple-600 transition-colors`}
                 >
                   + Adicionar nova variação
                 </button>
               ) : (
-                <div className="bg-[#EDECF7] border border-gray-300 rounded-lg p-6 space-y-4">
+                <div
+                  className={`bg-[#EDECF7] border border-gray-300 rounded-lg ${
+                    isMobile ? "p-4" : "p-6"
+                  } space-y-4`}
+                >
                   <div className="flex items-center justify-between border-b pb-3">
                     <h3 className="text-lg font-semibold text-gray-800">
                       {editingVariationId
@@ -1142,15 +1132,42 @@ const MultiPartFormSaleOnly = () => {
         {/* STEP 5 - Publicar Anúncio */}
         {step === 5 && (
           <>
-            <StepHeader title="Publicar Anúncio" subtitle="" step={5} />
+            <StepHeader 
+            title="Publicar Anúncio" 
+            subtitle="" 
+            step={5} 
+            steps={stepsArray} 
+            onBack={prevStep} />
             <div className="p-8 text-center">
               {/* Mensagem central */}
               <p className="text-black font- text-lg mb-8 max-w-2xl mx-auto">
-                Você está prestes a publicar o seu anúncio de apenas venda,
+                Você está prestes a publicar o seu anúncio,
                 revise todas as informações, e se quiser, ainda é possível fazer
                 alterações
               </p>
-              <div className="flex items-center justify-center gap-4">
+              {isMobile ? (
+              <div className="flex flex-col items-center justify-center gap-4">
+              <img src="../public/computador.svg" alt="" />
+              {/* Botões */}
+              <div className="space-y-4">
+                <button
+                  onClick={handleFinish}
+                  disabled={!checkboxConfirmed}
+                  className="px-24 py-3 bg-[#38307C] text-white rounded-lg hover:bg-[#2A1F5C] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#38307C]"
+                >
+                  Publicar
+                </button>
+                <br />
+                <button
+                  onClick={() => setStep(6)}
+                  className="px-16 py-3 bg-[#DDDDF3] text-[#38307C] rounded-lg hover:bg-[#C8C8E8] transition-colors font-medium"
+                >
+                  Revisar Anúncio
+                </button>
+              </div>
+            </div>
+              ) : (
+                <div className="flex items-center justify-center gap-4">
                 <img src="../public/computador.svg" alt="" />
                 {/* Botões */}
                 <div className="space-y-4">
@@ -1170,7 +1187,7 @@ const MultiPartFormSaleOnly = () => {
                   </button>
                 </div>
               </div>
-
+              )}
               {/* Checkbox e disclaimer */}
               <div className="mt-8 text-start">
                 <div className="flex items-center justify-center mb-2">
@@ -1195,6 +1212,8 @@ const MultiPartFormSaleOnly = () => {
               title="Revisar Anúncio"
               subtitle="Confirme se todas as informações estão corretas"
               step={6}
+              steps={stepsArray}
+              onBack={prevStep}
             />
             <div className="p-8 bg-white">
               <div className="space-y-4">
@@ -1228,7 +1247,7 @@ const MultiPartFormSaleOnly = () => {
 
                   {/* Conteúdo do anúncio principal */}
                   {showMainAd && (
-                    <div className="p-6 space-y-6">
+                    <div className={`${isMobile ? "p-4" : "p-6"} space-y-6`}>
                       {/* Imagens */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-500">
@@ -1359,7 +1378,7 @@ const MultiPartFormSaleOnly = () => {
                           Condições
                         </label>
                         <p className="text-gray-800 font-medium">
-                          Venda e Troca
+                          {formData.condicoes || "Não informado"}
                         </p>
                       </div>
 
@@ -1378,7 +1397,7 @@ const MultiPartFormSaleOnly = () => {
                         <label className="text-sm font-medium text-gray-500">
                           Preço
                         </label>
-                        <p className="text-gray-800 font-medium">R$ 80,00</p>
+                        <p className="text-gray-800 font-medium">{formData.preco || "Não informado"}</p>
                       </div>
                     </div>
                   )}
@@ -1450,7 +1469,7 @@ const MultiPartFormSaleOnly = () => {
 
                     {/* Conteúdo expandido da variação */}
                     {expandedVariations[variation.id || index] && (
-                      <div className="p-6 space-y-6">
+                      <div className={`${isMobile ? "p-4" : "p-6"} space-y-6`}>
                         {/* Imagens da variação */}
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-500">
@@ -1615,11 +1634,11 @@ const MultiPartFormSaleOnly = () => {
         )}
 
         {/* FOOTER BUTTONS */}
-        <div className="flex justify-end p-4 bg-gray-50 border-t gap-1">
+        <div className={`flex justify-end p-4 bg-gray-50 border-t gap-1 ${isMobile ? 'flex-col px-9' : 'flex-row'}`}>
           <button
             onClick={prevStep}
             disabled={step === 1}
-            className="px-4 py-2 rounded-lg bg-[#DDDDF3] disabled:opacity-50"
+            className={`py-2 rounded-lg bg-[#DDDDF3] disabled:opacity-50 ${isMobile ? 'hidden' : 'px-4'}`}
           >
             Cancelar
           </button>

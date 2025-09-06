@@ -1,4 +1,6 @@
 import React from "react";
+import { useIsMobile } from "@/hooks/useIsMobile";
+
 
 interface ConfirmButtonProps {
   children?: React.ReactNode;
@@ -13,11 +15,14 @@ const ConfirmButton: React.FC<ConfirmButtonProps> = ({
   className = "",
   disabled = false,
 }) => {
+  const isMobile = useIsMobile();
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`bg-[#483D9E] hover:bg-[#211C49] text-white font-medium py-2 px-6 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#483D9E] ${className}`}
+      className={`bg-[#483D9E] hover:bg-[#211C49] ${
+        isMobile ? "w-full py-4" : "px-6 py-2"
+      } text-white font-medium  rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#483D9E] ${className}`}
     >
       {children}
     </button>

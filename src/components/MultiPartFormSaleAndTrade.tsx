@@ -8,7 +8,13 @@ import ModalAlert from "./ui/ModalAlert";
 import CustomCheckbox from "./ui/CustomCheckbox";
 import Head from "./Head";
 
-const MultiPartFormSaleAndTrade = () => {
+interface MultiPartFormSaleAndTradeProps {
+  isMobile?: boolean;
+}
+
+const MultiPartFormSaleAndTrade = ({
+  isMobile = false,
+}: MultiPartFormSaleAndTradeProps) => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [showVariationForm, setShowVariationForm] = useState(false);
@@ -405,6 +411,10 @@ const MultiPartFormSaleAndTrade = () => {
   const StepHeader = ({ title, subtitle, step }) => {
     const steps = [1, 2, 3, 4, 5]; // Step 6 não é contabilizado
 
+    if (isMobile) {
+      return null; // Mobile uses ProgressIndicator component
+    }
+
     return (
       <div className="bg-[#38307C] text-white p-4 rounded-t-sm text-center">
         <h2 className="text-lg">{title}</h2>
@@ -456,7 +466,13 @@ const MultiPartFormSaleAndTrade = () => {
         }}
       />
 
-      <div className="lg:mx-52 shadow-lg rounded-sm overflow-hidden border justify-center">
+      <div
+        className={`${
+          isMobile
+            ? "mx-0 shadow-none border-0"
+            : "lg:mx-52 shadow-lg rounded-sm border"
+        } justify-center`}
+      >
         {/* STEP 1 */}
         {step === 1 && (
           <>
@@ -465,7 +481,7 @@ const MultiPartFormSaleAndTrade = () => {
               subtitle="Comece preenchendo as informações básicas sobre o anúncio de venda e troca"
               step={step - 1}
             />
-            <div className="p-6 space-y-4">
+            <div className={`${isMobile ? "p-4" : "p-6"} space-y-4`}>
               <div>
                 <label className="block mb-1 text-sm font-bold">
                   Título do Anúncio
@@ -561,7 +577,7 @@ const MultiPartFormSaleAndTrade = () => {
               subtitle="Agora adicione os detalhes sobre o cartucho"
               step={step - 1}
             />
-            <div className="p-6 space-y-4">
+            <div className={`${isMobile ? "p-4" : "p-6"} space-y-4`}>
               <div>
                 <label className="block mb-1 text-sm font-bold">Jogo</label>
                 <CustomSelect
@@ -695,7 +711,7 @@ const MultiPartFormSaleAndTrade = () => {
               subtitle="Especifique as condições para a troca"
               step={step - 1}
             />
-            <div className="p-6 space-y-4">
+            <div className={`${isMobile ? "p-4" : "p-6"} space-y-4`}>
               <div>
                 <label className="block mb-1 text-sm font-bold">Jogo</label>
                 <CustomSelect
@@ -909,7 +925,7 @@ const MultiPartFormSaleAndTrade = () => {
               subtitle="Tem mais de um cartucho do mesmo jogo para vender?"
               step={4}
             />
-            <div className="p-6 space-y-6">
+            <div className={`${isMobile ? "p-4" : "p-6"} space-y-6`}>
               {/* Lista de variações existentes - sempre visível */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -1583,7 +1599,7 @@ const MultiPartFormSaleAndTrade = () => {
 
                   {/* Conteúdo do anúncio principal */}
                   {showMainAd && (
-                    <div className="p-6 space-y-6">
+                    <div className={`${isMobile ? "p-4" : "p-6"} space-y-6`}>
                       {/* Imagens */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-500">
@@ -1875,7 +1891,7 @@ const MultiPartFormSaleAndTrade = () => {
 
                     {/* Conteúdo expandido da variação */}
                     {expandedVariations[variation.id || index] && (
-                      <div className="p-6 space-y-6">
+                      <div className={`${isMobile ? "p-4" : "p-6"} space-y-6`}>
                         {/* Imagens da variação */}
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-500">
