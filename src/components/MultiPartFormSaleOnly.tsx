@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Camera, ChevronDown, Edit, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import InfoTooltip from "./InfoToolTip";
@@ -9,13 +9,61 @@ import CustomCheckbox from "./ui/CustomCheckbox";
 import Head from "./Head";
 import StepHeader from "./StepHeader";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { useAdvertisementCreation } from "../hooks/useAdvertisementCreation";
+import { useReferenceData } from "../hooks/useReferenceData";
+import {
+  validateFormData,
+  validateVariations,
+} from "../utils/formDataConverter";
 
 const stepsArray = [1, 2, 3, 4];
-
 
 const MultiPartFormSaleOnly = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+
+  // Hook para dados de referência
+  const handleReferenceDataError = useCallback((error: Error) => {
+    console.error("Erro ao carregar dados de referência:", error);
+  }, []);
+
+  const {
+    preservationStates,
+    cartridgeTypes,
+    regions,
+    languages,
+    getGameOptions,
+    getPreservationStateOptions,
+    getCartridgeTypeOptions,
+    getRegionOptions,
+    getLanguageOptions,
+    getGameById,
+    getPreservationStateById,
+    getCartridgeTypeById,
+    getRegionById,
+    getLanguageById,
+  } = useReferenceData({
+    autoLoad: true,
+    onError: handleReferenceDataError,
+  });
+
+  // Hook para criação de anúncios
+  const {
+    createAdvertisementFromExistingForm,
+    loading: creationLoading,
+    error: creationError,
+  } = useAdvertisementCreation({
+    onSuccess: (advertisement) => {
+      console.log("Anúncio criado com sucesso:", advertisement);
+      setShowSuccessMessage(true);
+      // Limpar localStorage após sucesso
+      localStorage.removeItem("tcc-variations");
+    },
+    onError: (error) => {
+      console.error("Erro ao criar anúncio:", error);
+      // Mostrar erro para o usuário
+    },
+  });
   const [showVariationForm, setShowVariationForm] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [variations, setVariations] = useState([]);
@@ -227,22 +275,38 @@ const MultiPartFormSaleOnly = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleFinish = () => {
-    // Aqui você pode adicionar a lógica de envio do formulário
-    // Por exemplo, validações, chamadas para API, etc.
+  const handleFinish = async () => {
+    try {
+      // Validar dados do formulário principal
+      const formErrors = validateFormData(formData);
+      if (formErrors.length > 0) {
+        alert(`Erro de validação:\n${formErrors.join("\n")}`);
+        return;
+      }
 
-    // Incluir as variações no envio
-    const formDataWithVariations = {
-      ...formData,
-      variations: variations,
-    };
+      // Validar variações
+      const variationErrors = validateVariations(variations);
+      if (variationErrors.length > 0) {
+        alert(
+          `Erro de validação nas variações:\n${variationErrors.join("\n")}`
+        );
+        return;
+      }
 
-    // Simular envio bem-sucedido
-    console.log("Formulário enviado:", formDataWithVariations);
-    console.log("Variações incluídas:", variations);
+      // Criar anúncio usando o serviço
+      await createAdvertisementFromExistingForm(formData, variations, {
+        preservationStates,
+        cartridgeTypes,
+        regions,
+        languages,
+      });
 
-    setShowSuccessMessage(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+      // Scroll para o topo após envio
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      console.error("Erro ao finalizar criação do anúncio:", error);
+      alert("Erro ao criar anúncio. Tente novamente.");
+    }
   };
 
   const toggleVariation = (variationId) => {
@@ -275,7 +339,15 @@ const MultiPartFormSaleOnly = () => {
                     variationData.titulo ||
                     formData.titulo ||
                     "Troco Cartucho Super Mario Bros Usado.",
-                  descricao: `${variationData.tipoCartucho} - ${variationData.estadoPreservacao} - ${variationData.regiao} - ${variationData.idiomaAudio}`,
+                  descricao:
+                    variationData.descricao ||
+                    `${getCartridgeTypeName(
+                      variationData.tipoCartucho
+                    )} - ${getPreservationStateName(
+                      variationData.estadoPreservacao
+                    )} - ${getRegionName(
+                      variationData.regiao
+                    )} - ${getLanguageName(variationData.idiomaAudio)}`,
                 }
               : v
           )
@@ -290,7 +362,15 @@ const MultiPartFormSaleOnly = () => {
             variationData.titulo ||
             formData.titulo ||
             "Troca Cartucho Super Mario Bros Usado.",
-          descricao: `${variationData.tipoCartucho} - ${variationData.estadoPreservacao} - ${variationData.regiao} - ${variationData.idiomaAudio}`,
+          descricao:
+            variationData.descricao ||
+            `${getCartridgeTypeName(
+              variationData.tipoCartucho
+            )} - ${getPreservationStateName(
+              variationData.estadoPreservacao
+            )} - ${getRegionName(variationData.regiao)} - ${getLanguageName(
+              variationData.idiomaAudio
+            )}`,
         };
 
         setVariations((prev) => [...prev, newVariation]);
@@ -335,39 +415,48 @@ const MultiPartFormSaleOnly = () => {
   };
 
   // =================== Opções para os selects ===================
-  const jogos = [
-    { label: "Jogo 1", value: "Jogo 1" },
-    { label: "Jogo 2", value: "Jogo 2" },
-  ];
+  const jogos = getGameOptions();
+  const tiposCartucho = getCartridgeTypeOptions();
+  const estados = getPreservationStateOptions();
+  const regioes = getRegionOptions();
+  const idiomas = getLanguageOptions();
 
-  const tiposCartucho = [
-    { label: "Retrô", value: "Retro" },
-    { label: "Repro", value: "Repro" },
-  ];
+  // =================== Funções para obter nomes dos IDs ===================
+  const getGameName = (gameId: string) => {
+    const game = getGameById(parseInt(gameId));
+    return game?.name || "Não informado";
+  };
 
-  const estados = [
-    { label: "Novo", value: "Novo" },
-    { label: "Usado", value: "Usado" },
-  ];
+  const getCartridgeTypeName = (cartridgeTypeId: string) => {
+    const cartridgeType = getCartridgeTypeById(parseInt(cartridgeTypeId));
+    return cartridgeType?.name || "Não informado";
+  };
 
-  const regioes = [
-    { label: "NTSC", value: "NTSC" },
-    { label: "PAL", value: "PAL" },
-  ];
+  const getPreservationStateName = (preservationStateId: string) => {
+    const preservationState = getPreservationStateById(
+      parseInt(preservationStateId)
+    );
+    return preservationState?.name || "Não informado";
+  };
 
-  const idiomas = [
-    { label: "Inglês", value: "Inglês" },
-    { label: "Português", value: "Português" },
-  ];
+  const getRegionName = (regionId: string) => {
+    const region = getRegionById(parseInt(regionId));
+    return (
+      region?.name ||
+      region?.identifier ||
+      `Região ${regionId}` ||
+      "Não informado"
+    );
+  };
 
-  
+  const getLanguageName = (languageId: string) => {
+    const language = getLanguageById(parseInt(languageId));
+    return language?.name || "Não informado";
+  };
 
   return (
     <>
-      <Head
-        title="Cadastrar anúncio"
-        iconHref="/logo-icon.svg"
-      />
+      <Head title="Cadastrar anúncio" iconHref="/logo-icon.svg" />
       <ModalAlert
         isOpen={showSuccessMessage}
         onClose={() => setShowSuccessMessage(false)}
@@ -396,9 +485,11 @@ const MultiPartFormSaleOnly = () => {
               subtitle="Comece preenchendo as informações básicas sobre o anúncio de venda"
               step={step - 1}
               steps={stepsArray}
-              onBack={''}
+              onBack={""}
             />
-            <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}>
+            <div
+              className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}
+            >
               <div>
                 <label className="block mb-1 text-sm font-bold">
                   Título do Anúncio
@@ -496,7 +587,9 @@ const MultiPartFormSaleOnly = () => {
               steps={stepsArray}
               onBack={prevStep}
             />
-            <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}>
+            <div
+              className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}
+            >
               <div>
                 <label className="block mb-1 text-sm font-bold">Jogo</label>
                 <CustomSelect
@@ -718,7 +811,11 @@ const MultiPartFormSaleOnly = () => {
               {/* Lista de variações existentes - sempre visível */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                <h3 className={`${isMobile ? 'hidden' : ''} text-lg font-semibold text-gray-800`}>
+                  <h3
+                    className={`${
+                      isMobile ? "hidden" : ""
+                    } text-lg font-semibold text-gray-800`}
+                  >
                     Variações do Anúncio
                   </h3>
                   {variations.length > 0 && (
@@ -732,9 +829,7 @@ const MultiPartFormSaleOnly = () => {
                 </div>
 
                 {variations.length === 0 ? (
-                  <div className="text-center text-gray-500">
-                    
-                  </div>
+                  <div className="text-center text-gray-500"></div>
                 ) : (
                   variations.map((variation, index) => (
                     <div
@@ -837,7 +932,6 @@ const MultiPartFormSaleOnly = () => {
                           imagens: Array(4).fill(null),
                         });
                       }}
-                      
                     >
                       <ChevronDown className="w-8 h-8 text-gray-600" />
                     </button>
@@ -847,8 +941,18 @@ const MultiPartFormSaleOnly = () => {
                     <h4 className="text-sm font-semibold text-gray-800 mb-3 text-center">
                       Detalhes do anúncio de venda
                     </h4>
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Título do Anúncio:
                       </label>
                       <input
@@ -861,8 +965,18 @@ const MultiPartFormSaleOnly = () => {
                       />
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Tipo do Cartucho:
                       </label>
                       <div className="flex-1">
@@ -884,8 +998,18 @@ const MultiPartFormSaleOnly = () => {
                       </div>
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Estado de Preservação:
                       </label>
                       <div className="flex-1">
@@ -907,8 +1031,18 @@ const MultiPartFormSaleOnly = () => {
                       </div>
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Região do Cartucho:
                       </label>
                       <div className="flex-1">
@@ -927,8 +1061,18 @@ const MultiPartFormSaleOnly = () => {
                       </div>
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Idioma da Audio:
                       </label>
                       <div className="flex-1">
@@ -949,8 +1093,18 @@ const MultiPartFormSaleOnly = () => {
                         />
                       </div>
                     </div>
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Idioma da Legenda:
                       </label>
                       <div className="flex-1">
@@ -969,8 +1123,18 @@ const MultiPartFormSaleOnly = () => {
                         />
                       </div>
                     </div>
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Idioma da Interface:
                       </label>
                       <div className="flex-1">
@@ -990,8 +1154,18 @@ const MultiPartFormSaleOnly = () => {
                       </div>
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Estoque Disponível:
                       </label>
                       <input
@@ -1014,8 +1188,18 @@ const MultiPartFormSaleOnly = () => {
                       )}
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Preço de Venda:
                       </label>
                       <div className="flex-1 flex items-center space-x-2">
@@ -1030,8 +1214,18 @@ const MultiPartFormSaleOnly = () => {
                         />
                       </div>
                     </div>
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Descrição:
                       </label>
                       <input
@@ -1044,9 +1238,18 @@ const MultiPartFormSaleOnly = () => {
                       />
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
-
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Imagens e Vídeos:
                       </label>
                       <div className="flex-1">
@@ -1130,61 +1333,76 @@ const MultiPartFormSaleOnly = () => {
         {/* STEP 5 - Publicar Anúncio */}
         {step === 5 && (
           <>
-            <StepHeader 
-            title="Publicar Anúncio" 
-            subtitle="" 
-            step={5} 
-            steps={stepsArray} 
-            onBack={prevStep} />
+            <StepHeader
+              title="Publicar Anúncio"
+              subtitle=""
+              step={5}
+              steps={stepsArray}
+              onBack={prevStep}
+            />
             <div className="p-8 text-center">
+              {/* Exibir erro se houver */}
+              {creationError && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-800 mb-3">{creationError}</p>
+                  {creationError.includes("CPF") && (
+                    <button
+                      onClick={() => navigate("/perfil")}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Ir para Perfil
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Mensagem central */}
               <p className="text-black font- text-lg mb-8 max-w-2xl mx-auto">
-                Você está prestes a publicar o seu anúncio,
-                revise todas as informações, e se quiser, ainda é possível fazer
-                alterações
+                Você está prestes a publicar o seu anúncio, revise todas as
+                informações, e se quiser, ainda é possível fazer alterações
               </p>
               {isMobile ? (
-              <div className="flex flex-col items-center justify-center gap-4">
-              <img src="../public/computador.svg" alt="" />
-              {/* Botões */}
-              <div className="space-y-4">
-                <button
-                  onClick={handleFinish}
-                  disabled={!checkboxConfirmed}
-                  className="px-24 py-3 bg-[#38307C] text-white rounded-lg hover:bg-[#2A1F5C] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#38307C]"
-                >
-                  Publicar
-                </button>
-                <br />
-                <button
-                  onClick={() => setStep(6)}
-                  className="px-16 py-3 bg-[#DDDDF3] text-[#38307C] rounded-lg hover:bg-[#C8C8E8] transition-colors font-medium"
-                >
-                  Revisar Anúncio
-                </button>
-              </div>
-            </div>
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <img src="../public/computador.svg" alt="" />
+                  {/* Botões */}
+                  <div className="space-y-4">
+                    <button
+                      onClick={handleFinish}
+                      disabled={!checkboxConfirmed || creationLoading}
+                      className="px-24 py-3 bg-[#38307C] text-white rounded-lg hover:bg-[#2A1F5C] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#38307C]"
+                    >
+                      {creationLoading ? "Publicando..." : "Publicar"}
+                    </button>
+                    <br />
+                    <button
+                      onClick={() => setStep(6)}
+                      className="px-16 py-3 bg-[#DDDDF3] text-[#38307C] rounded-lg hover:bg-[#C8C8E8] transition-colors font-medium"
+                    >
+                      Revisar Anúncio
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <div className="flex items-center justify-center gap-4">
-                <img src="../public/computador.svg" alt="" />
-                {/* Botões */}
-                <div className="space-y-4">
-                  <button
-                    onClick={handleFinish}
-                    disabled={!checkboxConfirmed}
-                    className="px-24 py-3 bg-[#38307C] text-white rounded-lg hover:bg-[#2A1F5C] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#38307C]"
-                  >
-                    Publicar
-                  </button>
-                  <br />
-                  <button
-                    onClick={() => setStep(6)}
-                    className="px-16 py-3 bg-[#DDDDF3] text-[#38307C] rounded-lg hover:bg-[#C8C8E8] transition-colors font-medium"
-                  >
-                    Revisar Anúncio
-                  </button>
+                  <img src="../public/computador.svg" alt="" />
+                  {/* Botões */}
+                  <div className="space-y-4">
+                    <button
+                      onClick={handleFinish}
+                      disabled={!checkboxConfirmed || creationLoading}
+                      className="px-24 py-3 bg-[#38307C] text-white rounded-lg hover:bg-[#2A1F5C] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#38307C]"
+                    >
+                      {creationLoading ? "Publicando..." : "Publicar"}
+                    </button>
+                    <br />
+                    <button
+                      onClick={() => setStep(6)}
+                      className="px-16 py-3 bg-[#DDDDF3] text-[#38307C] rounded-lg hover:bg-[#C8C8E8] transition-colors font-medium"
+                    >
+                      Revisar Anúncio
+                    </button>
+                  </div>
                 </div>
-              </div>
               )}
               {/* Checkbox e disclaimer */}
               <div className="mt-8 text-start">
@@ -1296,7 +1514,7 @@ const MultiPartFormSaleOnly = () => {
                           Tipo do Cartucho
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.tipoCartucho || "Não informado"}
+                          {getCartridgeTypeName(formData.tipoCartucho)}
                         </p>
                       </div>
 
@@ -1306,7 +1524,7 @@ const MultiPartFormSaleOnly = () => {
                           Jogo
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.jogo || "Não informado"}
+                          {getGameName(formData.jogo)}
                         </p>
                       </div>
 
@@ -1316,7 +1534,7 @@ const MultiPartFormSaleOnly = () => {
                           Estado de Preservação
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.estadoPreservacao || "Não informado"}
+                          {getPreservationStateName(formData.estadoPreservacao)}
                         </p>
                       </div>
 
@@ -1326,7 +1544,7 @@ const MultiPartFormSaleOnly = () => {
                           Região do Cartucho
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.regiao || "Não informado"}
+                          {getRegionName(formData.regiao)}
                         </p>
                       </div>
 
@@ -1336,7 +1554,7 @@ const MultiPartFormSaleOnly = () => {
                           Idiomas do Audio
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.idiomaAudio || "Não informado"}
+                          {getLanguageName(formData.idiomaAudio)}
                         </p>
                       </div>
 
@@ -1346,7 +1564,7 @@ const MultiPartFormSaleOnly = () => {
                           Idiomas da Legenda
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.idiomaLegenda || "Não informado"}
+                          {getLanguageName(formData.idiomaLegenda)}
                         </p>
                       </div>
 
@@ -1356,7 +1574,7 @@ const MultiPartFormSaleOnly = () => {
                           Idiomas da Interface
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.idiomaInterface || "Não informado"}
+                          {getLanguageName(formData.idiomaInterface)}
                         </p>
                       </div>
 
@@ -1395,7 +1613,9 @@ const MultiPartFormSaleOnly = () => {
                         <label className="text-sm font-medium text-gray-500">
                           Preço
                         </label>
-                        <p className="text-gray-800 font-medium">{formData.preco || "Não informado"}</p>
+                        <p className="text-gray-800 font-medium">
+                          {formData.preco || "Não informado"}
+                        </p>
                       </div>
                     </div>
                   )}
@@ -1435,10 +1655,12 @@ const MultiPartFormSaleOnly = () => {
                               {variation.titulo || `Variação ${index + 1}`}
                             </h2>
                             <p className="text-sm text-gray-600">
-                              {variation.tipoCartucho || "N/A"} -{" "}
-                              {variation.estadoPreservacao || "N/A"} -{" "}
-                              {variation.regiao || "N/A"} -{" "}
-                              {variation.idiomaAudio || "N/A"}
+                              {getCartridgeTypeName(variation.tipoCartucho)} -{" "}
+                              {getPreservationStateName(
+                                variation.estadoPreservacao
+                              )}{" "}
+                              - {getRegionName(variation.regiao)} -{" "}
+                              {getLanguageName(variation.idiomaAudio)}
                             </p>
                             <p className="text-xs text-gray-500">
                               Estoque: {variation.estoque || "N/A"}
@@ -1526,7 +1748,7 @@ const MultiPartFormSaleOnly = () => {
                             Tipo do Cartucho
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.tipoCartucho || "Não informado"}
+                            {getCartridgeTypeName(variation.tipoCartucho)}
                           </p>
                         </div>
 
@@ -1546,7 +1768,9 @@ const MultiPartFormSaleOnly = () => {
                             Estado de Preservação
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.estadoPreservacao || "Não informado"}
+                            {getPreservationStateName(
+                              variation.estadoPreservacao
+                            )}
                           </p>
                         </div>
 
@@ -1556,7 +1780,7 @@ const MultiPartFormSaleOnly = () => {
                             Região
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.regiao || "Não informado"}
+                            {getRegionName(variation.regiao)}
                           </p>
                         </div>
 
@@ -1566,7 +1790,7 @@ const MultiPartFormSaleOnly = () => {
                             Idiomas do Áudio
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.idiomaAudio || "Não informado"}
+                            {getLanguageName(variation.idiomaAudio)}
                           </p>
                         </div>
 
@@ -1575,7 +1799,7 @@ const MultiPartFormSaleOnly = () => {
                             Idiomas da Legenda
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.idiomaLegenda || "Não informado"}
+                            {getLanguageName(variation.idiomaLegenda)}
                           </p>
                         </div>
 
@@ -1584,7 +1808,7 @@ const MultiPartFormSaleOnly = () => {
                             Idiomas da Interface
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.idiomaInterface || "Não informado"}
+                            {getLanguageName(variation.idiomaInterface)}
                           </p>
                         </div>
 
@@ -1632,11 +1856,17 @@ const MultiPartFormSaleOnly = () => {
         )}
 
         {/* FOOTER BUTTONS */}
-        <div className={`flex justify-end p-4 bg-gray-50 border-t gap-1 ${isMobile ? 'flex-col px-9' : 'flex-row'}`}>
+        <div
+          className={`flex justify-end p-4 bg-gray-50 border-t gap-1 ${
+            isMobile ? "flex-col px-9" : "flex-row"
+          }`}
+        >
           <button
             onClick={prevStep}
             disabled={step === 1}
-            className={`py-2 rounded-lg bg-[#DDDDF3] disabled:opacity-50 ${isMobile ? 'hidden' : 'px-4'}`}
+            className={`py-2 rounded-lg bg-[#DDDDF3] disabled:opacity-50 ${
+              isMobile ? "hidden" : "px-4"
+            }`}
           >
             Cancelar
           </button>

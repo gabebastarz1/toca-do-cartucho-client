@@ -476,19 +476,19 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
 
     setFilters((prev) => {
       const newThemeOptions = themes.map((theme) => ({
-          id: theme.id,
-          label: theme.name,
-          checked:
-            prev.theme.options.find((opt) => opt.id === theme.id)?.checked ||
-            false,
+        id: theme.id,
+        label: theme.name,
+        checked:
+          prev.theme.options.find((opt) => opt.id === theme.id)?.checked ||
+          false,
       }));
 
       const newGenreOptions = genres.map((genre) => ({
-          id: genre.id,
-          label: genre.name,
-          checked:
-            prev.genre.options.find((opt) => opt.id === genre.id)?.checked ||
-            false,
+        id: genre.id,
+        label: genre.name,
+        checked:
+          prev.genre.options.find((opt) => opt.id === genre.id)?.checked ||
+          false,
       }));
 
       // Verifica se as opções realmente mudaram para evitar re-renderizações desnecessárias

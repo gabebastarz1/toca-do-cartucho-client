@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Camera, ChevronDown, Edit, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import InfoTooltip from "./InfoToolTip";
@@ -9,7 +9,12 @@ import CustomCheckbox from "./ui/CustomCheckbox";
 import Head from "./Head";
 import StepHeader from "./StepHeader";
 import { useIsMobile } from "../hooks/useIsMobile";
-
+import { useAdvertisementCreation } from "../hooks/useAdvertisementCreation";
+import { useReferenceData } from "../hooks/useReferenceData";
+import {
+  validateFormData,
+  validateVariations,
+} from "../utils/formDataConverter";
 
 const stepsArray = [1, 2, 3, 4, 5];
 
@@ -18,6 +23,31 @@ const MultiPartFormSaleAndTrade = () => {
   const [step, setStep] = useState(1);
   const [showVariationForm, setShowVariationForm] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  // Hook para dados de referência
+  const handleReferenceDataError = useCallback((error: Error) => {
+    console.error("Erro ao carregar dados de referência:", error);
+  }, []);
+
+  const {
+    preservationStates,
+    cartridgeTypes,
+    regions,
+    languages,
+    getGameOptions,
+    getPreservationStateOptions,
+    getCartridgeTypeOptions,
+    getRegionOptions,
+    getLanguageOptions,
+    getGameById,
+    getPreservationStateById,
+    getCartridgeTypeById,
+    getRegionById,
+    getLanguageById,
+  } = useReferenceData({
+    autoLoad: true,
+    onError: handleReferenceDataError,
+  });
   const [variations, setVariations] = useState([]);
   const [editingVariationId, setEditingVariationId] = useState(null);
   const [checkboxConfirmed, setCheckboxConfirmed] = useState(false);
@@ -307,7 +337,15 @@ const MultiPartFormSaleAndTrade = () => {
                     variationData.titulo ||
                     formData.titulo ||
                     "Troco Cartucho Super Mario Bros Usado.",
-                  descricao: `${variationData.tipoCartucho} - ${variationData.estadoPreservacao} - ${variationData.regiao} - ${variationData.idiomaAudio}`,
+                  descricao:
+                    variationData.descricao ||
+                    `${getCartridgeTypeName(
+                      variationData.tipoCartucho
+                    )} - ${getPreservationStateName(
+                      variationData.estadoPreservacao
+                    )} - ${getRegionName(
+                      variationData.regiao
+                    )} - ${getLanguageName(variationData.idiomaAudio)}`,
                 }
               : v
           )
@@ -322,7 +360,15 @@ const MultiPartFormSaleAndTrade = () => {
             variationData.titulo ||
             formData.titulo ||
             "Troca Cartucho Super Mario Bros Usado.",
-          descricao: `${variationData.tipoCartucho} - ${variationData.estadoPreservacao} - ${variationData.regiao} - ${variationData.idiomaAudio}`,
+          descricao:
+            variationData.descricao ||
+            `${getCartridgeTypeName(
+              variationData.tipoCartucho
+            )} - ${getPreservationStateName(
+              variationData.estadoPreservacao
+            )} - ${getRegionName(variationData.regiao)} - ${getLanguageName(
+              variationData.idiomaAudio
+            )}`,
         };
 
         setVariations((prev) => [...prev, newVariation]);
@@ -375,38 +421,45 @@ const MultiPartFormSaleAndTrade = () => {
   };
 
   // =================== Opções para os selects ===================
-  const jogos = [
-    { label: "Jogo 1", value: "Jogo 1" },
-    { label: "Jogo 2", value: "Jogo 2" },
-  ];
+  const jogos = getGameOptions();
+  const tiposCartucho = getCartridgeTypeOptions();
+  const estados = getPreservationStateOptions();
+  const regioes = getRegionOptions();
+  const regioesTroca = getRegionOptions();
+  const idiomas = getLanguageOptions();
 
-  const tiposCartucho = [
-    { label: "Retrô", value: "Retro" },
-    { label: "Repro", value: "Repro" },
-  ];
+  // =================== Funções para obter nomes dos IDs ===================
+  const getGameName = (gameId: string) => {
+    const game = getGameById(parseInt(gameId));
+    return game?.name || "Não informado";
+  };
 
-  const estados = [
-    { label: "Novo", value: "Novo" },
-    { label: "Usado", value: "Usado" },
-  ];
+  const getCartridgeTypeName = (cartridgeTypeId: string) => {
+    const cartridgeType = getCartridgeTypeById(parseInt(cartridgeTypeId));
+    return cartridgeType?.name || "Não informado";
+  };
 
-  const regioes = [
-    { label: "NTSC", value: "NTSC" },
-    { label: "PAL", value: "PAL" },
-  ];
+  const getPreservationStateName = (preservationStateId: string) => {
+    const preservationState = getPreservationStateById(
+      parseInt(preservationStateId)
+    );
+    return preservationState?.name || "Não informado";
+  };
 
-  const regioesTroca = [
-    { label: "NTSC-U", value: "NTSCU" },
-    { label: "NTSC-J", value: "NTSCJ" },
-    { label: "PAL-A", value: "PALA" },
-    { label: "PAL-B", value: "PALB" },
-    { label: "PAL", value: "PAL" },
-  ];
+  const getRegionName = (regionId: string) => {
+    const region = getRegionById(parseInt(regionId));
+    return (
+      region?.name ||
+      region?.identifier ||
+      `Região ${regionId}` ||
+      "Não informado"
+    );
+  };
 
-  const idiomas = [
-    { label: "Inglês", value: "Inglês" },
-    { label: "Português", value: "Português" },
-  ];
+  const getLanguageName = (languageId: string) => {
+    const language = getLanguageById(parseInt(languageId));
+    return language?.name || "Não informado";
+  };
 
   const isMobile = useIsMobile();
 
@@ -441,9 +494,11 @@ const MultiPartFormSaleAndTrade = () => {
               subtitle="Comece preenchendo as informações básicas sobre o anúncio de venda e troca"
               step={step - 1}
               steps={stepsArray}
-              onBack={''}
+              onBack={""}
             />
-            <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}>
+            <div
+              className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}
+            >
               <div>
                 <label className="block mb-1 text-sm font-bold">
                   Título do Anúncio
@@ -541,7 +596,9 @@ const MultiPartFormSaleAndTrade = () => {
               steps={stepsArray}
               onBack={prevStep}
             />
-            <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}>
+            <div
+              className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}
+            >
               <div>
                 <label className="block mb-1 text-sm font-bold">Jogo</label>
                 <CustomSelect
@@ -677,7 +734,9 @@ const MultiPartFormSaleAndTrade = () => {
               steps={stepsArray}
               onBack={prevStep}
             />
-            <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}>
+            <div
+              className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}
+            >
               <div>
                 <label className="block mb-1 text-sm font-bold">Jogo</label>
                 <CustomSelect
@@ -899,7 +958,11 @@ const MultiPartFormSaleAndTrade = () => {
               {/* Lista de variações existentes - sempre visível */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className={`${isMobile ? 'hidden' : ''} text-lg font-semibold text-gray-800`}>
+                  <h3
+                    className={`${
+                      isMobile ? "hidden" : ""
+                    } text-lg font-semibold text-gray-800`}
+                  >
                     Variações do Anúncio
                   </h3>
                   {variations.length > 0 && (
@@ -913,9 +976,7 @@ const MultiPartFormSaleAndTrade = () => {
                 </div>
 
                 {variations.length === 0 ? (
-                  <div className="text-center text-gray-500">
-                   
-                  </div>
+                  <div className="text-center text-gray-500"></div>
                 ) : (
                   variations.map((variation, index) => (
                     <div
@@ -988,7 +1049,11 @@ const MultiPartFormSaleAndTrade = () => {
                   + Adicionar nova variação
                 </button>
               ) : (
-                <div className={`bg-[#EDECF7] border ${isMobile ? 'w-full' : ''} border-gray-300 rounded-lg p-4 space-y-4`}>
+                <div
+                  className={`bg-[#EDECF7] border ${
+                    isMobile ? "w-full" : ""
+                  } border-gray-300 rounded-lg p-4 space-y-4`}
+                >
                   <div className="flex items-center justify-between border-b pb-3">
                     <h3 className="text-lg font-semibold text-gray-800">
                       {editingVariationId
@@ -1022,7 +1087,6 @@ const MultiPartFormSaleAndTrade = () => {
                           idiomasInterfaceTroca: "",
                         });
                       }}
-                      
                     >
                       <ChevronDown className="w-8 h-8 text-gray-600" />
                     </button>
@@ -1032,8 +1096,18 @@ const MultiPartFormSaleAndTrade = () => {
                     <h4 className="text-sm font-semibold text-gray-800 mb-3 text-center">
                       Detalhes do anúncio de venda
                     </h4>
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Título do Anúncio:
                       </label>
                       <input
@@ -1046,8 +1120,18 @@ const MultiPartFormSaleAndTrade = () => {
                       />
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Tipo do Cartucho:
                       </label>
                       <div className="flex-1">
@@ -1069,8 +1153,18 @@ const MultiPartFormSaleAndTrade = () => {
                       </div>
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Estado de Preservação:
                       </label>
                       <div className="flex-1">
@@ -1092,8 +1186,18 @@ const MultiPartFormSaleAndTrade = () => {
                       </div>
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Região do Cartucho:
                       </label>
                       <div className="flex-1">
@@ -1112,8 +1216,18 @@ const MultiPartFormSaleAndTrade = () => {
                       </div>
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Idioma da Audio:
                       </label>
                       <div className="flex-1">
@@ -1134,8 +1248,18 @@ const MultiPartFormSaleAndTrade = () => {
                         />
                       </div>
                     </div>
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Idioma da Legenda:
                       </label>
                       <div className="flex-1">
@@ -1154,8 +1278,18 @@ const MultiPartFormSaleAndTrade = () => {
                         />
                       </div>
                     </div>
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Idioma da Interface:
                       </label>
                       <div className="flex-1">
@@ -1199,8 +1333,18 @@ const MultiPartFormSaleAndTrade = () => {
                       )}
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Preço de Venda:
                       </label>
                       <div className="flex-1 flex items-center space-x-2">
@@ -1215,8 +1359,18 @@ const MultiPartFormSaleAndTrade = () => {
                         />
                       </div>
                     </div>
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Descrição:
                       </label>
                       <input
@@ -1229,7 +1383,11 @@ const MultiPartFormSaleAndTrade = () => {
                       />
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
                       <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2 pt-2">
                         Imagens e Vídeos:
                       </label>
@@ -1285,8 +1443,18 @@ const MultiPartFormSaleAndTrade = () => {
                       </h4>
 
                       <div className="space-y-3">
-                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                        <div
+                          className={`flex  ${
+                            isMobile ? "flex-col gap-2" : "items-center"
+                          }`}
+                        >
+                          <label
+                            className={`font-medium text-gray-700 flex-shrink-0 ${
+                              isMobile
+                                ? "text-start text-md"
+                                : "text-end text-sm w-40"
+                            } pr-2`}
+                          >
                             Jogos:
                           </label>
                           <div className="flex-1">
@@ -1306,8 +1474,18 @@ const MultiPartFormSaleAndTrade = () => {
                           </div>
                         </div>
 
-                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                        <div
+                          className={`flex  ${
+                            isMobile ? "flex-col gap-2" : "items-center"
+                          }`}
+                        >
+                          <label
+                            className={`font-medium text-gray-700 flex-shrink-0 ${
+                              isMobile
+                                ? "text-start text-md"
+                                : "text-end text-sm w-40"
+                            } pr-2`}
+                          >
                             Tipo de Cartucho:
                           </label>
                           <div className="flex-1">
@@ -1327,8 +1505,18 @@ const MultiPartFormSaleAndTrade = () => {
                           </div>
                         </div>
 
-                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                        <div
+                          className={`flex  ${
+                            isMobile ? "flex-col gap-2" : "items-center"
+                          }`}
+                        >
+                          <label
+                            className={`font-medium text-gray-700 flex-shrink-0 ${
+                              isMobile
+                                ? "text-start text-md"
+                                : "text-end text-sm w-40"
+                            } pr-2`}
+                          >
                             Estado de Preservação:
                           </label>
                           <div className="flex-1">
@@ -1348,8 +1536,18 @@ const MultiPartFormSaleAndTrade = () => {
                           </div>
                         </div>
 
-                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                        <div
+                          className={`flex  ${
+                            isMobile ? "flex-col gap-2" : "items-center"
+                          }`}
+                        >
+                          <label
+                            className={`font-medium text-gray-700 flex-shrink-0 ${
+                              isMobile
+                                ? "text-start text-md"
+                                : "text-end text-sm w-40"
+                            } pr-2`}
+                          >
                             Região do Cartucho:
                           </label>
                           <div className="flex-1">
@@ -1369,8 +1567,18 @@ const MultiPartFormSaleAndTrade = () => {
                           </div>
                         </div>
 
-                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                        <div
+                          className={`flex  ${
+                            isMobile ? "flex-col gap-2" : "items-center"
+                          }`}
+                        >
+                          <label
+                            className={`font-medium text-gray-700 flex-shrink-0 ${
+                              isMobile
+                                ? "text-start text-md"
+                                : "text-end text-sm w-40"
+                            } pr-2`}
+                          >
                             Idiomas de Áudio:
                           </label>
                           <div className="flex-1">
@@ -1391,8 +1599,18 @@ const MultiPartFormSaleAndTrade = () => {
                           </div>
                         </div>
 
-                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                        <div
+                          className={`flex  ${
+                            isMobile ? "flex-col gap-2" : "items-center"
+                          }`}
+                        >
+                          <label
+                            className={`font-medium text-gray-700 flex-shrink-0 ${
+                              isMobile
+                                ? "text-start text-md"
+                                : "text-end text-sm w-40"
+                            } pr-2`}
+                          >
                             Idiomas de Legenda Aceitos:
                           </label>
                           <div className="flex-1">
@@ -1413,8 +1631,18 @@ const MultiPartFormSaleAndTrade = () => {
                           </div>
                         </div>
 
-                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                        <div
+                          className={`flex  ${
+                            isMobile ? "flex-col gap-2" : "items-center"
+                          }`}
+                        >
+                          <label
+                            className={`font-medium text-gray-700 flex-shrink-0 ${
+                              isMobile
+                                ? "text-start text-md"
+                                : "text-end text-sm w-40"
+                            } pr-2`}
+                          >
                             Idiomas de Interface Aceitos:
                           </label>
                           <div className="flex-1">
@@ -1482,12 +1710,12 @@ const MultiPartFormSaleAndTrade = () => {
         {/* STEP 6 - Publicar Anúncio */}
         {step === 6 && (
           <>
-            <StepHeader 
-              title="Publicar Anúncio" 
-              subtitle="" 
+            <StepHeader
+              title="Publicar Anúncio"
+              subtitle=""
               step={6}
               steps={stepsArray}
-              onBack={prevStep} 
+              onBack={prevStep}
             />
             <div className="p-8 text-center">
               {/* Mensagem central */}
@@ -1497,47 +1725,47 @@ const MultiPartFormSaleAndTrade = () => {
                 alterações
               </p>
               {isMobile ? (
-              <div className="flex flex-col items-center justify-center gap-4">
-              <img src="../public/computador.svg" alt="" />
-              {/* Botões */}
-              <div className="space-y-4">
-                <button
-                  onClick={handleFinish}
-                  disabled={!checkboxConfirmed}
-                  className="px-24 py-3 bg-[#38307C] text-white rounded-lg hover:bg-[#2A1F5C] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#38307C]"
-                >
-                  Publicar
-                </button>
-                <br />
-                <button
-                  onClick={() => setStep(6)}
-                  className="px-16 py-3 bg-[#DDDDF3] text-[#38307C] rounded-lg hover:bg-[#C8C8E8] transition-colors font-medium"
-                >
-                  Revisar Anúncio
-                </button>
-              </div>
-            </div>
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <img src="../public/computador.svg" alt="" />
+                  {/* Botões */}
+                  <div className="space-y-4">
+                    <button
+                      onClick={handleFinish}
+                      disabled={!checkboxConfirmed}
+                      className="px-24 py-3 bg-[#38307C] text-white rounded-lg hover:bg-[#2A1F5C] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#38307C]"
+                    >
+                      Publicar
+                    </button>
+                    <br />
+                    <button
+                      onClick={() => setStep(6)}
+                      className="px-16 py-3 bg-[#DDDDF3] text-[#38307C] rounded-lg hover:bg-[#C8C8E8] transition-colors font-medium"
+                    >
+                      Revisar Anúncio
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <div className="flex items-center justify-center gap-4">
-                <img src="../public/computador.svg" alt="" />
-                {/* Botões */}
-                <div className="space-y-4">
-                  <button
-                    onClick={handleFinish}
-                    disabled={!checkboxConfirmed}
-                    className="px-24 py-3 bg-[#38307C] text-white rounded-lg hover:bg-[#2A1F5C] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#38307C]"
-                  >
-                    Publicar
-                  </button>
-                  <br />
-                  <button
-                    onClick={() => setStep(6)}
-                    className="px-16 py-3 bg-[#DDDDF3] text-[#38307C] rounded-lg hover:bg-[#C8C8E8] transition-colors font-medium"
-                  >
-                    Revisar Anúncio
-                  </button>
+                  <img src="../public/computador.svg" alt="" />
+                  {/* Botões */}
+                  <div className="space-y-4">
+                    <button
+                      onClick={handleFinish}
+                      disabled={!checkboxConfirmed}
+                      className="px-24 py-3 bg-[#38307C] text-white rounded-lg hover:bg-[#2A1F5C] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#38307C]"
+                    >
+                      Publicar
+                    </button>
+                    <br />
+                    <button
+                      onClick={() => setStep(6)}
+                      className="px-16 py-3 bg-[#DDDDF3] text-[#38307C] rounded-lg hover:bg-[#C8C8E8] transition-colors font-medium"
+                    >
+                      Revisar Anúncio
+                    </button>
+                  </div>
                 </div>
-              </div>
               )}
 
               {/* Checkbox e disclaimer */}
@@ -1599,7 +1827,11 @@ const MultiPartFormSaleAndTrade = () => {
 
                   {/* Conteúdo do anúncio principal */}
                   {showMainAd && (
-                    <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-6`}>
+                    <div
+                      className={`${
+                        isMobile ? "p-4 pt-24 px-10" : "p-6"
+                      } space-y-6`}
+                    >
                       {/* Imagens */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-500">
@@ -1650,7 +1882,7 @@ const MultiPartFormSaleAndTrade = () => {
                           Tipo do Cartucho
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.tipoCartucho || "Não informado"}
+                          {getCartridgeTypeName(formData.tipoCartucho)}
                         </p>
                       </div>
 
@@ -1660,7 +1892,7 @@ const MultiPartFormSaleAndTrade = () => {
                           Jogo
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.jogo || "Não informado"}
+                          {getGameName(formData.jogo)}
                         </p>
                       </div>
 
@@ -1670,7 +1902,7 @@ const MultiPartFormSaleAndTrade = () => {
                           Estado de Preservação
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.estadoPreservacao || "Não informado"}
+                          {getPreservationStateName(formData.estadoPreservacao)}
                         </p>
                       </div>
 
@@ -1680,7 +1912,7 @@ const MultiPartFormSaleAndTrade = () => {
                           Região do Cartucho
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.regiao || "Não informado"}
+                          {getRegionName(formData.regiao)}
                         </p>
                       </div>
 
@@ -1690,7 +1922,7 @@ const MultiPartFormSaleAndTrade = () => {
                           Idiomas do Audio
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.idiomaAudio || "Não informado"}
+                          {getLanguageName(formData.idiomaAudio)}
                         </p>
                       </div>
 
@@ -1700,7 +1932,7 @@ const MultiPartFormSaleAndTrade = () => {
                           Idiomas da Legenda
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.idiomaLegenda || "Não informado"}
+                          {getLanguageName(formData.idiomaLegenda)}
                         </p>
                       </div>
 
@@ -1710,7 +1942,7 @@ const MultiPartFormSaleAndTrade = () => {
                           Idiomas da Interface
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.idiomaInterface || "Não informado"}
+                          {getLanguageName(formData.idiomaInterface)}
                         </p>
                       </div>
 
@@ -1859,10 +2091,12 @@ const MultiPartFormSaleAndTrade = () => {
                               {variation.titulo || `Variação ${index + 1}`}
                             </h2>
                             <p className="text-sm text-gray-600">
-                              {variation.tipoCartucho || "N/A"} -{" "}
-                              {variation.estadoPreservacao || "N/A"} -{" "}
-                              {variation.regiao || "N/A"} -{" "}
-                              {variation.idiomaAudio || "N/A"}
+                              {getCartridgeTypeName(variation.tipoCartucho)} -{" "}
+                              {getPreservationStateName(
+                                variation.estadoPreservacao
+                              )}{" "}
+                              - {getRegionName(variation.regiao)} -{" "}
+                              {getLanguageName(variation.idiomaAudio)}
                             </p>
                             <p className="text-xs text-gray-500">
                               Estoque: {variation.estoque || "N/A"}
@@ -1891,7 +2125,11 @@ const MultiPartFormSaleAndTrade = () => {
 
                     {/* Conteúdo expandido da variação */}
                     {expandedVariations[variation.id || index] && (
-                      <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-6`}>
+                      <div
+                        className={`${
+                          isMobile ? "p-4 pt-24 px-10" : "p-6"
+                        } space-y-6`}
+                      >
                         {/* Imagens da variação */}
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-500">
@@ -1950,7 +2188,7 @@ const MultiPartFormSaleAndTrade = () => {
                             Tipo do Cartucho
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.tipoCartucho || "Não informado"}
+                            {getCartridgeTypeName(variation.tipoCartucho)}
                           </p>
                         </div>
 
@@ -1970,7 +2208,9 @@ const MultiPartFormSaleAndTrade = () => {
                             Estado de Preservação
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.estadoPreservacao || "Não informado"}
+                            {getPreservationStateName(
+                              variation.estadoPreservacao
+                            )}
                           </p>
                         </div>
 
@@ -1980,7 +2220,7 @@ const MultiPartFormSaleAndTrade = () => {
                             Região
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.regiao || "Não informado"}
+                            {getRegionName(variation.regiao)}
                           </p>
                         </div>
 
@@ -1990,7 +2230,7 @@ const MultiPartFormSaleAndTrade = () => {
                             Idiomas do Áudio
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.idiomaAudio || "Não informado"}
+                            {getLanguageName(variation.idiomaAudio)}
                           </p>
                         </div>
 
@@ -1999,7 +2239,7 @@ const MultiPartFormSaleAndTrade = () => {
                             Idiomas da Legenda
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.idiomaLegenda || "Não informado"}
+                            {getLanguageName(variation.idiomaLegenda)}
                           </p>
                         </div>
 
@@ -2008,7 +2248,7 @@ const MultiPartFormSaleAndTrade = () => {
                             Idiomas da Interface
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.idiomaInterface || "Não informado"}
+                            {getLanguageName(variation.idiomaInterface)}
                           </p>
                         </div>
 
@@ -2056,11 +2296,17 @@ const MultiPartFormSaleAndTrade = () => {
         )}
 
         {/* FOOTER BUTTONS */}
-        <div className={`flex justify-end p-4 bg-gray-50 border-t gap-1 ${isMobile ? 'flex-col px-9' : 'flex-row'}`}>
+        <div
+          className={`flex justify-end p-4 bg-gray-50 border-t gap-1 ${
+            isMobile ? "flex-col px-9" : "flex-row"
+          }`}
+        >
           <button
             onClick={prevStep}
             disabled={step === 1}
-            className={`py-2 rounded-lg bg-[#DDDDF3] disabled:opacity-50 ${isMobile ? 'hidden' : 'px-4'}`}
+            className={`py-2 rounded-lg bg-[#DDDDF3] disabled:opacity-50 ${
+              isMobile ? "hidden" : "px-4"
+            }`}
           >
             Cancelar
           </button>
