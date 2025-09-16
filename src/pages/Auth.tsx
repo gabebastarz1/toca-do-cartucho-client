@@ -4,10 +4,10 @@ import {
   LoginRequest,
   RegisterRequest,
 } from "../services/authService";
-import CookieAuth from "../components/CookieAuth";
+//import CookieAuth from "../components/CookieAuth";
 
 const Auth: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<"login" | "register" | "cookie">(
+  const [activeTab, setActiveTab] = useState<"login" | "register">(
     "login"
   );
   const [formData, setFormData] = useState({
@@ -85,7 +85,7 @@ const Auth: React.FC = () => {
                 ? "Faça login na sua conta"
                 : activeTab === "register"
                 ? "Crie uma nova conta"
-                : "Configure autenticação por cookie"}
+                : ""}
             </p>
           </div>
 
@@ -113,23 +113,11 @@ const Auth: React.FC = () => {
             >
               Registrar
             </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("cookie")}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                activeTab === "cookie"
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              Cookie
-            </button>
+            
           </div>
 
           {/* Content */}
-          {activeTab === "cookie" ? (
-            <CookieAuth />
-          ) : (
+          
             <form onSubmit={handleSubmit} className="space-y-6">
               {activeTab === "register" && (
                 <div>
@@ -234,7 +222,7 @@ const Auth: React.FC = () => {
                 )}
               </button>
             </form>
-          )}
+          
         </div>
       </div>
     </div>
