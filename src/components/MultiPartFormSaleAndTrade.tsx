@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Camera, Check, ChevronDown, Edit, Trash2 } from "lucide-react";
+import { Camera, ChevronDown, Edit, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import InfoTooltip from "./InfoToolTip";
 import CustomSelect from "./ui/CustomSelect";
@@ -7,14 +7,13 @@ import ConfirmButton from "./ui/ConfirmButton";
 import ModalAlert from "./ui/ModalAlert";
 import CustomCheckbox from "./ui/CustomCheckbox";
 import Head from "./Head";
+import StepHeader from "./StepHeader";
+import { useIsMobile } from "../hooks/useIsMobile";
 
-interface MultiPartFormSaleAndTradeProps {
-  isMobile?: boolean;
-}
 
-const MultiPartFormSaleAndTrade = ({
-  isMobile = false,
-}: MultiPartFormSaleAndTradeProps) => {
+const stepsArray = [1, 2, 3, 4, 5];
+
+const MultiPartFormSaleAndTrade = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [showVariationForm, setShowVariationForm] = useState(false);
@@ -74,6 +73,7 @@ const MultiPartFormSaleAndTrade = ({
     idiomaAudio: "",
     idiomaLegenda: "",
     idiomaInterface: "",
+    condicoes: "Venda ou Troca",
 
     jogosTroca: "",
     tiposTroca: "",
@@ -408,47 +408,7 @@ const MultiPartFormSaleAndTrade = ({
     { label: "Português", value: "Português" },
   ];
 
-  const StepHeader = ({ title, subtitle, step }) => {
-    const steps = [1, 2, 3, 4, 5]; // Step 6 não é contabilizado
-
-    if (isMobile) {
-      return null; // Mobile uses ProgressIndicator component
-    }
-
-    return (
-      <div className="bg-[#38307C] text-white p-4 rounded-t-sm text-center">
-        <h2 className="text-lg">{title}</h2>
-        <p className="text-sm">{subtitle}</p>
-
-        <div className="flex items-center justify-center mt-3 w-full max-w-3xl mx-auto">
-          {steps.map((i, idx) => (
-            <React.Fragment key={i}>
-              <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold 
-                  ${
-                    i <= step
-                      ? "bg-[#211C49] text-white"
-                      : "bg-[#DDDDF3] text-[#38307C]"
-                  }`}
-              >
-                {i <= step ? <Check className="w-4 h-4" /> : i}
-              </div>
-              {idx < steps.length - 1 && (
-                <div className="flex-1 h-1 bg-[#DDDDF3] relative">
-                  <div
-                    className="absolute top-0 left-0 h-full bg-[#211C49] transition-all duration-500 ease-in-out"
-                    style={{
-                      width: i < step + 1 ? "100%" : "0%",
-                    }}
-                  />
-                </div>
-              )}
-            </React.Fragment>
-          ))}
-        </div>
-      </div>
-    );
-  };
+  const isMobile = useIsMobile();
 
   return (
     <>
@@ -480,8 +440,10 @@ const MultiPartFormSaleAndTrade = ({
               title="Informações Básicas - Venda e Troca"
               subtitle="Comece preenchendo as informações básicas sobre o anúncio de venda e troca"
               step={step - 1}
+              steps={stepsArray}
+              onBack={''}
             />
-            <div className={`${isMobile ? "p-4" : "p-6"} space-y-4`}>
+            <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}>
               <div>
                 <label className="block mb-1 text-sm font-bold">
                   Título do Anúncio
@@ -576,8 +538,10 @@ const MultiPartFormSaleAndTrade = ({
               title="Detalhes do Cartucho"
               subtitle="Agora adicione os detalhes sobre o cartucho"
               step={step - 1}
+              steps={stepsArray}
+              onBack={prevStep}
             />
-            <div className={`${isMobile ? "p-4" : "p-6"} space-y-4`}>
+            <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}>
               <div>
                 <label className="block mb-1 text-sm font-bold">Jogo</label>
                 <CustomSelect
@@ -710,8 +674,10 @@ const MultiPartFormSaleAndTrade = ({
               title="Condições de Troca"
               subtitle="Especifique as condições para a troca"
               step={step - 1}
+              steps={stepsArray}
+              onBack={prevStep}
             />
-            <div className={`${isMobile ? "p-4" : "p-6"} space-y-4`}>
+            <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}>
               <div>
                 <label className="block mb-1 text-sm font-bold">Jogo</label>
                 <CustomSelect
@@ -844,6 +810,8 @@ const MultiPartFormSaleAndTrade = ({
               title="Imagens e Vídeos"
               subtitle="Nós já estamos finalizando, envie fotos e vídeos do seu cartucho para venda"
               step={step - 1}
+              steps={stepsArray}
+              onBack={prevStep}
             />
 
             <div className="px-6 md:px-16 pt-8">
@@ -923,13 +891,15 @@ const MultiPartFormSaleAndTrade = ({
             <StepHeader
               title="Adicionar Variações"
               subtitle="Tem mais de um cartucho do mesmo jogo para vender?"
-              step={4}
+              step={step - 1}
+              steps={stepsArray}
+              onBack={prevStep}
             />
             <div className={`${isMobile ? "p-4" : "p-6"} space-y-6`}>
               {/* Lista de variações existentes - sempre visível */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-800">
+                  <h3 className={`${isMobile ? 'hidden' : ''} text-lg font-semibold text-gray-800`}>
                     Variações do Anúncio
                   </h3>
                   {variations.length > 0 && (
@@ -943,11 +913,8 @@ const MultiPartFormSaleAndTrade = ({
                 </div>
 
                 {variations.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>Nenhuma variação criada ainda.</p>
-                    <p className="text-sm">
-                      Clique em "Adicionar nova variação" para começar.
-                    </p>
+                  <div className="text-center text-gray-500">
+                   
                   </div>
                 ) : (
                   variations.map((variation, index) => (
@@ -1014,12 +981,14 @@ const MultiPartFormSaleAndTrade = ({
               {!showVariationForm ? (
                 <button
                   onClick={() => setShowVariationForm(true)}
-                  className="w-full border-2 border-dashed border-purple-400 p-6 rounded-lg text-purple-600 hover:bg-purple-50 hover:border-purple-600 transition-colors"
+                  className={`w-full border-2 border-dashed border-purple-400 ${
+                    isMobile ? "p-4" : "p-6"
+                  } rounded-lg text-purple-600 hover:bg-purple-50 hover:border-purple-600 transition-colors`}
                 >
                   + Adicionar nova variação
                 </button>
               ) : (
-                <div className="bg-[#EDECF7] border border-gray-300 rounded-lg p-6 space-y-4">
+                <div className={`bg-[#EDECF7] border ${isMobile ? 'w-full' : ''} border-gray-300 rounded-lg p-4 space-y-4`}>
                   <div className="flex items-center justify-between border-b pb-3">
                     <h3 className="text-lg font-semibold text-gray-800">
                       {editingVariationId
@@ -1053,9 +1022,9 @@ const MultiPartFormSaleAndTrade = ({
                           idiomasInterfaceTroca: "",
                         });
                       }}
-                      className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                      
                     >
-                      ✕
+                      <ChevronDown className="w-8 h-8 text-gray-600" />
                     </button>
                   </div>
 
@@ -1063,8 +1032,8 @@ const MultiPartFormSaleAndTrade = ({
                     <h4 className="text-sm font-semibold text-gray-800 mb-3 text-center">
                       Detalhes do anúncio de venda
                     </h4>
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Título do Anúncio:
                       </label>
                       <input
@@ -1077,8 +1046,8 @@ const MultiPartFormSaleAndTrade = ({
                       />
                     </div>
 
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Tipo do Cartucho:
                       </label>
                       <div className="flex-1">
@@ -1100,8 +1069,8 @@ const MultiPartFormSaleAndTrade = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Estado de Preservação:
                       </label>
                       <div className="flex-1">
@@ -1123,8 +1092,8 @@ const MultiPartFormSaleAndTrade = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Região do Cartucho:
                       </label>
                       <div className="flex-1">
@@ -1143,8 +1112,8 @@ const MultiPartFormSaleAndTrade = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Idioma da Audio:
                       </label>
                       <div className="flex-1">
@@ -1165,8 +1134,8 @@ const MultiPartFormSaleAndTrade = ({
                         />
                       </div>
                     </div>
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Idioma da Legenda:
                       </label>
                       <div className="flex-1">
@@ -1185,8 +1154,8 @@ const MultiPartFormSaleAndTrade = ({
                         />
                       </div>
                     </div>
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Idioma da Interface:
                       </label>
                       <div className="flex-1">
@@ -1230,8 +1199,8 @@ const MultiPartFormSaleAndTrade = ({
                       )}
                     </div>
 
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Preço de Venda:
                       </label>
                       <div className="flex-1 flex items-center space-x-2">
@@ -1246,8 +1215,8 @@ const MultiPartFormSaleAndTrade = ({
                         />
                       </div>
                     </div>
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Descrição:
                       </label>
                       <input
@@ -1260,7 +1229,7 @@ const MultiPartFormSaleAndTrade = ({
                       />
                     </div>
 
-                    <div className="flex items-start">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
                       <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2 pt-2">
                         Imagens e Vídeos:
                       </label>
@@ -1316,8 +1285,8 @@ const MultiPartFormSaleAndTrade = ({
                       </h4>
 
                       <div className="space-y-3">
-                        <div className="flex items-center">
-                          <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                             Jogos:
                           </label>
                           <div className="flex-1">
@@ -1337,8 +1306,8 @@ const MultiPartFormSaleAndTrade = ({
                           </div>
                         </div>
 
-                        <div className="flex items-center">
-                          <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                             Tipo de Cartucho:
                           </label>
                           <div className="flex-1">
@@ -1358,8 +1327,8 @@ const MultiPartFormSaleAndTrade = ({
                           </div>
                         </div>
 
-                        <div className="flex items-center">
-                          <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                             Estado de Preservação:
                           </label>
                           <div className="flex-1">
@@ -1379,8 +1348,8 @@ const MultiPartFormSaleAndTrade = ({
                           </div>
                         </div>
 
-                        <div className="flex items-center">
-                          <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                             Região do Cartucho:
                           </label>
                           <div className="flex-1">
@@ -1400,8 +1369,8 @@ const MultiPartFormSaleAndTrade = ({
                           </div>
                         </div>
 
-                        <div className="flex items-center">
-                          <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                             Idiomas de Áudio:
                           </label>
                           <div className="flex-1">
@@ -1422,8 +1391,8 @@ const MultiPartFormSaleAndTrade = ({
                           </div>
                         </div>
 
-                        <div className="flex items-center">
-                          <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                             Idiomas de Legenda Aceitos:
                           </label>
                           <div className="flex-1">
@@ -1444,8 +1413,8 @@ const MultiPartFormSaleAndTrade = ({
                           </div>
                         </div>
 
-                        <div className="flex items-center">
-                          <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                             Idiomas de Interface Aceitos:
                           </label>
                           <div className="flex-1">
@@ -1513,7 +1482,13 @@ const MultiPartFormSaleAndTrade = ({
         {/* STEP 6 - Publicar Anúncio */}
         {step === 6 && (
           <>
-            <StepHeader title="Publicar Anúncio" subtitle="" step={6} />
+            <StepHeader 
+              title="Publicar Anúncio" 
+              subtitle="" 
+              step={6}
+              steps={stepsArray}
+              onBack={prevStep} 
+            />
             <div className="p-8 text-center">
               {/* Mensagem central */}
               <p className="text-black font- text-lg mb-8 max-w-2xl mx-auto">
@@ -1521,7 +1496,29 @@ const MultiPartFormSaleAndTrade = ({
                 todas as informações, e se quiser, ainda é possível fazer
                 alterações
               </p>
-              <div className="flex items-center justify-center gap-4">
+              {isMobile ? (
+              <div className="flex flex-col items-center justify-center gap-4">
+              <img src="../public/computador.svg" alt="" />
+              {/* Botões */}
+              <div className="space-y-4">
+                <button
+                  onClick={handleFinish}
+                  disabled={!checkboxConfirmed}
+                  className="px-24 py-3 bg-[#38307C] text-white rounded-lg hover:bg-[#2A1F5C] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#38307C]"
+                >
+                  Publicar
+                </button>
+                <br />
+                <button
+                  onClick={() => setStep(6)}
+                  className="px-16 py-3 bg-[#DDDDF3] text-[#38307C] rounded-lg hover:bg-[#C8C8E8] transition-colors font-medium"
+                >
+                  Revisar Anúncio
+                </button>
+              </div>
+            </div>
+              ) : (
+                <div className="flex items-center justify-center gap-4">
                 <img src="../public/computador.svg" alt="" />
                 {/* Botões */}
                 <div className="space-y-4">
@@ -1534,13 +1531,14 @@ const MultiPartFormSaleAndTrade = ({
                   </button>
                   <br />
                   <button
-                    onClick={() => setStep(7)}
+                    onClick={() => setStep(6)}
                     className="px-16 py-3 bg-[#DDDDF3] text-[#38307C] rounded-lg hover:bg-[#C8C8E8] transition-colors font-medium"
                   >
                     Revisar Anúncio
                   </button>
                 </div>
               </div>
+              )}
 
               {/* Checkbox e disclaimer */}
               <div className="mt-8 text-start">
@@ -1565,7 +1563,9 @@ const MultiPartFormSaleAndTrade = ({
             <StepHeader
               title="Revisar Anúncio"
               subtitle="Confirme se todas as informações estão corretas"
-              step={7}
+              step={step - 1}
+              steps={stepsArray}
+              onBack={prevStep}
             />
             <div className="p-8 bg-white">
               <div className="space-y-4">
@@ -1599,7 +1599,7 @@ const MultiPartFormSaleAndTrade = ({
 
                   {/* Conteúdo do anúncio principal */}
                   {showMainAd && (
-                    <div className={`${isMobile ? "p-4" : "p-6"} space-y-6`}>
+                    <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-6`}>
                       {/* Imagens */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-500">
@@ -1891,7 +1891,7 @@ const MultiPartFormSaleAndTrade = ({
 
                     {/* Conteúdo expandido da variação */}
                     {expandedVariations[variation.id || index] && (
-                      <div className={`${isMobile ? "p-4" : "p-6"} space-y-6`}>
+                      <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-6`}>
                         {/* Imagens da variação */}
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-500">
@@ -2056,25 +2056,26 @@ const MultiPartFormSaleAndTrade = ({
         )}
 
         {/* FOOTER BUTTONS */}
-        <div className="flex justify-end p-4 bg-gray-50 border-t gap-1">
+        <div className={`flex justify-end p-4 bg-gray-50 border-t gap-1 ${isMobile ? 'flex-col px-9' : 'flex-row'}`}>
           <button
             onClick={prevStep}
             disabled={step === 1}
-            className="px-4 py-2 rounded-lg bg-[#DDDDF3] disabled:opacity-50"
+            className={`py-2 rounded-lg bg-[#DDDDF3] disabled:opacity-50 ${isMobile ? 'hidden' : 'px-4'}`}
           >
             Cancelar
           </button>
           {step !== 6 && (
             <ConfirmButton
               onClick={() => {
-                if (step === 7) {
+                if (step === 6) {
                   setStep(6);
                 } else {
                   nextStep();
                 }
               }}
+              disabled={false}
             >
-              Confirmar
+              {step === 7 ? "Voltar" : "Continuar"}
             </ConfirmButton>
           )}
         </div>

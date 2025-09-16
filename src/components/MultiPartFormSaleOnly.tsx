@@ -714,11 +714,11 @@ const MultiPartFormSaleOnly = () => {
               steps={stepsArray}
               onBack={prevStep}
             />
-            <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-6`}>
+            <div className={`${isMobile ? "p-4" : "p-6"} space-y-6`}>
               {/* Lista de variações existentes - sempre visível */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-800">
+                <h3 className={`${isMobile ? 'hidden' : ''} text-lg font-semibold text-gray-800`}>
                     Variações do Anúncio
                   </h3>
                   {variations.length > 0 && (
@@ -732,11 +732,8 @@ const MultiPartFormSaleOnly = () => {
                 </div>
 
                 {variations.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>Nenhuma variação criada ainda.</p>
-                    <p className="text-sm">
-                      Clique em "Adicionar nova variação" para começar.
-                    </p>
+                  <div className="text-center text-gray-500">
+                    
                   </div>
                 ) : (
                   variations.map((variation, index) => (
@@ -840,9 +837,9 @@ const MultiPartFormSaleOnly = () => {
                           imagens: Array(4).fill(null),
                         });
                       }}
-                      className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                      
                     >
-                      ✕
+                      <ChevronDown className="w-8 h-8 text-gray-600" />
                     </button>
                   </div>
 
@@ -850,8 +847,8 @@ const MultiPartFormSaleOnly = () => {
                     <h4 className="text-sm font-semibold text-gray-800 mb-3 text-center">
                       Detalhes do anúncio de venda
                     </h4>
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Título do Anúncio:
                       </label>
                       <input
@@ -864,8 +861,8 @@ const MultiPartFormSaleOnly = () => {
                       />
                     </div>
 
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Tipo do Cartucho:
                       </label>
                       <div className="flex-1">
@@ -887,8 +884,8 @@ const MultiPartFormSaleOnly = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Estado de Preservação:
                       </label>
                       <div className="flex-1">
@@ -910,8 +907,8 @@ const MultiPartFormSaleOnly = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Região do Cartucho:
                       </label>
                       <div className="flex-1">
@@ -930,8 +927,8 @@ const MultiPartFormSaleOnly = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Idioma da Audio:
                       </label>
                       <div className="flex-1">
@@ -952,8 +949,8 @@ const MultiPartFormSaleOnly = () => {
                         />
                       </div>
                     </div>
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Idioma da Legenda:
                       </label>
                       <div className="flex-1">
@@ -972,8 +969,8 @@ const MultiPartFormSaleOnly = () => {
                         />
                       </div>
                     </div>
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Idioma da Interface:
                       </label>
                       <div className="flex-1">
@@ -993,8 +990,8 @@ const MultiPartFormSaleOnly = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Estoque Disponível:
                       </label>
                       <input
@@ -1017,8 +1014,8 @@ const MultiPartFormSaleOnly = () => {
                       )}
                     </div>
 
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Preço de Venda:
                       </label>
                       <div className="flex-1 flex items-center space-x-2">
@@ -1033,8 +1030,8 @@ const MultiPartFormSaleOnly = () => {
                         />
                       </div>
                     </div>
-                    <div className="flex items-center">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
                         Descrição:
                       </label>
                       <input
@@ -1047,8 +1044,9 @@ const MultiPartFormSaleOnly = () => {
                       />
                     </div>
 
-                    <div className="flex items-start">
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2 pt-2">
+                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+
                         Imagens e Vídeos:
                       </label>
                       <div className="flex-1">
@@ -1247,7 +1245,7 @@ const MultiPartFormSaleOnly = () => {
 
                   {/* Conteúdo do anúncio principal */}
                   {showMainAd && (
-                    <div className={`${isMobile ? "p-4" : "p-6"} space-y-6`}>
+                    <div className={`${isMobile ? "" : "p-6"} space-y-6`}>
                       {/* Imagens */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-500">
