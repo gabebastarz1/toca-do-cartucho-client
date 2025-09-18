@@ -238,3 +238,5 @@ export interface AdvertisementVariationFormData {
   acceptedTradeLanguageSupportIds?: number[];
   acceptedTradeRegionIds?: number[];
 }
+
+

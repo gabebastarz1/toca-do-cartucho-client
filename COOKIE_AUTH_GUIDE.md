@@ -80,3 +80,4 @@ Identity.Application=VALOR_DO_COOKIE_AQUI
 ---
 
 **💡 Dica**: Mantenha este guia atualizado quando trocar cookies!
+

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Camera, ChevronDown, Edit, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import InfoTooltip from "./InfoToolTip";
@@ -9,13 +9,62 @@ import CustomCheckbox from "./ui/CustomCheckbox";
 import Head from "./Head";
 import StepHeader from "./StepHeader";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { useAdvertisementCreation } from "../hooks/useAdvertisementCreation";
+import { useReferenceData } from "../hooks/useReferenceData";
+import {
+  validateFormData,
+  validateVariations,
+} from "../utils/formDataConverter";
 
 const stepsArray = [1, 2, 3, 4, 5];
-
 
 const MultiPartForm = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+
+  // Hook para dados de referência
+  const handleReferenceDataError = useCallback((error: Error) => {
+    console.error("Erro ao carregar dados de referência:", error);
+  }, []);
+
+  const {
+    preservationStates,
+    cartridgeTypes,
+    regions,
+    languages,
+    getGameOptions,
+    getPreservationStateOptions,
+    getCartridgeTypeOptions,
+    getRegionOptions,
+    getLanguageOptions,
+    getGameById,
+    getPreservationStateById,
+    getCartridgeTypeById,
+    getRegionById,
+    getLanguageById,
+  } = useReferenceData({
+    autoLoad: true,
+    onError: handleReferenceDataError,
+  });
+
+  // Hook para criação de anúncios
+  const {
+    createAdvertisementFromExistingForm,
+    loading: creationLoading,
+    error: creationError,
+  } = useAdvertisementCreation({
+    onSuccess: (advertisement) => {
+      console.log("Anúncio criado com sucesso:", advertisement);
+      setShowSuccessMessage(true);
+      // Limpar localStorage após sucesso
+      localStorage.removeItem("tcc-variations");
+    },
+    onError: (error) => {
+      console.error("Erro ao criar anúncio:", error);
+      // Mostrar erro para o usuário
+    },
+  });
+
   const [showVariationForm, setShowVariationForm] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [variations, setVariations] = useState([]);
@@ -63,6 +112,7 @@ const MultiPartForm = () => {
     titulo: "",
     estoque: "",
     descricao: "",
+    preco: "",
 
     jogo: "",
     tipoCartucho: "",
@@ -206,22 +256,38 @@ const MultiPartForm = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleFinish = () => {
-    // Aqui você pode adicionar a lógica de envio do formulário
-    // Por exemplo, validações, chamadas para API, etc.
+  const handleFinish = async () => {
+    try {
+      // Validar dados do formulário principal
+      const formErrors = validateFormData(formData);
+      if (formErrors.length > 0) {
+        alert(`Erro de validação:\n${formErrors.join("\n")}`);
+        return;
+      }
 
-    // Incluir as variações no envio
-    const formDataWithVariations = {
-      ...formData,
-      variations: variations,
-    };
+      // Validar variações
+      const variationErrors = validateVariations(variations);
+      if (variationErrors.length > 0) {
+        alert(
+          `Erro de validação nas variações:\n${variationErrors.join("\n")}`
+        );
+        return;
+      }
 
-    // Simular envio bem-sucedido
-    console.log("Formulário enviado:", formDataWithVariations);
-    console.log("Variações incluídas:", variations);
+      // Criar anúncio usando o serviço
+      await createAdvertisementFromExistingForm(formData, variations, {
+        preservationStates,
+        cartridgeTypes,
+        regions,
+        languages,
+      });
 
-    setShowSuccessMessage(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+      // Scroll para o topo após envio
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      console.error("Erro ao finalizar criação do anúncio:", error);
+      alert("Erro ao criar anúncio. Tente novamente.");
+    }
   };
 
   const toggleVariation = (variationId) => {
@@ -254,7 +320,15 @@ const MultiPartForm = () => {
                     variationData.titulo ||
                     formData.titulo ||
                     "Troco Cartucho Super Mario Bros Usado.",
-                  descricao: `${variationData.tipoCartucho} - ${variationData.estadoPreservacao} - ${variationData.regiao} - ${variationData.idiomaAudio}`,
+                  descricao:
+                    variationData.descricao ||
+                    `${getCartridgeTypeName(
+                      variationData.tipoCartucho
+                    )} - ${getPreservationStateName(
+                      variationData.estadoPreservacao
+                    )} - ${getRegionName(
+                      variationData.regiao
+                    )} - ${getLanguageName(variationData.idiomaAudio)}`,
                 }
               : v
           )
@@ -269,7 +343,15 @@ const MultiPartForm = () => {
             variationData.titulo ||
             formData.titulo ||
             "Troca Cartucho Super Mario Bros Usado.",
-          descricao: `${variationData.tipoCartucho} - ${variationData.estadoPreservacao} - ${variationData.regiao} - ${variationData.idiomaAudio}`,
+          descricao:
+            variationData.descricao ||
+            `${getCartridgeTypeName(
+              variationData.tipoCartucho
+            )} - ${getPreservationStateName(
+              variationData.estadoPreservacao
+            )} - ${getRegionName(variationData.regiao)} - ${getLanguageName(
+              variationData.idiomaAudio
+            )}`,
         };
 
         setVariations((prev) => [...prev, newVariation]);
@@ -322,44 +404,51 @@ const MultiPartForm = () => {
   };
 
   // =================== Opções para os selects ===================
-  const jogos = [
-    { label: "Jogo 1", value: "Jogo 1" },
-    { label: "Jogo 2", value: "Jogo 2" },
-  ];
+  const jogos = getGameOptions();
+  const tiposCartucho = getCartridgeTypeOptions();
+  const estados = getPreservationStateOptions();
+  const regioes = getRegionOptions();
+  const idiomas = getLanguageOptions();
 
-  const tiposCartucho = [
-    { label: "Retrô", value: "Retro" },
-    { label: "Repro", value: "Repro" },
-  ];
+  // =================== Funções para obter nomes dos IDs ===================
+  const getGameName = (gameId: string) => {
+    const game = getGameById(parseInt(gameId));
+    return game?.name || "Não informado";
+  };
 
-  const estados = [
-    { label: "Novo", value: "Novo" },
-    { label: "Usado", value: "Usado" },
-  ];
+  const getCartridgeTypeName = (cartridgeTypeId: string) => {
+    const cartridgeType = getCartridgeTypeById(parseInt(cartridgeTypeId));
+    return cartridgeType?.name || "Não informado";
+  };
 
-  const regioes = [
-    { label: "NTSC", value: "NTSC" },
-    { label: "PAL", value: "PAL" },
-  ];
+  const getPreservationStateName = (preservationStateId: string) => {
+    const preservationState = getPreservationStateById(
+      parseInt(preservationStateId)
+    );
+    return preservationState?.name || "Não informado";
+  };
 
-  const regioesTroca = [
-    { label: "NTSC-U", value: "NTSCU" },
-    { label: "NTSC-J", value: "NTSCJ" },
-    { label: "PAL-A", value: "PALA" },
-    { label: "PAL-B", value: "PALB" },
-    { label: "PAL", value: "PAL" },
-  ];
+  const getRegionName = (regionId: string) => {
+    const region = getRegionById(parseInt(regionId));
+    return (
+      region?.name ||
+      region?.identifier ||
+      `Região ${regionId}` ||
+      "Não informado"
+    );
+  };
 
-  const idiomas = [
-    { label: "Inglês", value: "Inglês" },
-    { label: "Português", value: "Português" },
-  ];
-
-  
+  const getLanguageName = (languageId: string) => {
+    const language = getLanguageById(parseInt(languageId));
+    return language?.name || "Não informado";
+  };
 
   return (
     <>
-      <Head title="Cadastrar anúncio - Apenas Troca" />
+      <Head
+        title="Cadastrar anúncio - Apenas Troca"
+        iconHref="/logo-icon.svg"
+      />
       <ModalAlert
         isOpen={showSuccessMessage}
         onClose={() => setShowSuccessMessage(false)}
@@ -385,12 +474,14 @@ const MultiPartForm = () => {
           <>
             <StepHeader
               title="Informações Básicas"
-              subtitle="Comece preenchendo as informações básicas sobre o anúncio"
+              subtitle="Comece preenchendo as informações básicas sobre o anúncio de troca"
               step={step - 1}
               steps={stepsArray}
-              onBack={''}
+              onBack={""}
             />
-            <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}>
+            <div
+              className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}
+            >
               <div>
                 <label className="block mb-1 text-sm font-bold">
                   Título do Anúncio
@@ -461,7 +552,9 @@ const MultiPartForm = () => {
               steps={stepsArray}
               onBack={prevStep}
             />
-            <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}>
+            <div
+              className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}
+            >
               <div>
                 <label className="block mb-1 text-sm font-bold">Jogo</label>
                 <CustomSelect
@@ -596,7 +689,9 @@ const MultiPartForm = () => {
               steps={stepsArray}
               onBack={prevStep}
             />
-            <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}>
+            <div
+              className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}
+            >
               <div>
                 <label className="block mb-1 text-sm font-bold">Jogo</label>
                 <CustomSelect
@@ -650,10 +745,8 @@ const MultiPartForm = () => {
                   Região do Cartucho
                 </label>
                 <CustomSelect
-                  options={regioesTroca}
-                  value={regioesTroca.find(
-                    (o) => o.value === formData.regioesTroca
-                  )}
+                  options={regioes}
+                  value={regioes.find((o) => o.value === formData.regioesTroca)}
                   onChange={(opt) =>
                     handleSelectChange("regioesTroca", opt.value)
                   }
@@ -713,7 +806,7 @@ const MultiPartForm = () => {
           <>
             <StepHeader
               title="Imagens e Vídeos"
-              subtitle="Nós já estamos finalizando, envie fotos e vídeos do seu cartucho"
+              subtitle="Nós já estamos finalizando, envie fotos e vídeos do seu cartucho para troca"
               step={step - 1}
               steps={stepsArray}
               onBack={prevStep}
@@ -794,8 +887,8 @@ const MultiPartForm = () => {
         {step === 5 && (
           <>
             <StepHeader
-              title="Adicionar Variação"
-              subtitle="Tem mais de um cartucho do mesmo jogo para anunciar?"
+              title="Adicionar Variações"
+              subtitle="Tem mais de um cartucho do mesmo jogo para trocar?"
               step={step - 1}
               steps={stepsArray}
               onBack={prevStep}
@@ -804,8 +897,12 @@ const MultiPartForm = () => {
               {/* Lista de variações existentes - sempre visível */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                <h3 className={`${isMobile ? 'hidden' : ''} text-lg font-semibold text-gray-800`}>
-                    Variações do Anúncio
+                  <h3
+                    className={`${
+                      isMobile ? "hidden" : ""
+                    } text-lg font-semibold text-gray-800`}
+                  >
+                    Variações do Anúncio de Troca
                   </h3>
                   {variations.length > 0 && (
                     <button
@@ -818,8 +915,7 @@ const MultiPartForm = () => {
                 </div>
 
                 {variations.length === 0 ? (
-                  <div className="text-center text-gray-500">
-                  </div>
+                  <div className="text-center text-gray-500"></div>
                 ) : (
                   variations.map((variation, index) => (
                     <div
@@ -829,7 +925,7 @@ const MultiPartForm = () => {
                       {/* Cabeçalho roxo claro */}
                       <div className="bg-[#EDECF7] px-4 py-3 flex items-center justify-between">
                         <span className="font-medium text-gray-800">
-                          Variação {index + 1}
+                          Variação de Troca {index + 1}
                         </span>
                         <ChevronDown className="w-5 h-5 text-gray-600" />
                       </div>
@@ -889,7 +985,7 @@ const MultiPartForm = () => {
                     isMobile ? "p-4" : "p-6"
                   } rounded-lg text-purple-600 hover:bg-purple-50 hover:border-purple-600 transition-colors`}
                 >
-                  + Adicionar nova variação
+                  + Adicionar nova variação de troca
                 </button>
               ) : (
                 <div className="bg-[#EDECF7] border border-gray-300 rounded-lg p-4 space-y-4">
@@ -897,7 +993,7 @@ const MultiPartForm = () => {
                     <h3 className="text-lg font-semibold text-gray-800">
                       {editingVariationId
                         ? "Editar Variação"
-                        : `Variação ${variations.length + 1}`}
+                        : `Variação de Troca ${variations.length + 1}`}
                     </h3>
 
                     <button
@@ -926,7 +1022,6 @@ const MultiPartForm = () => {
                           idiomasInterfaceTroca: "",
                         });
                       }}
-                      
                     >
                       <ChevronDown className="w-8 h-8 text-gray-600" />
                     </button>
@@ -934,11 +1029,21 @@ const MultiPartForm = () => {
 
                   <div className="space-y-3 bg-white p-4 rounded rounded-lg">
                     <h4 className="text-sm font-semibold text-gray-800 mb-3 text-center">
-                      Detalhes do anúncio
+                      Detalhes do anúncio de troca
                     </h4>
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
-                        Título do Anúncio:
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
+                        Título do Anúncio de Troca:
                       </label>
                       <input
                         type="text"
@@ -950,8 +1055,18 @@ const MultiPartForm = () => {
                       />
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Tipo do Cartucho:
                       </label>
                       <div className="flex-1">
@@ -973,8 +1088,18 @@ const MultiPartForm = () => {
                       </div>
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} `}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } `}
+                      >
                         Estado de Preservação:
                       </label>
                       <div className="flex-1">
@@ -996,8 +1121,18 @@ const MultiPartForm = () => {
                       </div>
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Região do Cartucho:
                       </label>
                       <div className="flex-1">
@@ -1016,8 +1151,18 @@ const MultiPartForm = () => {
                       </div>
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Idioma da Audio:
                       </label>
                       <div className="flex-1">
@@ -1038,8 +1183,18 @@ const MultiPartForm = () => {
                         />
                       </div>
                     </div>
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Idioma da Legenda:
                       </label>
                       <div className="flex-1">
@@ -1058,8 +1213,18 @@ const MultiPartForm = () => {
                         />
                       </div>
                     </div>
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Idioma da Interface:
                       </label>
                       <div className="flex-1">
@@ -1079,8 +1244,18 @@ const MultiPartForm = () => {
                       </div>
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                    <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Estoque Disponível:
                       </label>
                       <input
@@ -1102,8 +1277,18 @@ const MultiPartForm = () => {
                         </p>
                       )}
                     </div>
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                      <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
                         Descrição:
                       </label>
                       <input
@@ -1116,7 +1301,11 @@ const MultiPartForm = () => {
                       />
                     </div>
 
-                    <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
+                    <div
+                      className={`flex  ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
                       <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2 pt-2">
                         Imagens e Vídeos:
                       </label>
@@ -1170,8 +1359,18 @@ const MultiPartForm = () => {
                       </h4>
 
                       <div className="space-y-3">
-                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                        <div
+                          className={`flex  ${
+                            isMobile ? "flex-col gap-2" : "items-center"
+                          }`}
+                        >
+                          <label
+                            className={`font-medium text-gray-700 flex-shrink-0 ${
+                              isMobile
+                                ? "text-start text-md"
+                                : "text-end text-sm w-40"
+                            } pr-2`}
+                          >
                             Jogos:
                           </label>
                           <div className="flex-1">
@@ -1191,8 +1390,18 @@ const MultiPartForm = () => {
                           </div>
                         </div>
 
-                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                        <div
+                          className={`flex  ${
+                            isMobile ? "flex-col gap-2" : "items-center"
+                          }`}
+                        >
+                          <label
+                            className={`font-medium text-gray-700 flex-shrink-0 ${
+                              isMobile
+                                ? "text-start text-md"
+                                : "text-end text-sm w-40"
+                            } pr-2`}
+                          >
                             Tipo de Cartucho:
                           </label>
                           <div className="flex-1">
@@ -1212,8 +1421,18 @@ const MultiPartForm = () => {
                           </div>
                         </div>
 
-                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                        <div
+                          className={`flex  ${
+                            isMobile ? "flex-col gap-2" : "items-center"
+                          }`}
+                        >
+                          <label
+                            className={`font-medium text-gray-700 flex-shrink-0 ${
+                              isMobile
+                                ? "text-start text-md"
+                                : "text-end text-sm w-40"
+                            } pr-2`}
+                          >
                             Estado de Preservação:
                           </label>
                           <div className="flex-1">
@@ -1233,14 +1452,24 @@ const MultiPartForm = () => {
                           </div>
                         </div>
 
-                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                        <div
+                          className={`flex  ${
+                            isMobile ? "flex-col gap-2" : "items-center"
+                          }`}
+                        >
+                          <label
+                            className={`font-medium text-gray-700 flex-shrink-0 ${
+                              isMobile
+                                ? "text-start text-md"
+                                : "text-end text-sm w-40"
+                            } pr-2`}
+                          >
                             Região do Cartucho:
                           </label>
                           <div className="flex-1">
                             <CustomSelect
-                              options={regioesTroca}
-                              value={regioesTroca.find(
+                              options={regioes}
+                              value={regioes.find(
                                 (o) => o.value === variationData.regioesTroca
                               )}
                               onChange={(opt) =>
@@ -1254,8 +1483,18 @@ const MultiPartForm = () => {
                           </div>
                         </div>
 
-                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                        <div
+                          className={`flex  ${
+                            isMobile ? "flex-col gap-2" : "items-center"
+                          }`}
+                        >
+                          <label
+                            className={`font-medium text-gray-700 flex-shrink-0 ${
+                              isMobile
+                                ? "text-start text-md"
+                                : "text-end text-sm w-40"
+                            } pr-2`}
+                          >
                             Idiomas de Áudio:
                           </label>
                           <div className="flex-1">
@@ -1276,8 +1515,18 @@ const MultiPartForm = () => {
                           </div>
                         </div>
 
-                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                        <div
+                          className={`flex  ${
+                            isMobile ? "flex-col gap-2" : "items-center"
+                          }`}
+                        >
+                          <label
+                            className={`font-medium text-gray-700 flex-shrink-0 ${
+                              isMobile
+                                ? "text-start text-md"
+                                : "text-end text-sm w-40"
+                            } pr-2`}
+                          >
                             Idiomas de Legenda Aceitos:
                           </label>
                           <div className="flex-1">
@@ -1298,8 +1547,18 @@ const MultiPartForm = () => {
                           </div>
                         </div>
 
-                        <div className={`flex  ${isMobile ? 'flex-col gap-2' : 'items-center'}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? 'text-start text-md' : 'text-end text-sm w-40'} pr-2`}>
+                        <div
+                          className={`flex  ${
+                            isMobile ? "flex-col gap-2" : "items-center"
+                          }`}
+                        >
+                          <label
+                            className={`font-medium text-gray-700 flex-shrink-0 ${
+                              isMobile
+                                ? "text-start text-md"
+                                : "text-end text-sm w-40"
+                            } pr-2`}
+                          >
                             Idiomas de Interface Aceitos:
                           </label>
                           <div className="flex-1">
@@ -1367,61 +1626,78 @@ const MultiPartForm = () => {
         {/* STEP 6 - Publicar Anúncio */}
         {step === 6 && (
           <>
-            <StepHeader 
-            title="Publicar Anúncio" 
-            subtitle="" 
-            step={6} 
-            steps={stepsArray}
-            onBack={prevStep}
+            <StepHeader
+              title="Publicar Anúncio"
+              subtitle=""
+              step={6}
+              steps={stepsArray}
+              onBack={prevStep}
             />
             <div className="p-8 text-center">
+              {/* Exibir erro se houver */}
+              {creationError && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-800 mb-3">{creationError}</p>
+                  {
+                    creationError.includes("CPF") /* && (
+                    <button
+                      onClick={() => navigate("/perfil")}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Ir para Perfil
+                    </button>
+                  )*/
+                  }
+                </div>
+              )}
+
               {/* Mensagem central */}
               <p className="text-black font- text-lg mb-8 max-w-2xl mx-auto">
                 Você está prestes a publicar o seu anúncio, revise todas as
                 informações, e se quiser, ainda é possível fazer alterações
               </p>
               {isMobile ? (
-              <div className="flex flex-col items-center justify-center gap-4">
-              <img src="../public/computador.svg" alt="" />
-              {/* Botões */}
-              <div className="space-y-4">
-                <button
-                  onClick={handleFinish}
-                  disabled={!checkboxConfirmed}
-                  className="px-24 py-3 bg-[#38307C] text-white rounded-lg hover:bg-[#2A1F5C] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#38307C]"
-                >
-                  Publicar
-                </button>
-                <br />
-                <button
-                  onClick={() => setStep(7)}
-                  className="px-16 py-3 bg-[#DDDDF3] text-[#38307C] rounded-lg hover:bg-[#C8C8E8] transition-colors font-medium"
-                >
-                  Revisar Anúncio
-                </button>
-              </div>
-            </div>
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <img src="../public/computador.svg" alt="" />
+                  {/* Botões */}
+                  <div className="space-y-4">
+                    <button
+                      onClick={handleFinish}
+                      disabled={!checkboxConfirmed || creationLoading}
+                      className="px-24 py-3 bg-[#38307C] text-white rounded-lg hover:bg-[#2A1F5C] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#38307C]"
+                    >
+                      {creationLoading ? "Publicando..." : "Publicar"}
+                    </button>
+                    <br />
+                    <button
+                      onClick={() => setStep(7)}
+                      className="px-16 py-3 bg-[#DDDDF3] text-[#38307C] rounded-lg hover:bg-[#C8C8E8] transition-colors font-medium"
+                    >
+                      Revisar Anúncio
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <div className="flex items-center justify-center gap-4">
-                <img src="../public/computador.svg" alt="" />
-                {/* Botões */}
-                <div className="space-y-4">
-                  <button
-                    onClick={handleFinish}
-                    disabled={!checkboxConfirmed}
-                    className="px-24 py-3 bg-[#38307C] text-white rounded-lg hover:bg-[#2A1F5C] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#38307C]"
-                  >
-                    Publicar
-                  </button>
-                  <br />
-                  <button
-                    onClick={() => setStep(7)}
-                    className="px-16 py-3 bg-[#DDDDF3] text-[#38307C] rounded-lg hover:bg-[#C8C8E8] transition-colors font-medium"
-                  >
-                    Revisar Anúncio
-                  </button>
+                  <img src="../public/computador.svg" alt="" />
+                  {/* Botões */}
+                  <div className="space-y-4">
+                    <button
+                      onClick={handleFinish}
+                      disabled={!checkboxConfirmed || creationLoading}
+                      className="px-24 py-3 bg-[#38307C] text-white rounded-lg hover:bg-[#2A1F5C] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#38307C]"
+                    >
+                      {creationLoading ? "Publicando..." : "Publicar"}
+                    </button>
+                    <br />
+                    <button
+                      onClick={() => setStep(7)}
+                      className="px-16 py-3 bg-[#DDDDF3] text-[#38307C] rounded-lg hover:bg-[#C8C8E8] transition-colors font-medium"
+                    >
+                      Revisar Anúncio de Troca
+                    </button>
+                  </div>
                 </div>
-              </div>
               )}
 
               {/* Checkbox e disclaimer */}
@@ -1445,7 +1721,7 @@ const MultiPartForm = () => {
         {step === 7 && (
           <>
             <StepHeader
-              title="Revisar Anúncio"
+              title="Revisar Anúncio de Troca"
               subtitle="Confirme se todas as informações estão corretas"
               step={step - 1}
               steps={stepsArray}
@@ -1461,7 +1737,7 @@ const MultiPartForm = () => {
                   >
                     <div className="flex items-center justify-between">
                       <h2 className="text-lg font-semibold text-gray-800">
-                        Anúncio Principal
+                        Anúncio Principal de Troca
                       </h2>
                       <svg
                         className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
@@ -1521,7 +1797,7 @@ const MultiPartForm = () => {
                       {/* Título do Anúncio */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-500">
-                          Titulo do Anúncio
+                          Titulo do Anúncio de Troca
                         </label>
                         <p className="text-gray-800 font-medium">
                           {formData.titulo || "Não informado"}
@@ -1534,7 +1810,7 @@ const MultiPartForm = () => {
                           Tipo do Cartucho
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.tipoCartucho || "Não informado"}
+                          {getCartridgeTypeName(formData.tipoCartucho)}
                         </p>
                       </div>
 
@@ -1544,7 +1820,7 @@ const MultiPartForm = () => {
                           Jogo
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.jogo || "Não informado"}
+                          {getGameName(formData.jogo)}
                         </p>
                       </div>
 
@@ -1554,7 +1830,7 @@ const MultiPartForm = () => {
                           Estado de Preservação
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.estadoPreservacao || "Não informado"}
+                          {getPreservationStateName(formData.estadoPreservacao)}
                         </p>
                       </div>
 
@@ -1564,7 +1840,7 @@ const MultiPartForm = () => {
                           Região do Cartucho
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.regiao || "Não informado"}
+                          {getRegionName(formData.regiao)}
                         </p>
                       </div>
 
@@ -1574,7 +1850,7 @@ const MultiPartForm = () => {
                           Idiomas do Audio
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.idiomaAudio || "Não informado"}
+                          {getLanguageName(formData.idiomaAudio)}
                         </p>
                       </div>
 
@@ -1584,7 +1860,7 @@ const MultiPartForm = () => {
                           Idiomas da Legenda
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.idiomaLegenda || "Não informado"}
+                          {getLanguageName(formData.idiomaLegenda)}
                         </p>
                       </div>
 
@@ -1594,7 +1870,7 @@ const MultiPartForm = () => {
                           Idiomas da Interface
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.idiomaInterface || "Não informado"}
+                          {getLanguageName(formData.idiomaInterface)}
                         </p>
                       </div>
 
@@ -1611,10 +1887,10 @@ const MultiPartForm = () => {
                       {/* Condições */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-500">
-                          Condições
+                          Condições de Troca Aceitas
                         </label>
                         <p className="text-gray-800 font-medium">
-                          Venda e Troca
+                          {formData.condicoes || "Não informado"}
                         </p>
                       </div>
 
@@ -1639,7 +1915,7 @@ const MultiPartForm = () => {
                       {/* Condições de Troca */}
                       <div className="space-y-4">
                         <label className="text-sm font-medium text-gray-500">
-                          Condições de Troca
+                          Condições de Troca Aceitas
                         </label>
 
                         <div className="space-y-3">
@@ -1648,7 +1924,7 @@ const MultiPartForm = () => {
                               Jogos
                             </label>
                             <p className="text-gray-800 font-medium">
-                              {formData.jogosTroca || "Nome do Jogo"}
+                              {getGameName(formData.jogosTroca)}
                             </p>
                           </div>
 
@@ -1657,7 +1933,7 @@ const MultiPartForm = () => {
                               Tipo de Cartucho Aceito
                             </label>
                             <p className="text-gray-800 font-medium">
-                              {formData.tiposTroca || "Não informado"}
+                              {getCartridgeTypeName(formData.tiposTroca)}
                             </p>
                           </div>
 
@@ -1666,7 +1942,7 @@ const MultiPartForm = () => {
                               Estado Mínimo Aceito
                             </label>
                             <p className="text-gray-800 font-medium">
-                              {formData.estadosTroca || "Não informado"}
+                              {getPreservationStateName(formData.estadosTroca)}
                             </p>
                           </div>
 
@@ -1675,7 +1951,7 @@ const MultiPartForm = () => {
                               Região Aceita
                             </label>
                             <p className="text-gray-800 font-medium">
-                              {formData.regioesTroca || "Não informado"}
+                              {getRegionName(formData.regioesTroca)}
                             </p>
                           </div>
 
@@ -1684,7 +1960,7 @@ const MultiPartForm = () => {
                               Idioma de Áudio Aceito
                             </label>
                             <p className="text-gray-800 font-medium">
-                              {formData.idiomasAudioTroca || "Não informado"}
+                              {getLanguageName(formData.idiomasAudioTroca)}
                             </p>
                           </div>
 
@@ -1693,7 +1969,7 @@ const MultiPartForm = () => {
                               Idioma de Legenda Aceito
                             </label>
                             <p className="text-gray-800 font-medium">
-                              {formData.idiomasLegendaTroca || "Não informado"}
+                              {getLanguageName(formData.idiomasLegendaTroca)}
                             </p>
                           </div>
 
@@ -1702,8 +1978,7 @@ const MultiPartForm = () => {
                               Idioma de Interface Aceito
                             </label>
                             <p className="text-gray-800 font-medium">
-                              {formData.idiomasInterfaceTroca ||
-                                "Não informado"}
+                              {getLanguageName(formData.idiomasInterfaceTroca)}
                             </p>
                           </div>
                         </div>
@@ -1740,13 +2015,16 @@ const MultiPartForm = () => {
                           </div>
                           <div>
                             <h2 className="text-lg font-semibold text-gray-800">
-                              {variation.titulo || `Variação ${index + 1}`}
+                              {variation.titulo ||
+                                `Variação de Troca ${index + 1}`}
                             </h2>
                             <p className="text-sm text-gray-600">
-                              {variation.tipoCartucho || "N/A"} -{" "}
-                              {variation.estadoPreservacao || "N/A"} -{" "}
-                              {variation.regiao || "N/A"} -{" "}
-                              {variation.idiomaAudio || "N/A"}
+                              {getCartridgeTypeName(variation.tipoCartucho)} -{" "}
+                              {getPreservationStateName(
+                                variation.estadoPreservacao
+                              )}{" "}
+                              - {getRegionName(variation.regiao)} -{" "}
+                              {getLanguageName(variation.idiomaAudio)}
                             </p>
                             <p className="text-xs text-gray-500">
                               Estoque: {variation.estoque || "N/A"}
@@ -1821,7 +2099,7 @@ const MultiPartForm = () => {
                         {/* Título da variação */}
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-500">
-                            Título da Variação
+                            Título da Variação de Troca
                           </label>
                           <p className="text-gray-800 font-medium">
                             {variation.titulo || "Não informado"}
@@ -1834,7 +2112,7 @@ const MultiPartForm = () => {
                             Tipo do Cartucho
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.tipoCartucho || "Não informado"}
+                            {getCartridgeTypeName(variation.tipoCartucho)}
                           </p>
                         </div>
 
@@ -1854,7 +2132,9 @@ const MultiPartForm = () => {
                             Estado de Preservação
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.estadoPreservacao || "Não informado"}
+                            {getPreservationStateName(
+                              variation.estadoPreservacao
+                            )}
                           </p>
                         </div>
 
@@ -1864,7 +2144,7 @@ const MultiPartForm = () => {
                             Região
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.regiao || "Não informado"}
+                            {getRegionName(variation.regiao)}
                           </p>
                         </div>
 
@@ -1874,7 +2154,7 @@ const MultiPartForm = () => {
                             Idiomas do Áudio
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.idiomaAudio || "Não informado"}
+                            {getLanguageName(variation.idiomaAudio)}
                           </p>
                         </div>
 
@@ -1883,7 +2163,7 @@ const MultiPartForm = () => {
                             Idiomas da Legenda
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.idiomaLegenda || "Não informado"}
+                            {getLanguageName(variation.idiomaLegenda)}
                           </p>
                         </div>
 
@@ -1892,7 +2172,7 @@ const MultiPartForm = () => {
                             Idiomas da Interface
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.idiomaInterface || "Não informado"}
+                            {getLanguageName(variation.idiomaInterface)}
                           </p>
                         </div>
 
@@ -1940,11 +2220,17 @@ const MultiPartForm = () => {
         )}
 
         {/* FOOTER BUTTONS */}
-        <div className={`flex justify-end p-4 bg-gray-50 border-t gap-1 ${isMobile ? 'flex-col px-9' : 'flex-row'}`}>
+        <div
+          className={`flex justify-end p-4 bg-gray-50 border-t gap-1 ${
+            isMobile ? "flex-col px-9" : "flex-row"
+          }`}
+        >
           <button
             onClick={prevStep}
             disabled={step === 1}
-            className={`py-2 rounded-lg bg-[#DDDDF3] disabled:opacity-50 ${isMobile ? 'hidden' : 'px-4'}`}
+            className={`py-2 rounded-lg bg-[#DDDDF3] disabled:opacity-50 ${
+              isMobile ? "hidden" : "px-4"
+            }`}
           >
             Cancelar
           </button>

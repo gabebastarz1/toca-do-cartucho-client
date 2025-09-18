@@ -1345,14 +1345,14 @@ const MultiPartFormSaleOnly = () => {
               {creationError && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                   <p className="text-red-800 mb-3">{creationError}</p>
-                  {creationError.includes("CPF") && (
+                  {creationError.includes("CPF")/* && (
                     <button
                       onClick={() => navigate("/perfil")}
                       className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
                     >
                       Ir para Perfil
                     </button>
-                  )}
+                  )*/}
                 </div>
               )}
 

@@ -48,6 +48,13 @@ const MultiPartFormSaleAndTrade = () => {
     autoLoad: true,
     onError: handleReferenceDataError,
   });
+
+  // Hook para criação de anúncios
+  const {
+    createAdvertisementFromExistingForm,
+    loading: creationLoading,
+    error: creationError,
+  } = useAdvertisementCreation();
   const [variations, setVariations] = useState([]);
   const [editingVariationId, setEditingVariationId] = useState(null);
   const [checkboxConfirmed, setCheckboxConfirmed] = useState(false);
@@ -289,22 +296,38 @@ const MultiPartFormSaleAndTrade = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleFinish = () => {
-    // Aqui você pode adicionar a lógica de envio do formulário
-    // Por exemplo, validações, chamadas para API, etc.
+  const handleFinish = async () => {
+    try {
+      // Validar dados do formulário principal
+      const formErrors = validateFormData(formData);
+      if (formErrors.length > 0) {
+        alert(`Erro de validação:\n${formErrors.join("\n")}`);
+        return;
+      }
 
-    // Incluir as variações no envio
-    const formDataWithVariations = {
-      ...formData,
-      variations: variations,
-    };
+      // Validar variações
+      const variationErrors = validateVariations(variations);
+      if (variationErrors.length > 0) {
+        alert(
+          `Erro de validação nas variações:\n${variationErrors.join("\n")}`
+        );
+        return;
+      }
 
-    // Simular envio bem-sucedido
-    console.log("Formulário enviado:", formDataWithVariations);
-    console.log("Variações incluídas:", variations);
+      // Chamar o serviço de criação
+      await createAdvertisementFromExistingForm(formData, variations, {
+        preservationStates,
+        cartridgeTypes,
+        regions,
+        languages,
+      });
 
-    setShowSuccessMessage(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+      setShowSuccessMessage(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      console.error("Erro ao criar anúncio:", error);
+      alert("Erro inesperado ao criar anúncio. Tente novamente.");
+    }
   };
 
   const toggleVariation = (variationId) => {
@@ -465,7 +488,10 @@ const MultiPartFormSaleAndTrade = () => {
 
   return (
     <>
-      <Head title="Cadastrar anúncio - Venda e troca" />
+      <Head
+        title="Cadastrar anúncio"
+        iconHref="/logo-icon.svg"
+      />
       <ModalAlert
         isOpen={showSuccessMessage}
         onClose={() => setShowSuccessMessage(false)}
@@ -490,8 +516,8 @@ const MultiPartFormSaleAndTrade = () => {
         {step === 1 && (
           <>
             <StepHeader
-              title="Informações Básicas - Venda e Troca"
-              subtitle="Comece preenchendo as informações básicas sobre o anúncio de venda e troca"
+              title="Informações Básicas"
+              subtitle="Comece preenchendo as informações básicas sobre o anúncio"
               step={step - 1}
               steps={stepsArray}
               onBack={""}
@@ -867,7 +893,7 @@ const MultiPartFormSaleAndTrade = () => {
           <>
             <StepHeader
               title="Imagens e Vídeos"
-              subtitle="Nós já estamos finalizando, envie fotos e vídeos do seu cartucho para venda"
+              subtitle="Nós já estamos finalizando, envie fotos e vídeos do seu cartucho"
               step={step - 1}
               steps={stepsArray}
               onBack={prevStep}
@@ -949,7 +975,7 @@ const MultiPartFormSaleAndTrade = () => {
           <>
             <StepHeader
               title="Adicionar Variações"
-              subtitle="Tem mais de um cartucho do mesmo jogo para vender?"
+              subtitle="Tem mais de um cartucho do mesmo jogo para vender e trocar?"
               step={step - 1}
               steps={stepsArray}
               onBack={prevStep}
@@ -1094,7 +1120,7 @@ const MultiPartFormSaleAndTrade = () => {
 
                   <div className="space-y-3 bg-white p-4 rounded rounded-lg">
                     <h4 className="text-sm font-semibold text-gray-800 mb-3 text-center">
-                      Detalhes do anúncio de venda
+                      Detalhes do anúncio
                     </h4>
                     <div
                       className={`flex  ${
@@ -1718,10 +1744,25 @@ const MultiPartFormSaleAndTrade = () => {
               onBack={prevStep}
             />
             <div className="p-8 text-center">
+              {/* Exibir erro se houver */}
+              {creationError && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-800 mb-3">{creationError}</p>
+                  {creationError.includes("CPF") && (
+                    <button
+                      onClick={() => navigate("/perfil")}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Completar Perfil
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Mensagem central */}
               <p className="text-black font- text-lg mb-8 max-w-2xl mx-auto">
-                Você está prestes a publicar o seu anúncio de venda, revise
-                todas as informações, e se quiser, ainda é possível fazer
+                Você está prestes a publicar o seu anúncio,
+                revise todas as informações, e se quiser, ainda é possível fazer
                 alterações
               </p>
               {isMobile ? (
@@ -1731,14 +1772,14 @@ const MultiPartFormSaleAndTrade = () => {
                   <div className="space-y-4">
                     <button
                       onClick={handleFinish}
-                      disabled={!checkboxConfirmed}
+                      disabled={!checkboxConfirmed || creationLoading}
                       className="px-24 py-3 bg-[#38307C] text-white rounded-lg hover:bg-[#2A1F5C] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#38307C]"
                     >
-                      Publicar
+                      {creationLoading ? "Publicando..." : "Publicar"}
                     </button>
                     <br />
                     <button
-                      onClick={() => setStep(6)}
+                      onClick={() => setStep(7)}
                       className="px-16 py-3 bg-[#DDDDF3] text-[#38307C] rounded-lg hover:bg-[#C8C8E8] transition-colors font-medium"
                     >
                       Revisar Anúncio
@@ -1752,14 +1793,14 @@ const MultiPartFormSaleAndTrade = () => {
                   <div className="space-y-4">
                     <button
                       onClick={handleFinish}
-                      disabled={!checkboxConfirmed}
+                      disabled={!checkboxConfirmed || creationLoading}
                       className="px-24 py-3 bg-[#38307C] text-white rounded-lg hover:bg-[#2A1F5C] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#38307C]"
                     >
-                      Publicar
+                      {creationLoading ? "Publicando..." : "Publicar"}
                     </button>
                     <br />
                     <button
-                      onClick={() => setStep(6)}
+                      onClick={() => setStep(7)}
                       className="px-16 py-3 bg-[#DDDDF3] text-[#38307C] rounded-lg hover:bg-[#C8C8E8] transition-colors font-medium"
                     >
                       Revisar Anúncio
@@ -1791,7 +1832,7 @@ const MultiPartFormSaleAndTrade = () => {
             <StepHeader
               title="Revisar Anúncio"
               subtitle="Confirme se todas as informações estão corretas"
-              step={step - 1}
+              step={7}
               steps={stepsArray}
               onBack={prevStep}
             />
@@ -1959,7 +2000,7 @@ const MultiPartFormSaleAndTrade = () => {
                       {/* Condições */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-500">
-                          Condições
+                          Condições de Venda e Troca
                         </label>
                         <p className="text-gray-800 font-medium">
                           Venda e Troca
@@ -1987,7 +2028,7 @@ const MultiPartFormSaleAndTrade = () => {
                       {/* Condições de Troca */}
                       <div className="space-y-4">
                         <label className="text-sm font-medium text-gray-500">
-                          Condições de Troca
+                          Condições de Troca Aceitas
                         </label>
 
                         <div className="space-y-3">
@@ -1996,7 +2037,7 @@ const MultiPartFormSaleAndTrade = () => {
                               Jogos
                             </label>
                             <p className="text-gray-800 font-medium">
-                              {formData.jogosTroca || "Nome do Jogo"}
+                              {getGameName(formData.jogosTroca)}
                             </p>
                           </div>
 
@@ -2005,7 +2046,7 @@ const MultiPartFormSaleAndTrade = () => {
                               Tipo de Cartucho Aceito
                             </label>
                             <p className="text-gray-800 font-medium">
-                              {formData.tiposTroca || "Não informado"}
+                              {getCartridgeTypeName(formData.tiposTroca)}
                             </p>
                           </div>
 
@@ -2014,7 +2055,7 @@ const MultiPartFormSaleAndTrade = () => {
                               Estado Mínimo Aceito
                             </label>
                             <p className="text-gray-800 font-medium">
-                              {formData.estadosTroca || "Não informado"}
+                              {getPreservationStateName(formData.estadosTroca)}
                             </p>
                           </div>
 
@@ -2023,7 +2064,7 @@ const MultiPartFormSaleAndTrade = () => {
                               Região Aceita
                             </label>
                             <p className="text-gray-800 font-medium">
-                              {formData.regioesTroca || "Não informado"}
+                              {getRegionName(formData.regioesTroca)}
                             </p>
                           </div>
 
@@ -2032,7 +2073,7 @@ const MultiPartFormSaleAndTrade = () => {
                               Idioma de Áudio Aceito
                             </label>
                             <p className="text-gray-800 font-medium">
-                              {formData.idiomasAudioTroca || "Não informado"}
+                              {getLanguageName(formData.idiomasAudioTroca)}
                             </p>
                           </div>
 
@@ -2041,7 +2082,7 @@ const MultiPartFormSaleAndTrade = () => {
                               Idioma de Legenda Aceito
                             </label>
                             <p className="text-gray-800 font-medium">
-                              {formData.idiomasLegendaTroca || "Não informado"}
+                              {getLanguageName(formData.idiomasLegendaTroca)}
                             </p>
                           </div>
 
@@ -2050,8 +2091,7 @@ const MultiPartFormSaleAndTrade = () => {
                               Idioma de Interface Aceito
                             </label>
                             <p className="text-gray-800 font-medium">
-                              {formData.idiomasInterfaceTroca ||
-                                "Não informado"}
+                              {getLanguageName(formData.idiomasInterfaceTroca)}
                             </p>
                           </div>
                         </div>
@@ -2088,7 +2128,8 @@ const MultiPartFormSaleAndTrade = () => {
                           </div>
                           <div>
                             <h2 className="text-lg font-semibold text-gray-800">
-                              {variation.titulo || `Variação ${index + 1}`}
+                              {variation.titulo ||
+                                `Variação ${index + 1}`}
                             </h2>
                             <p className="text-sm text-gray-600">
                               {getCartridgeTypeName(variation.tipoCartucho)} -{" "}
