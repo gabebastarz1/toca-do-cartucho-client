@@ -71,8 +71,8 @@ export const useAdvertisements = (
       console.log("API Response:", response); // Debug log
 
       // Verificar se a resposta tem a estrutura esperada
-      if (response && Array.isArray(response.data)) {
-        setAdvertisements(response.data);
+      if (response && Array.isArray(response.advertisements)) {
+        setAdvertisements(response.advertisements);
         setTotalCount(response.totalCount || 0);
         setPage(response.page || 1);
         setPageSize(response.pageSize || 12);

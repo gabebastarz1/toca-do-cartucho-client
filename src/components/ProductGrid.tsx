@@ -13,6 +13,9 @@ interface Product {
   condition: "new" | "semi-new" | "good" | "normal" | "damaged";
   type: "retro" | "repro";
   location: string;
+  genre?: string;
+  theme?: string;
+  saleType?: "sale" | "trade" | "sale-trade";
 }
 
 interface ProductGridProps {

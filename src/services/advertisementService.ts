@@ -34,7 +34,7 @@ export interface AdvertisementOrdering {
 }
 
 export interface AdvertisementResponse {
-  data: AdvertisementDTO[];
+  advertisements: AdvertisementDTO[];
   totalCount: number;
   page: number;
   pageSize: number;
@@ -87,13 +87,40 @@ class AdvertisementService {
 
       const response = await api.get(`${this.baseUrl}?${params.toString()}`);
       
-      // A API retorna um array diretamente, não um objeto com propriedade 'data'
+      // A API retorna um objeto com advertisements, page, pageSize, totalNumberOfPages
       const data = response.data;
       
-      // Se a resposta é um array, criar a estrutura esperada
+      // Se a resposta tem a estrutura esperada da API real
+      if (data && data.advertisements && Array.isArray(data.advertisements)) {
+        const currentPage = data.page || pagination?.page || 1;
+        const currentPageSize = data.pageSize || pagination?.pageSize || 12;
+        const totalPages = data.totalNumberOfPages || Math.ceil(data.advertisements.length / currentPageSize);
+        
+        // Calcular total count baseado no total de páginas e página atual
+        // Se estamos na última página, usar o tamanho atual do array
+        // Caso contrário, estimar baseado no total de páginas
+        let estimatedTotalCount;
+        if (currentPage === totalPages) {
+          // Última página: total = (páginas anteriores * pageSize) + itens nesta página
+          estimatedTotalCount = ((totalPages - 1) * currentPageSize) + data.advertisements.length;
+        } else {
+          // Não é a última página: estimar baseado no total de páginas
+          estimatedTotalCount = totalPages * currentPageSize;
+        }
+        
+        return {
+          advertisements: data.advertisements,
+          totalCount: estimatedTotalCount,
+          page: currentPage,
+          pageSize: currentPageSize,
+          totalPages: totalPages
+        };
+      }
+      
+      // Fallback: se a resposta é um array diretamente
       if (Array.isArray(data)) {
         return {
-          data: data,
+          advertisements: data,
           totalCount: data.length,
           page: pagination?.page || 1,
           pageSize: pagination?.pageSize || 12,

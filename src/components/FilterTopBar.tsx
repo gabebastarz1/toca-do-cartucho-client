@@ -6,12 +6,16 @@ interface FilterTopBarProps {
   onCategoryClick?: (category: string) => void;
   onFavoritesClick?: () => void;
   activeCategory?: string;
+  onFilterChange?: (filters: Record<string, string[]>) => void;
+  currentFilters?: Record<string, string[]>; // Para manter filtros da sidebar
 }
 
 const FilterTopBar: React.FC<FilterTopBarProps> = ({
   onCategoryClick,
   onFavoritesClick,
   activeCategory = "all",
+  onFilterChange,
+  currentFilters = {},
 }) => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
@@ -28,6 +32,40 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
   const handleCategoryClick = (categoryId: string) => {
     onCategoryClick?.(categoryId);
     setOpenDropdown(null);
+
+    // Aplicar filtros baseados na categoria selecionada
+    if (onFilterChange) {
+      // Manter filtros da sidebar (exceto genre/theme que são controlados pela topbar)
+      const sidebarFilters = { ...currentFilters };
+
+      if (categoryId === "all") {
+        // Limpar apenas filtros de categoria da topbar, manter outros
+        delete sidebarFilters.genre;
+        delete sidebarFilters.theme;
+        onFilterChange(sidebarFilters);
+      } else {
+        // Verificar se é um gênero ou tema específico
+        const genre = genres.find((g) => g.id === categoryId);
+        const theme = themes.find((t) => t.id === categoryId);
+
+        if (genre) {
+          // Limpar tema anterior e aplicar novo gênero
+          delete sidebarFilters.theme;
+          sidebarFilters.genre = [categoryId];
+          onFilterChange(sidebarFilters);
+        } else if (theme) {
+          // Limpar gênero anterior e aplicar novo tema
+          delete sidebarFilters.genre;
+          sidebarFilters.theme = [categoryId];
+          onFilterChange(sidebarFilters);
+        } else {
+          // Para outras categorias (quem-somos, contato, ajuda), limpar apenas categoria
+          delete sidebarFilters.genre;
+          delete sidebarFilters.theme;
+          onFilterChange(sidebarFilters);
+        }
+      }
+    }
   };
 
   const handleDropdownToggle = (categoryId: string) => {
@@ -63,7 +101,7 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
 
                   {/* Dropdown para categorias com submenu */}
                   {openDropdown === category.id && category.id !== "all" && (
-                    <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 font-vt323">
+                    <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 font-vt323 max-h-64 overflow-y-auto">
                       {category.id === "generos" && (
                         <>
                           {loading ? (

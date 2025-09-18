@@ -6,11 +6,12 @@ export interface AdvertisementDTO {
   title: string;
   description?: string;
   availableStock: number;
-  price?: number;
-  isTrade: boolean;
-  createdAt: string;
-  updatedAt: string;
+  slug: string;
   status: string;
+  createdAt: string;
+  updatedAt?: string;
+  updatedByUserId?: string;
+  parentAdvertisementId?: number;
   
   // Relacionamentos
   game?: GameDTO;
@@ -19,7 +20,10 @@ export interface AdvertisementDTO {
   gameLocalization?: GameLocalizationDTO;
   seller?: UserDTO;
   images?: AdvertisementImageDTO[];
-  languageSupports?: LanguageSupportDTO[];
+  advertisementLanguageSupports?: LanguageSupportDTO[];
+  sale?: SaleDTO;
+  trade?: TradeDTO;
+  variations?: AdvertisementDTO[];
 }
 
 export interface AdvertisementImageDTO {
@@ -28,11 +32,30 @@ export interface AdvertisementImageDTO {
   advertisementId: number;
 }
 
+export interface SaleDTO {
+  id: number;
+  price: number;
+  previousPrice?: number;
+  discountPercentage?: string;
+  updatedAt: string;
+}
+
 export interface GameDTO {
   id: number;
   name: string;
-  description?: string;
-  franchise?: string;
+  slug: string;
+  summary?: string;
+  storyline?: string;
+  firstReleaseDate?: string;
+  igdbUrl?: string;
+  totalRating?: number;
+  totalRatingCount?: number;
+  createdAt: string;
+  updatedAt: string;
+  franchises?: FranchiseDTO[];
+  genres?: GenreDTO[];
+  themes?: ThemeDTO[];
+  gameGameModes?: GameModeDTO[];
 }
 
 export interface CartridgeTypeDTO {
@@ -49,7 +72,58 @@ export interface PreservationStateDTO {
 
 export interface GameLocalizationDTO {
   id: number;
-  region: string;
+  name: string;
+  gameId: number;
+  region: RegionDTO;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RegionDTO {
+  id: number;
+  category: string;
+  identifier: string;
+  name: string;
+  updatedAt: string;
+}
+
+export interface GenreDTO {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+}
+
+export interface ThemeDTO {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+}
+
+export interface TradeDTO {
+  id: number;
+  price?: number;
+  updatedAt: string;
+}
+
+export interface FranchiseDTO {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+}
+
+export interface GameModeDTO {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+}
+
+export interface RoleDTO {
+  id: number;
+  name: string;
   description?: string;
 }
 
@@ -65,7 +139,9 @@ export interface UserDTO {
   email: string;
   firstName?: string;
   lastName?: string;
-  cpf?: string;
+  slug: string;
+  roles?: RoleDTO[];
+  favoriteAdvertisements?: AdvertisementDTO[];
 }
 
 // Tipos personalizados para evitar conflitos
