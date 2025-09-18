@@ -5,7 +5,7 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
 
   React.useEffect(() => {
-    navigate("/criar-anuncio");
+    navigate("/produtos");
   }, [navigate]);
 
   return null;

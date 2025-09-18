@@ -221,6 +221,17 @@ class ReferenceDataService {
       throw error;
     }
   }
+
+  // Carregar modos de jogo
+  async getGameModes(): Promise<any[]> {
+    try {
+      const response = await api.get('/api/gamemodes');
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao carregar modos de jogo:', error);
+      throw error;
+    }
+  }
 }
 
 export const referenceDataService = new ReferenceDataService();

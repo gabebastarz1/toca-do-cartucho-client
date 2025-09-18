@@ -20,7 +20,7 @@ import "./App.css";
 function App() {
   return (
     <AuthProvider>
-      <CategoryDataProvider useMockData={import.meta.env.DEV}>
+      <CategoryDataProvider>
         <Router>
           <div className="App">
             <Routes>

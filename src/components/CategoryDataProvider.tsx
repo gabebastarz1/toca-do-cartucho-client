@@ -6,8 +6,55 @@ import React, {
   useCallback,
   ReactNode,
 } from "react";
+import { api } from "../services/api";
 
-// Interfaces para os dados
+// Interfaces para os dados do backend
+interface GenreDTO {
+  id: number;
+  name: string;
+  slug: string;
+  url: string;
+  updatedAt: string;
+  createdAt: string;
+}
+
+interface ThemeDTO {
+  id: number;
+  name: string;
+  slug: string;
+  url: string;
+  updatedAt: string;
+  createdAt: string;
+}
+
+interface GameModeDTO {
+  id: number;
+  name: string;
+  slug: string;
+  url: string;
+  updatedAt: string;
+  createdAt: string;
+}
+
+interface LanguageDTO {
+  id: number;
+  name: string;
+  nativeName: string;
+  locale: string;
+  updatedAt: string;
+  createdAt: string;
+}
+
+interface RegionDTO {
+  id: number;
+  category: string;
+  identifier: string;
+  name: string;
+  updatedAt: string;
+  createdAt: string;
+}
+
+// Interfaces para os dados do frontend
 export interface Genre {
   id: string;
   name: string;
@@ -18,10 +65,31 @@ export interface Theme {
   name: string;
 }
 
+export interface GameMode {
+  id: string;
+  name: string;
+}
+
+export interface Language {
+  id: string;
+  name: string;
+  nativeName: string;
+  locale: string;
+}
+
+export interface Region {
+  id: string;
+  name: string;
+  identifier: string;
+}
+
 // Interface do contexto
 interface CategoryDataContextType {
   genres: Genre[];
   themes: Theme[];
+  gameModes: GameMode[];
+  languages: Language[];
+  regions: Region[];
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -32,121 +100,134 @@ const CategoryDataContext = createContext<CategoryDataContextType | undefined>(
   undefined
 );
 
-// Dados mockados como fallback
-const mockGenres: Genre[] = [
-  { id: "action", name: "Action" },
-  { id: "comedy", name: "Comedy" },
-  { id: "drama", name: "Drama" },
-  { id: "educational", name: "Educational" },
-  { id: "fantasy", name: "Fantasy" },
-  { id: "historical", name: "Historical" },
-  { id: "horror", name: "Horror" },
-  { id: "kids", name: "Kids" },
-  { id: "mystery", name: "Mystery" },
-  { id: "romance", name: "Romance" },
-  { id: "science-fiction", name: "Science fiction" },
-  { id: "thriller", name: "Thriller" },
-  { id: "warfare", name: "TESTE" },
-];
+// Função para converter GenreDTO para Genre
+const convertGenreDTO = (genreDTO: GenreDTO): Genre => ({
+  id: genreDTO.id.toString(),
+  name: genreDTO.name,
+});
 
-const mockThemes: Theme[] = [
-  { id: "fantasia", name: "Fantasia" },
-  { id: "futurista", name: "Futurista" },
-  { id: "historico", name: "Histórico" },
-  { id: "medieval", name: "Medieval" },
-  { id: "espacial", name: "Espacial" },
-];
+// Função para converter ThemeDTO para Theme
+const convertThemeDTO = (themeDTO: ThemeDTO): Theme => ({
+  id: themeDTO.id.toString(),
+  name: themeDTO.name,
+});
 
-// Configuração da API
-const API_CONFIG = {
-  baseUrl: import.meta.env.VITE_API_URL || "http://localhost:3001/api",
-  endpoints: {
-    genres: "/genres",
-    themes: "/themes",
-  },
-};
+// Função para converter GameModeDTO para GameMode
+const convertGameModeDTO = (gameModeDTO: GameModeDTO): GameMode => ({
+  id: gameModeDTO.id.toString(),
+  name: gameModeDTO.name,
+});
 
-// Função para buscar dados da API
-const fetchFromAPI = async <T,>(endpoint: string): Promise<T[]> => {
-  try {
-    const response = await fetch(`${API_CONFIG.baseUrl}${endpoint}`);
+// Função para converter LanguageDTO para Language
+const convertLanguageDTO = (languageDTO: LanguageDTO): Language => ({
+  id: languageDTO.id.toString(),
+  name: languageDTO.name,
+  nativeName: languageDTO.nativeName,
+  locale: languageDTO.locale,
+});
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return Array.isArray(data) ? data : [];
-  } catch (error) {
-    console.warn(`Erro ao buscar dados de ${endpoint}:`, error);
-    throw error;
-  }
-};
+// Função para converter RegionDTO para Region
+const convertRegionDTO = (regionDTO: RegionDTO): Region => ({
+  id: regionDTO.id.toString(),
+  name: regionDTO.name || regionDTO.identifier || `Região ${regionDTO.id}`,
+  identifier: regionDTO.identifier || "",
+});
 
 // Props do provider
 interface CategoryDataProviderProps {
   children: ReactNode;
-  useMockData?: boolean; // Flag para forçar uso de dados mockados
 }
 
 // Provider principal
 export const CategoryDataProvider: React.FC<CategoryDataProviderProps> = ({
   children,
-  useMockData = false,
 }) => {
   const [genres, setGenres] = useState<Genre[]>([]);
   const [themes, setThemes] = useState<Theme[]>([]);
+  const [gameModes, setGameModes] = useState<GameMode[]>([]);
+  const [languages, setLanguages] = useState<Language[]>([]);
+  const [regions, setRegions] = useState<Region[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   const loadData = useCallback(async () => {
+    // Se já carregou, não carregar novamente
+    if (hasLoaded) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      if (useMockData) {
-        // Usar dados mockados
-        setGenres(mockGenres);
-        setThemes(mockThemes);
-      } else {
-        // Tentar buscar da API
-        try {
-          const [genresData, themesData] = await Promise.all([
-            fetchFromAPI<Genre>(API_CONFIG.endpoints.genres),
-            fetchFromAPI<Theme>(API_CONFIG.endpoints.themes),
-          ]);
+      console.log(
+        "Buscando gêneros, temas, modos de jogo, idiomas e regiões do backend..."
+      );
 
-          // Se a API retornou dados válidos, usar eles
-          if (genresData.length > 0) {
-            setGenres(genresData);
-          } else {
-            setGenres(mockGenres);
-          }
+      const [
+        genresResponse,
+        themesResponse,
+        gameModesResponse,
+        languagesResponse,
+        gameLocalizationsResponse,
+      ] = await Promise.all([
+        api.get("/api/genres"),
+        api.get("/api/themes"),
+        api.get("/api/gamemodes"),
+        api.get("/api/languages"),
+        api.get("/api/game-localizations"),
+      ]);
 
-          if (themesData.length > 0) {
-            setThemes(themesData);
-          } else {
-            setThemes(mockThemes);
-          }
-        } catch (apiError) {
-          // Se a API falhar, usar dados mockados como fallback
-          console.warn("API não disponível, usando dados mockados:", apiError);
-          setGenres(mockGenres);
-          setThemes(mockThemes);
+      const genresData: GenreDTO[] = genresResponse.data;
+      const themesData: ThemeDTO[] = themesResponse.data;
+      const gameModesData: GameModeDTO[] = gameModesResponse.data;
+      const languagesData: LanguageDTO[] = languagesResponse.data;
+      const gameLocalizationsData: any[] = gameLocalizationsResponse.data;
+
+      console.log("Gêneros recebidos:", genresData.length);
+      console.log("Temas recebidos:", themesData.length);
+      console.log("Modos de jogo recebidos:", gameModesData.length);
+      console.log("Idiomas recebidos:", languagesData.length);
+      console.log(
+        "Localizações de jogos recebidas:",
+        gameLocalizationsData.length
+      );
+
+      // Extrair regiões únicas das localizações de jogos
+      const regionsMap = new Map<number, RegionDTO>();
+      gameLocalizationsData.forEach((localization: any) => {
+        if (localization.region && !regionsMap.has(localization.region.id)) {
+          regionsMap.set(localization.region.id, localization.region);
         }
-      }
+      });
+      const regionsData = Array.from(regionsMap.values());
+
+      console.log("Regiões únicas extraídas:", regionsData.length);
+
+      // Converter DTOs para interfaces do frontend
+      const convertedGenres = genresData.map(convertGenreDTO);
+      const convertedThemes = themesData.map(convertThemeDTO);
+      const convertedGameModes = gameModesData.map(convertGameModeDTO);
+      const convertedLanguages = languagesData.map(convertLanguageDTO);
+      const convertedRegions = regionsData.map(convertRegionDTO);
+
+      setGenres(convertedGenres);
+      setThemes(convertedThemes);
+      setGameModes(convertedGameModes);
+      setLanguages(convertedLanguages);
+      setRegions(convertedRegions);
+      setHasLoaded(true);
     } catch (error) {
       console.error("Erro ao carregar dados de categorias:", error);
       setError("Erro ao carregar categorias");
-      // Em caso de erro, usar dados mockados como fallback
-      setGenres(mockGenres);
-      setThemes(mockThemes);
     } finally {
       setLoading(false);
     }
-  }, [useMockData]);
+  }, [hasLoaded]);
 
   const refetch = async () => {
+    setHasLoaded(false);
     await loadData();
   };
 
@@ -157,6 +238,9 @@ export const CategoryDataProvider: React.FC<CategoryDataProviderProps> = ({
   const value: CategoryDataContextType = {
     genres,
     themes,
+    gameModes,
+    languages,
+    regions,
     loading,
     error,
     refetch,
@@ -194,10 +278,52 @@ export const useThemes = () => {
   return { themes, loading, error, refetch };
 };
 
-// Hook para ambos
+// Hook específico para modos de jogo
+export const useGameModes = () => {
+  const { gameModes, loading, error, refetch } = useCategoryData();
+  return { gameModes, loading, error, refetch };
+};
+
+// Hook específico para idiomas
+export const useLanguages = () => {
+  const { languages, loading, error, refetch } = useCategoryData();
+  return { languages, loading, error, refetch };
+};
+
+// Hook específico para regiões
+export const useRegions = () => {
+  const { regions, loading, error, refetch } = useCategoryData();
+  return { regions, loading, error, refetch };
+};
+
+// Hook para categorias básicas (gêneros e temas)
 export const useCategories = () => {
   const { genres, themes, loading, error, refetch } = useCategoryData();
   return { genres, themes, loading, error, refetch };
+};
+
+// Hook para todos os dados
+export const useAllCategoryData = () => {
+  const {
+    genres,
+    themes,
+    gameModes,
+    languages,
+    regions,
+    loading,
+    error,
+    refetch,
+  } = useCategoryData();
+  return {
+    genres,
+    themes,
+    gameModes,
+    languages,
+    regions,
+    loading,
+    error,
+    refetch,
+  };
 };
 
 export default CategoryDataProvider;

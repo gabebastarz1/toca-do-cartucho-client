@@ -65,6 +65,30 @@ export interface AdvertisementCreationResponse {
   createdAt: string;
 }
 
+// Tipo para listagem de anúncios (baseado no AdvertisementDTO do backend)
+export interface AdvertisementDTO {
+  Id: number;
+  Title: string;
+  Slug: string;
+  Description?: string;
+  AvailableStock: number;
+  Status: string;
+  Images: AdvertisementImageDTO[];
+  Seller: UserDTO;
+  Game: GameDTO;
+  PreservationState: PreservationStateDTO;
+  CartridgeType: CartridgeTypeDTO;
+  AdvertisementLanguageSupports: AdvertisementLanguageSupportsDTO[];
+  GameLocalization?: GameLocalizationDTO;
+  ParentAdvertisementId?: number;
+  Variations: AdvertisementDTO[];
+  Sale?: AdvertisementSaleDTO;
+  Trade?: AdvertisementTradeDTO;
+  UpdatedByUserId?: string;
+  UpdatedAt?: string;
+  CreatedAt: string;
+}
+
 // Tipos auxiliares
 export interface AdvertisementImageDTO {
   id: number;
