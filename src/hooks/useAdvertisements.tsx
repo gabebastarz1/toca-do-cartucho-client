@@ -68,7 +68,25 @@ export const useAdvertisements = (
         ordering
       );
 
-      console.log("API Response:", response); // Debug log
+      console.log("=== API RESPONSE DEBUG ===");
+      console.log("API Response:", response);
+      console.log("Filters sent to API:", filters);
+      console.log(
+        "Number of advertisements:",
+        response?.advertisements?.length || 0
+      );
+      if (response?.advertisements?.length > 0) {
+        console.log("First advertisement sample:", response.advertisements[0]);
+        console.log(
+          "Advertisement isSale:",
+          response.advertisements[0]?.isSale
+        );
+        console.log(
+          "Advertisement isTrade:",
+          response.advertisements[0]?.isTrade
+        );
+      }
+      console.log("===========================");
 
       // Verificar se a resposta tem a estrutura esperada
       if (response && Array.isArray(response.advertisements)) {
@@ -126,7 +144,7 @@ export const useAdvertisements = (
     if (autoFetch) {
       fetchAdvertisements();
     }
-  }, [fetchAdvertisements, autoFetch]);
+  }, [filters, pagination, ordering, autoFetch]); // Usar dependências diretas ao invés de fetchAdvertisements
 
   return {
     advertisements,
