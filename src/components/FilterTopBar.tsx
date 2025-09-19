@@ -1,23 +1,31 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useCategories } from "./CategoryDataProvider";
 
 interface FilterTopBarProps {
-  onCategoryClick?: (category: string) => void;
-  onFavoritesClick?: () => void;
-  activeCategory?: string;
-  onFilterChange?: (filters: Record<string, string[]>) => void;
   currentFilters?: Record<string, string[]>; // Para manter filtros da sidebar
 }
 
-const FilterTopBar: React.FC<FilterTopBarProps> = ({
-  onCategoryClick,
-  onFavoritesClick,
-  activeCategory = "all",
-  onFilterChange,
-  currentFilters = {},
-}) => {
+const FilterTopBar: React.FC<FilterTopBarProps> = ({ currentFilters = {} }) => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Função para determinar categoria ativa baseada na URL
+  const getActiveCategoryFromURL = () => {
+    const searchParams = new URLSearchParams(location.search);
+    const genre = searchParams.get("genre");
+    const theme = searchParams.get("theme");
+
+    if (genre) return genre;
+    if (theme) return theme;
+    return "all";
+  };
+
+  const [currentActiveCategory, setCurrentActiveCategory] = useState(
+    getActiveCategoryFromURL()
+  );
 
   // Usar dados do CategoryDataProvider
   const { genres, themes, loading, error } = useCategories();
@@ -29,43 +37,70 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
     { id: "sobre", label: "Sobre" },
   ];
 
+  // Ler parâmetros da URL para determinar categoria ativa
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const genre = searchParams.get("genre");
+    const theme = searchParams.get("theme");
+
+    console.log("FilterTopBar - URL params:", location.search);
+    console.log("FilterTopBar - Genre from URL:", genre);
+    console.log("FilterTopBar - Theme from URL:", theme);
+
+    if (genre) {
+      setCurrentActiveCategory(genre);
+    } else if (theme) {
+      setCurrentActiveCategory(theme);
+    } else {
+      setCurrentActiveCategory("all");
+    }
+  }, [location.search]);
+
   const handleCategoryClick = (categoryId: string) => {
-    onCategoryClick?.(categoryId);
     setOpenDropdown(null);
 
-    // Aplicar filtros baseados na categoria selecionada
-    if (onFilterChange) {
-      // Manter filtros da sidebar (exceto genre/theme que são controlados pela topbar)
-      const sidebarFilters = { ...currentFilters };
+    // Construir URL com filtros aplicados
+    const buildProductsUrl = (filters: Record<string, string[]>) => {
+      const params = new URLSearchParams();
 
-      if (categoryId === "all") {
-        // Limpar apenas filtros de categoria da topbar, manter outros
-        delete sidebarFilters.genre;
-        delete sidebarFilters.theme;
-        onFilterChange(sidebarFilters);
-      } else {
-        // Verificar se é um gênero ou tema específico
-        const genre = genres.find((g) => g.id === categoryId);
-        const theme = themes.find((t) => t.id === categoryId);
-
-        if (genre) {
-          // Limpar tema anterior e aplicar novo gênero
-          delete sidebarFilters.theme;
-          sidebarFilters.genre = [categoryId];
-          onFilterChange(sidebarFilters);
-        } else if (theme) {
-          // Limpar gênero anterior e aplicar novo tema
-          delete sidebarFilters.genre;
-          sidebarFilters.theme = [categoryId];
-          onFilterChange(sidebarFilters);
-        } else {
-          // Para outras categorias (quem-somos, contato, ajuda), limpar apenas categoria
-          delete sidebarFilters.genre;
-          delete sidebarFilters.theme;
-          onFilterChange(sidebarFilters);
+      Object.entries(filters).forEach(([key, values]) => {
+        if (values && values.length > 0) {
+          params.append(key, values.join(","));
         }
+      });
+
+      const queryString = params.toString();
+      return queryString ? `/produtos?${queryString}` : "/produtos";
+    };
+
+    // Navegar para produtos com filtros aplicados
+    const updatedFilters = { ...currentFilters };
+
+    if (categoryId === "all") {
+      delete updatedFilters.genre;
+      delete updatedFilters.theme;
+    } else {
+      const genre = genres.find((g) => g.id === categoryId);
+      const theme = themes.find((t) => t.id === categoryId);
+
+      if (genre) {
+        delete updatedFilters.theme;
+        updatedFilters.genre = [categoryId];
+      } else if (theme) {
+        delete updatedFilters.genre;
+        updatedFilters.theme = [categoryId];
+      } else {
+        delete updatedFilters.genre;
+        delete updatedFilters.theme;
       }
     }
+
+    const productsUrl = buildProductsUrl(updatedFilters);
+    navigate(productsUrl);
+  };
+
+  const handleFavoritesClick = () => {
+    navigate("/favoritos");
   };
 
   const handleDropdownToggle = (categoryId: string) => {
@@ -73,7 +108,7 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
   };
 
   return (
-    <div className="bg-[#211C49] border-t border-gray-600 font-vt323 text-xl">
+    <div className="hidden md:block bg-[#211C49] border-t border-gray-600 font-vt323 text-xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-12">
           {/* Menu de navegação */}
@@ -90,7 +125,9 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
                       }
                     }}
                     className={`flex items-center space-x-1 text-white hover:text-purple-200 transition-colors ${
-                      activeCategory === category.id ? "text-purple-200" : ""
+                      currentActiveCategory === category.id
+                        ? "text-purple-200"
+                        : ""
                     }`}
                   >
                     <span>{category.label}</span>
@@ -180,7 +217,7 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
           {/* Botão Favoritos */}
           <div className="flex items-center space-x-4">
             <button
-              onClick={onFavoritesClick}
+              onClick={handleFavoritesClick}
               className="text-white hover:text-purple-200 transition-colors"
             >
               Favoritos

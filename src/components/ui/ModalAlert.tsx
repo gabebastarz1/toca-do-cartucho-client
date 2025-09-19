@@ -57,7 +57,7 @@ const ModalAlert: React.FC<ModalAlertProps> = ({
               <h3 className="text-sm font-medium text-black mb-1">{title}</h3>
               <img
                 src="../../public/checkcircle.svg"
-                alt="Success"
+                alt=""
                 className="w-[18px] h-[18px]"
               />
             </div>

@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import {
   Home,
   Auth,
-  AdvertisementDetail,
+  Advertisement,
   CreateAdvertisement,
   Profile,
   NotFound,
@@ -26,7 +26,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/anuncio/:id" element={<AdvertisementDetail />} />
+              <Route path="/anuncio/:id" element={<Advertisement />} />
               <Route path="/criar-anuncio" element={<CreateAdvertisement />} />
               <Route path="/perfil" element={<Profile />} />
               <Route path="/criar-conta" element={<CadastroParaAnunciar />} />

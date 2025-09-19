@@ -1,6 +1,6 @@
 export { default as Auth } from './Auth';
 export { default as Home } from './Home';
-export { default as AdvertisementDetail } from './AdvertisementDetail';
+export { default as Advertisement } from './Advertisement';
 export { default as CreateAdvertisement } from './CreateAdvertisement';
 export { default as Profile } from './Profile';
 export { default as NotFound } from './NotFound';

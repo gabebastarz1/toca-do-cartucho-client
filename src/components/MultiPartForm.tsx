@@ -21,6 +21,7 @@ const stepsArray = [1, 2, 3, 4, 5];
 const MultiPartForm = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [imageError, setImageError] = useState<string>("");
 
   // Hook para dados de referência
   const handleReferenceDataError = useCallback((error: Error) => {
@@ -65,7 +66,7 @@ const MultiPartForm = () => {
     },
   });
 
-  const [showVariationForm, setShowVariationForm] = useState(false);
+  //const [showVariationForm, setShowVariationForm] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [variations, setVariations] = useState([]);
   const [editingVariationId, setEditingVariationId] = useState(null);
@@ -86,7 +87,30 @@ const MultiPartForm = () => {
       console.error("Erro ao salvar variações no localStorage:", error);
     }
   };
-
+  const resetAndHideVariationForm = () => {
+    setEditingVariationId(null);
+    setVariationData({
+      titulo: "",
+      tipoCartucho: "",
+      estadoPreservacao: "",
+      regiao: "",
+      idiomaAudio: "",
+      idiomaLegenda: "",
+      idiomaInterface: "",
+      preco: "", // Este campo parece não ser usado neste formulário, mas mantendo a estrutura
+      estoque: "",
+      descricao: "",
+      imagens: Array(4).fill(null),
+      // Limpar condições de troca também
+      jogosTroca: "",
+      tiposTroca: "",
+      estadosTroca: "",
+      regioesTroca: "",
+      idiomasAudioTroca: "",
+      idiomasLegendaTroca: "",
+      idiomasInterfaceTroca: "",
+    });
+  };
   const loadVariationsFromStorage = () => {
     try {
       const saved = localStorage.getItem("tcc-variations");
@@ -168,6 +192,19 @@ const MultiPartForm = () => {
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const { name, value } = e.target;
+
+    // Remover zeros à esquerda para campos de estoque
+    if (name === "estoque" && value) {
+      const numericValue = parseInt(value, 10);
+      if (!isNaN(numericValue)) {
+        setVariationData((prev) => ({
+          ...prev,
+          [name]: numericValue.toString(),
+        }));
+        return;
+      }
+    }
+
     setVariationData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -175,6 +212,16 @@ const MultiPartForm = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
+
+    // Remover zeros à esquerda para campos de estoque
+    if (name === "estoque" && value) {
+      const numericValue = parseInt(value, 10);
+      if (!isNaN(numericValue)) {
+        setFormData((prev) => ({ ...prev, [name]: numericValue.toString() }));
+        return;
+      }
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -185,6 +232,19 @@ const MultiPartForm = () => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
       const file = files[0]; // Pega apenas o primeiro arquivo
+
+      // Validação de tamanho (3MB = 3 * 1024 * 1024 bytes)
+      const maxSize = 3 * 1024 * 1024; // 3MB em bytes
+      if (file.size > maxSize) {
+        setImageError(
+          `A imagem ou vídeo "${file.name}" é muito grande. Tamanho máximo permitido: 3MB`
+        );
+        return; // Não adiciona o arquivo se for muito grande
+      }
+
+      // Limpa erros anteriores se o arquivo for válido
+      setImageError("");
+
       setFormData((prev) => {
         const newImagens = [...prev.imagens];
         newImagens[index] = file; // Substitui o arquivo na posição específica
@@ -208,6 +268,19 @@ const MultiPartForm = () => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
       const file = files[0]; // Pega apenas o primeiro arquivo
+
+      // Validação de tamanho (3MB = 3 * 1024 * 1024 bytes)
+      const maxSize = 3 * 1024 * 1024; // 3MB em bytes
+      if (file.size > maxSize) {
+        setImageError(
+          `A imagem "${file.name}" é muito grande. Tamanho máximo permitido: 3MB`
+        );
+        return; // Não adiciona o arquivo se for muito grande
+      }
+
+      // Limpa erros anteriores se o arquivo for válido
+      setImageError("");
+
       setVariationData((prev) => {
         const newImagens = [...prev.imagens];
         newImagens[index] = file; // Substitui o arquivo na posição específica
@@ -298,89 +371,40 @@ const MultiPartForm = () => {
   };
 
   const handleSaveVariation = () => {
-    // Ativar validação apenas do step 5
     setShowValidation((prev) => ({ ...prev, step5: true }));
 
-    if (
+    const isDataValid =
       variationData.tipoCartucho &&
       variationData.estadoPreservacao &&
       variationData.regiao &&
       variationData.idiomaAudio &&
-      variationData.estoque
-    ) {
-      if (editingVariationId) {
+      variationData.estoque;
+
+    if (isDataValid) {
+      if (editingVariationId && editingVariationId !== "new") {
         // Editando variação existente
         setVariations((prev) =>
           prev.map((v) =>
-            v.id === editingVariationId
-              ? {
-                  ...v,
-                  ...variationData,
-                  titulo:
-                    variationData.titulo ||
-                    formData.titulo ||
-                    "Troco Cartucho Super Mario Bros Usado.",
-                  descricao:
-                    variationData.descricao ||
-                    `${getCartridgeTypeName(
-                      variationData.tipoCartucho
-                    )} - ${getPreservationStateName(
-                      variationData.estadoPreservacao
-                    )} - ${getRegionName(
-                      variationData.regiao
-                    )} - ${getLanguageName(variationData.idiomaAudio)}`,
-                }
-              : v
+            v.id === editingVariationId ? { ...v, ...variationData } : v
           )
         );
-        setEditingVariationId(null);
       } else {
         // Criando nova variação
         const newVariation = {
           id: Date.now(),
           ...variationData,
+          // Sua lógica para título e descrição padrão
           titulo:
             variationData.titulo ||
             formData.titulo ||
-            "Troca Cartucho Super Mario Bros Usado.",
+            "Variação de Anúncio",
           descricao:
             variationData.descricao ||
-            `${getCartridgeTypeName(
-              variationData.tipoCartucho
-            )} - ${getPreservationStateName(
-              variationData.estadoPreservacao
-            )} - ${getRegionName(variationData.regiao)} - ${getLanguageName(
-              variationData.idiomaAudio
-            )}`,
+            `Variação de ${getCartridgeTypeName(variationData.tipoCartucho)}`,
         };
-
         setVariations((prev) => [...prev, newVariation]);
       }
-
-      setShowVariationForm(false);
-
-      // Resetar o formulário de variação
-      setVariationData({
-        titulo: "",
-        tipoCartucho: "",
-        estadoPreservacao: "",
-        regiao: "",
-        idiomaAudio: "",
-        idiomaLegenda: "",
-        idiomaInterface: "",
-        preco: "",
-        estoque: "",
-        descricao: "",
-        imagens: Array(4).fill(null),
-        // Condições de troca
-        jogosTroca: "",
-        tiposTroca: "",
-        estadosTroca: "",
-        regioesTroca: "",
-        idiomasAudioTroca: "",
-        idiomasLegendaTroca: "",
-        idiomasInterfaceTroca: "",
-      });
+      resetAndHideVariationForm();
     }
   };
 
@@ -391,7 +415,6 @@ const MultiPartForm = () => {
   const handleEditVariation = (variation) => {
     setVariationData(variation);
     setEditingVariationId(variation.id);
-    setShowVariationForm(true);
   };
 
   const clearVariationsStorage = () => {
@@ -474,7 +497,7 @@ const MultiPartForm = () => {
           <>
             <StepHeader
               title="Informações Básicas"
-              subtitle="Comece preenchendo as informações básicas sobre o anúncio de troca"
+              subtitle="Comece preenchendo as informações básicas sobre o anúncio"
               step={step - 1}
               steps={stepsArray}
               onBack={""}
@@ -483,7 +506,7 @@ const MultiPartForm = () => {
               className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}
             >
               <div>
-                <label className="block mb-1 text-sm font-bold">
+                <label className="block mb-1 text-sm font-semibold">
                   Título do Anúncio
                 </label>
                 <input
@@ -505,7 +528,7 @@ const MultiPartForm = () => {
                 )}
               </div>
               <div>
-                <label className="block mb-1 text-sm font-bold">
+                <label className="block mb-1 text-sm font-semibold">
                   Estoque disponível
                 </label>
                 <input
@@ -527,7 +550,7 @@ const MultiPartForm = () => {
                 )}
               </div>
               <div>
-                <label className="block mb-1 text-sm font-bold">
+                <label className="block mb-1 text-sm font-semibold">
                   Descrição
                 </label>
                 <textarea
@@ -556,19 +579,20 @@ const MultiPartForm = () => {
               className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}
             >
               <div>
-                <label className="block mb-1 text-sm font-bold">Jogo</label>
+                <label className="block mb-1 text-sm font-semibold">Jogo</label>
                 <CustomSelect
                   options={jogos}
                   value={jogos.find((o) => o.value === formData.jogo)}
                   onChange={(opt) => handleSelectChange("jogo", opt.value)}
-                  placeholder="Selecione o jogo do cartucho"
                   required={true}
                   showValidation={showValidation.step2}
                 />
               </div>
               <div>
-                <label className="block mb-1 text-sm font-bold">
-                  Tipo de Cartucho{" "}
+                <div className="flex">
+                  <label className="block mb-1 text-sm font-semibold pr-1">
+                    Tipo de Cartucho{" "}
+                  </label>
                   <InfoTooltip
                     message={
                       <>
@@ -578,7 +602,7 @@ const MultiPartForm = () => {
                       </>
                     }
                   />
-                </label>
+                </div>
                 <CustomSelect
                   options={tiposCartucho}
                   value={tiposCartucho.find(
@@ -587,13 +611,12 @@ const MultiPartForm = () => {
                   onChange={(opt) =>
                     handleSelectChange("tipoCartucho", opt.value)
                   }
-                  placeholder="Selecione o tipo de cartucho"
                   required={true}
                   showValidation={showValidation.step2}
                 />
               </div>
               <div>
-                <label className="block mb-1 text-sm font-bold">
+                <label className="block mb-1 text-sm font-semibold">
                   Estado de Preservação
                 </label>
                 <CustomSelect
@@ -604,27 +627,25 @@ const MultiPartForm = () => {
                   onChange={(opt) =>
                     handleSelectChange("estadoPreservacao", opt.value)
                   }
-                  placeholder="Selecione o estado de preservação"
                   required={true}
                   showValidation={showValidation.step2}
                 />
               </div>
               <div>
-                <label className="block mb-1 text-sm font-bold">
+                <label className="block mb-1 text-sm font-semibold">
                   Região do Cartucho
                 </label>
                 <CustomSelect
                   options={regioes}
                   value={regioes.find((o) => o.value === formData.regiao)}
                   onChange={(opt) => handleSelectChange("regiao", opt.value)}
-                  placeholder="Selecione a região do cartucho"
                   required={true}
                   showValidation={showValidation.step2}
                 />
               </div>
               <div>
-                <label className="block mb-1 text-sm font-bold">
-                  Idiomas do Áudio
+                <label className="block mb-1 text-sm font-semibold">
+                  Idioma do Áudio
                 </label>
                 <CustomSelect
                   options={idiomas}
@@ -632,14 +653,13 @@ const MultiPartForm = () => {
                   onChange={(opt) =>
                     handleSelectChange("idiomaAudio", opt.value)
                   }
-                  placeholder="Selecione o idioma do áudio"
                   required={true}
                   showValidation={showValidation.step2}
                 />
               </div>
               <div>
-                <label className="block mb-1 text-sm font-bold">
-                  Idiomas da Legenda
+                <label className="block mb-1 text-sm font-semibold">
+                  Idioma da Legenda
                 </label>
                 <CustomSelect
                   options={idiomas}
@@ -649,12 +669,11 @@ const MultiPartForm = () => {
                   onChange={(opt) =>
                     handleSelectChange("idiomaLegenda", opt.value)
                   }
-                  placeholder="Selecione o idioma da legenda"
                 />
               </div>
               <div>
-                <label className="block mb-1 text-sm font-bold">
-                  Idiomas da Interface
+                <label className="block mb-1 text-sm font-semibold">
+                  Idioma da Interface
                 </label>
                 <CustomSelect
                   options={idiomas}
@@ -664,7 +683,6 @@ const MultiPartForm = () => {
                   onChange={(opt) =>
                     handleSelectChange("idiomaInterface", opt.value)
                   }
-                  placeholder="Selecione o idioma da interface"
                 />
               </div>
               <p className="text-sm">
@@ -693,18 +711,17 @@ const MultiPartForm = () => {
               className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-4`}
             >
               <div>
-                <label className="block mb-1 text-sm font-bold">Jogo</label>
+                <label className="block mb-1 text-sm font-semibold">Jogo</label>
                 <CustomSelect
                   options={jogos}
                   value={jogos.find((o) => o.value === formData.jogosTroca)}
                   onChange={(opt) =>
                     handleSelectChange("jogosTroca", opt.value)
                   }
-                  placeholder="Selecione o jogo desejado para troca"
                 />
               </div>
               <div>
-                <label className="block mb-1 text-sm font-bold">
+                <label className="block mb-1 text-sm font-semibold">
                   Tipo de Cartucho{" "}
                   <InfoTooltip
                     message={
@@ -724,11 +741,10 @@ const MultiPartForm = () => {
                   onChange={(opt) =>
                     handleSelectChange("tiposTroca", opt.value)
                   }
-                  placeholder="Selecione o tipo de cartucho aceito"
                 />
               </div>
               <div>
-                <label className="block mb-1 text-sm font-bold">
+                <label className="block mb-1 text-sm font-semibold">
                   Estado de Preservação
                 </label>
                 <CustomSelect
@@ -737,11 +753,10 @@ const MultiPartForm = () => {
                   onChange={(opt) =>
                     handleSelectChange("estadosTroca", opt.value)
                   }
-                  placeholder="Selecione o estado mínimo aceito"
                 />
               </div>
               <div>
-                <label className="block mb-1 text-sm font-bold">
+                <label className="block mb-1 text-sm font-semibold">
                   Região do Cartucho
                 </label>
                 <CustomSelect
@@ -750,12 +765,11 @@ const MultiPartForm = () => {
                   onChange={(opt) =>
                     handleSelectChange("regioesTroca", opt.value)
                   }
-                  placeholder="Selecione a região aceita para troca"
                 />
               </div>
               <div>
-                <label className="block mb-1 text-sm font-bold">
-                  Idiomas do Áudio
+                <label className="block mb-1 text-sm font-semibold">
+                  Idioma do Áudio
                 </label>
                 <CustomSelect
                   options={idiomas}
@@ -765,12 +779,11 @@ const MultiPartForm = () => {
                   onChange={(opt) =>
                     handleSelectChange("idiomasAudioTroca", opt.value)
                   }
-                  placeholder="Selecione o idioma de áudio aceito"
                 />
               </div>
               <div>
-                <label className="block mb-1 text-sm font-bold">
-                  Idiomas da Legenda
+                <label className="block mb-1 text-sm font-semibold">
+                  Idioma da Legenda
                 </label>
                 <CustomSelect
                   options={idiomas}
@@ -780,12 +793,11 @@ const MultiPartForm = () => {
                   onChange={(opt) =>
                     handleSelectChange("idiomasLegendaTroca", opt.value)
                   }
-                  placeholder="Selecione o idioma de legenda aceito"
                 />
               </div>
               <div>
-                <label className="block mb-1 text-sm font-bold">
-                  Idiomas da Interface
+                <label className="block mb-1 text-sm font-semibold">
+                  Idioma da Interface
                 </label>
                 <CustomSelect
                   options={idiomas}
@@ -795,7 +807,6 @@ const MultiPartForm = () => {
                   onChange={(opt) =>
                     handleSelectChange("idiomasInterfaceTroca", opt.value)
                   }
-                  placeholder="Selecione o idioma de interface aceito"
                 />
               </div>
             </div>
@@ -838,7 +849,7 @@ const MultiPartForm = () => {
                             />
                             <button
                               onClick={() => removeImage(i)}
-                              className="absolute top-2 right-2 w-6 h-6 text-[#483D9E] flex items-center justify-center text-2xl hover:text-[#211C49] transition-colors font-bold"
+                              className="absolute top-2 right-2 w-6 h-6 text-[#483D9E] flex items-center justify-center text-2xl hover:text-[#211C49] transition-colors font-semibold"
                               title="Remover imagem"
                             >
                               ✕
@@ -866,6 +877,13 @@ const MultiPartForm = () => {
                   })}
                 </div>
 
+                {/* Mensagem de erro de tamanho de imagem */}
+                {imageError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-600">{imageError}</p>
+                  </div>
+                )}
+
                 {/* Aviso */}
                 {formData.tipoCartucho === "Retro" && (
                   <p className="text-sm">
@@ -884,6 +902,7 @@ const MultiPartForm = () => {
           </>
         )}
         {/* STEP 5 */}
+        {/* STEP 5 - VARIAÇÕES */}
         {step === 5 && (
           <>
             <StepHeader
@@ -893,8 +912,10 @@ const MultiPartForm = () => {
               steps={stepsArray}
               onBack={prevStep}
             />
-            <div className={`${isMobile ? "p-4" : "p-6"} space-y-6`}>
-              {/* Lista de variações existentes - sempre visível */}
+            <div
+              className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-6`}
+            >
+              {/* Lista de variações existentes */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3
@@ -902,7 +923,7 @@ const MultiPartForm = () => {
                       isMobile ? "hidden" : ""
                     } text-lg font-semibold text-gray-800`}
                   >
-                    Variações do Anúncio de Troca
+                    Variações do Anúncio
                   </h3>
                   {variations.length > 0 && (
                     <button
@@ -914,125 +935,713 @@ const MultiPartForm = () => {
                   )}
                 </div>
 
-                {variations.length === 0 ? (
-                  <div className="text-center text-gray-500"></div>
-                ) : (
-                  variations.map((variation, index) => (
-                    <div
-                      key={variation.id}
-                      className="border border-gray-200 rounded-lg overflow-hidden"
-                    >
-                      {/* Cabeçalho roxo claro */}
-                      <div className="bg-[#EDECF7] px-4 py-3 flex items-center justify-between">
-                        <span className="font-medium text-gray-800">
-                          Variação de Troca {index + 1}
-                        </span>
-                        <ChevronDown className="w-5 h-5 text-gray-600" />
-                      </div>
+                {variations.map((variation, index) => {
+                  // Se o ID desta variação é o que está sendo editado, mostre o formulário
+                  if (editingVariationId === variation.id) {
+                    return (
+                      // =================== FORMULÁRIO DE EDIÇÃO ===================
+                      <div
+                        key={`editing-${variation.id}`}
+                        className={`bg-[#EDECF7] border border-gray-300 rounded-lg ${
+                          isMobile ? "p-4" : "p-6"
+                        } space-y-4 animate-fadeIn`}
+                      >
+                        <div className="flex items-center justify-between border-b pb-3">
+                          <h3 className="text-lg font-semibold text-gray-800">
+                            Editando Variação
+                          </h3>
+                          <button
+                            onClick={resetAndHideVariationForm}
+                            title="Fechar edição"
+                          >
+                            <ChevronDown className="w-8 h-8 text-gray-600" />
+                          </button>
+                        </div>
 
-                      {/* Conteúdo da variação */}
-                      <div className="bg-white p-4 border-x-8 border-[#EDECF7] border-b-8">
-                        <div className="flex items-start space-x-4">
-                          {/* Imagem da variação ou placeholder */}
-                          <div className="w-16 h-16 rounded flex-shrink-0 overflow-hidden">
-                            {variation.imagens && variation.imagens[0] ? (
-                              <img
-                                src={URL.createObjectURL(variation.imagens[0])}
-                                alt={`Imagem da variação ${index + 1}`}
-                                className="w-full h-full object-cover"
+                        <div className="space-y-3 bg-white p-4 rounded-lg">
+                          <h4 className="text-sm font-semibold text-gray-800 mb-3 text-center">
+                            Detalhes da variação
+                          </h4>
+                          {/* CAMPOS DO FORMULÁRIO */}
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
+                          >
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Título:
+                            </label>
+                            <input
+                              type="text"
+                              name="titulo"
+                              value={variationData.titulo}
+                              onChange={handleVariationInputChange}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                              placeholder="Ex: Cartucho Super Mario Bros - Repro"
+                            />
+                          </div>
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
+                          >
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Tipo do Cartucho:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
+                                options={tiposCartucho}
+                                value={tiposCartucho.find(
+                                  (o) => o.value === variationData.tipoCartucho
+                                )}
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "tipoCartucho",
+                                    opt.value
+                                  )
+                                }
+                                required={true}
+                                showValidation={showValidation.step5}
                               />
-                            ) : (
-                              <div className="w-full h-full bg-gray-200 rounded"></div>
-                            )}
+                            </div>
+                          </div>
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
+                          >
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Estado:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
+                                options={estados}
+                                value={estados.find(
+                                  (o) =>
+                                    o.value === variationData.estadoPreservacao
+                                )}
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "estadoPreservacao",
+                                    opt.value
+                                  )
+                                }
+                                required={true}
+                                showValidation={showValidation.step5}
+                              />
+                            </div>
+                          </div>
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
+                          >
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Região:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
+                                options={regioes}
+                                value={regioes.find(
+                                  (o) => o.value === variationData.regiao
+                                )}
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "regiao",
+                                    opt.value
+                                  )
+                                }
+                                required={true}
+                                showValidation={showValidation.step5}
+                              />
+                            </div>
+                          </div>
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
+                          >
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Idioma do Audio:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
+                                options={idiomas}
+                                value={idiomas.find(
+                                  (o) => o.value === variationData.idiomaAudio
+                                )}
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "idiomaAudio",
+                                    opt.value
+                                  )
+                                }
+                                required={true}
+                                showValidation={showValidation.step5}
+                              />
+                            </div>
+                          </div>
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
+                          >
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Idioma da Legenda:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
+                                options={idiomas}
+                                value={idiomas.find(
+                                  (o) => o.value === variationData.idiomaLegenda
+                                )}
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "idiomaLegenda",
+                                    opt.value
+                                  )
+                                }
+                              />
+                            </div>
+                          </div>
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
+                          >
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Idioma da Interface:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
+                                options={idiomas}
+                                value={idiomas.find(
+                                  (o) =>
+                                    o.value === variationData.idiomaInterface
+                                )}
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "idiomaInterface",
+                                    opt.value
+                                  )
+                                }
+                              />
+                            </div>
+                          </div>
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
+                          >
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Estoque:
+                            </label>
+                            <input
+                              type="number"
+                              name="estoque"
+                              value={variationData.estoque}
+                              placeholder="1"
+                              onChange={handleVariationInputChange}
+                              className={`flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none ${
+                                showValidation.step5 && !variationData.estoque
+                                  ? "border-red-500"
+                                  : "border-gray-300"
+                              }`}
+                              min="1"
+                            />
+                          </div>
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
+                          >
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Descrição:
+                            </label>
+                            <input
+                              type="text"
+                              name="descricao"
+                              value={variationData.descricao}
+                              placeholder="Descrição"
+                              onChange={handleVariationInputChange}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                            />
+                          </div>
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-start"
+                            }`}
+                          >
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2 pt-2`}
+                            >
+                              Imagens:
+                            </label>
+                            <div className="flex-1">
+                              <div className="grid grid-cols-4 gap-2">
+                                {[...Array(4)].map((_, i) => (
+                                  <div key={i} className="relative">
+                                    {variationData.imagens[i] ? (
+                                      <div className="aspect-square border-2 border-solid border-purple-400 rounded overflow-hidden bg-gray-100">
+                                        <img
+                                          src={URL.createObjectURL(
+                                            variationData.imagens[i]
+                                          )}
+                                          alt={`Imagem ${i + 1}`}
+                                          className="w-full h-full object-cover"
+                                        />
+                                        <button
+                                          onClick={() =>
+                                            removeVariationImage(i)
+                                          }
+                                          className="absolute top-1 right-1 w-5 h-5 text-[#483D9E] flex items-center justify-center text-lg hover:text-[#211C49] transition-colors"
+                                          title="Remover imagem"
+                                        >
+                                          ✕
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <label className="aspect-square bg-gray-200 rounded border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-300">
+                                        <Camera className="w-6 h-6 text-gray-400" />
+                                        <input
+                                          type="file"
+                                          accept="image/*,video/*"
+                                          className="hidden"
+                                          onChange={(e) =>
+                                            handleVariationFileChange(e, i)
+                                          }
+                                        />
+                                      </label>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           </div>
 
-                          {/* Informações do produto */}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-gray-800 leading-relaxed">
-                              {variation.titulo} - {variation.descricao}
-                            </p>
-                          </div>
-
-                          {/* Ícones de ação */}
-                          <div className="flex items-center space-x-2 flex-shrink-0">
-                            <button
-                              onClick={() => handleEditVariation(variation)}
-                              className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleDeleteVariation(variation.id)
-                              }
-                              className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                          <div className="border-t pt-4 mt-4">
+                            <h4 className="text-sm font-semibold text-gray-800 mb-3 text-center">
+                              Condições de Troca
+                            </h4>
+                            <div className="space-y-3">
+                              <div
+                                className={`flex ${
+                                  isMobile ? "flex-col gap-2" : "items-center"
+                                }`}
+                              >
+                                <label
+                                  className={`font-medium text-gray-700 flex-shrink-0 ${
+                                    isMobile
+                                      ? "text-start text-md"
+                                      : "text-end text-sm w-40"
+                                  } pr-2`}
+                                >
+                                  Jogos:
+                                </label>
+                                <div className="flex-1">
+                                  <CustomSelect
+                                    options={jogos}
+                                    value={jogos.find(
+                                      (o) =>
+                                        o.value === variationData.jogosTroca
+                                    )}
+                                    onChange={(opt) =>
+                                      handleVariationSelectChange(
+                                        "jogosTroca",
+                                        opt.value
+                                      )
+                                    }
+                                    required={true}
+                                    showValidation={showValidation.step5}
+                                  />
+                                </div>
+                              </div>
+                              <div
+                                className={`flex ${
+                                  isMobile ? "flex-col gap-2" : "items-center"
+                                }`}
+                              >
+                                <label
+                                  className={`font-medium text-gray-700 flex-shrink-0 ${
+                                    isMobile
+                                      ? "text-start text-md"
+                                      : "text-end text-sm w-40"
+                                  } pr-2`}
+                                >
+                                  Tipo de Cartucho:
+                                </label>
+                                <div className="flex-1">
+                                  <CustomSelect
+                                    options={tiposCartucho}
+                                    value={tiposCartucho.find(
+                                      (o) =>
+                                        o.value === variationData.tiposTroca
+                                    )}
+                                    onChange={(opt) =>
+                                      handleVariationSelectChange(
+                                        "tiposTroca",
+                                        opt.value
+                                      )
+                                    }
+                                    required={true}
+                                    showValidation={showValidation.step5}
+                                  />
+                                </div>
+                              </div>
+                              <div
+                                className={`flex ${
+                                  isMobile ? "flex-col gap-2" : "items-center"
+                                }`}
+                              >
+                                <label
+                                  className={`font-medium text-gray-700 flex-shrink-0 ${
+                                    isMobile
+                                      ? "text-start text-md"
+                                      : "text-end text-sm w-40"
+                                  } pr-2`}
+                                >
+                                  Estado de Preservação:
+                                </label>
+                                <div className="flex-1">
+                                  <CustomSelect
+                                    options={estados}
+                                    value={estados.find(
+                                      (o) =>
+                                        o.value === variationData.estadosTroca
+                                    )}
+                                    onChange={(opt) =>
+                                      handleVariationSelectChange(
+                                        "estadosTroca",
+                                        opt.value
+                                      )
+                                    }
+                                    required={true}
+                                    showValidation={showValidation.step5}
+                                  />
+                                </div>
+                              </div>
+                              <div
+                                className={`flex ${
+                                  isMobile ? "flex-col gap-2" : "items-center"
+                                }`}
+                              >
+                                <label
+                                  className={`font-medium text-gray-700 flex-shrink-0 ${
+                                    isMobile
+                                      ? "text-start text-md"
+                                      : "text-end text-sm w-40"
+                                  } pr-2`}
+                                >
+                                  Região do Cartucho:
+                                </label>
+                                <div className="flex-1">
+                                  <CustomSelect
+                                    options={regioesTroca}
+                                    value={regioesTroca.find(
+                                      (o) =>
+                                        o.value === variationData.regioesTroca
+                                    )}
+                                    onChange={(opt) =>
+                                      handleVariationSelectChange(
+                                        "regioesTroca",
+                                        opt.value
+                                      )
+                                    }
+                                    required={true}
+                                    showValidation={showValidation.step5}
+                                  />
+                                </div>
+                              </div>
+                              <div
+                                className={`flex ${
+                                  isMobile ? "flex-col gap-2" : "items-center"
+                                }`}
+                              >
+                                <label
+                                  className={`font-medium text-gray-700 flex-shrink-0 ${
+                                    isMobile
+                                      ? "text-start text-md"
+                                      : "text-end text-sm w-40"
+                                  } pr-2`}
+                                >
+                                  Idioma de Áudio:
+                                </label>
+                                <div className="flex-1">
+                                  <CustomSelect
+                                    options={idiomas}
+                                    value={idiomas.find(
+                                      (o) =>
+                                        o.value ===
+                                        variationData.idiomasAudioTroca
+                                    )}
+                                    onChange={(opt) =>
+                                      handleVariationSelectChange(
+                                        "idiomasAudioTroca",
+                                        opt.value
+                                      )
+                                    }
+                                    required={true}
+                                    showValidation={showValidation.step5}
+                                  />
+                                </div>
+                              </div>
+                              <div
+                                className={`flex ${
+                                  isMobile ? "flex-col gap-2" : "items-center"
+                                }`}
+                              >
+                                <label
+                                  className={`font-medium text-gray-700 flex-shrink-0 ${
+                                    isMobile
+                                      ? "text-start text-md"
+                                      : "text-end text-sm w-40"
+                                  } pr-2`}
+                                >
+                                  Idioma de Legenda:
+                                </label>
+                                <div className="flex-1">
+                                  <CustomSelect
+                                    options={idiomas}
+                                    value={idiomas.find(
+                                      (o) =>
+                                        o.value ===
+                                        variationData.idiomasLegendaTroca
+                                    )}
+                                    onChange={(opt) =>
+                                      handleVariationSelectChange(
+                                        "idiomasLegendaTroca",
+                                        opt.value
+                                      )
+                                    }
+                                    required={true}
+                                    showValidation={showValidation.step5}
+                                  />
+                                </div>
+                              </div>
+                              <div
+                                className={`flex ${
+                                  isMobile ? "flex-col gap-2" : "items-center"
+                                }`}
+                              >
+                                <label
+                                  className={`font-medium text-gray-700 flex-shrink-0 ${
+                                    isMobile
+                                      ? "text-start text-md"
+                                      : "text-end text-sm w-40"
+                                  } pr-2`}
+                                >
+                                  Idioma de Interface:
+                                </label>
+                                <div className="flex-1">
+                                  <CustomSelect
+                                    options={idiomas}
+                                    value={idiomas.find(
+                                      (o) =>
+                                        o.value ===
+                                        variationData.idiomasInterfaceTroca
+                                    )}
+                                    onChange={(opt) =>
+                                      handleVariationSelectChange(
+                                        "idiomasInterfaceTroca",
+                                        opt.value
+                                      )
+                                    }
+                                    required={true}
+                                    showValidation={showValidation.step5}
+                                  />
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
+
+                        <div className="flex justify-end gap-2 pt-4 border-t">
+                          <button
+                            onClick={resetAndHideVariationForm}
+                            className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                          <ConfirmButton onClick={handleSaveVariation}>
+                            Salvar Alterações
+                          </ConfirmButton>
+                        </div>
                       </div>
+                    );
+                  }
+
+                  // =================== MODO DE VISUALIZAÇÃO NORMAL ===================
+                  return (
+                    <div
+                      key={variation.id}
+                      className="border border-gray-200 rounded-lg overflow-hidden animate-fadeIn"
+                    >
+                      <div
+                        className="bg-[#EDECF7] px-4 py-3 cursor-pointer transition-colors"
+                        onClick={() => toggleVariation(variation.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
+                              {variation.imagens && variation.imagens[0] ? (
+                                <img
+                                  src={URL.createObjectURL(
+                                    variation.imagens[0]
+                                  )}
+                                  alt="Imagem da variação"
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gray-300"></div>
+                              )}
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-800">
+                                Variação {index + 1}
+                              </span>
+                              <p className="text-sm text-gray-600 truncate max-w-xs md:max-w-md">
+                                {getCartridgeTypeName(variation.tipoCartucho)} -{" "}
+                                {getPreservationStateName(
+                                  variation.estadoPreservacao
+                                )}{" "}
+                                - {getRegionName(variation.regiao)}
+                              </p>
+                            </div>
+                          </div>
+                          <ChevronDown
+                            className={`w-5 h-5 text-gray-600 transition-transform duration-300 ${
+                              expandedVariations[variation.id]
+                                ? "rotate-180"
+                                : ""
+                            }`}
+                          />
+                        </div>
+                      </div>
+                      {expandedVariations[variation.id] && (
+                        <div className="bg-white p-4 border-x-8 border-[#EDECF7] border-b-8">
+                          <div className="flex items-start space-x-4">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-800 leading-relaxed">
+                                <strong>Título:</strong> {variation.titulo}
+                              </p>
+                              <p className="text-sm text-gray-600 mt-1">
+                                <strong>Descrição:</strong>{" "}
+                                {variation.descricao || "Nenhuma descrição."}
+                              </p>
+                              <p className="text-sm text-gray-600 mt-1">
+                                <strong>Estoque:</strong> {variation.estoque}
+                              </p>
+                            </div>
+                            <div className="flex items-center space-x-2 flex-shrink-0">
+                              <button
+                                onClick={() => handleEditVariation(variation)}
+                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full"
+                                title="Editar"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleDeleteVariation(variation.id)
+                                }
+                                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-full"
+                                title="Excluir"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ))
-                )}
+                  );
+                })}
               </div>
 
-              {/* Botão para adicionar nova variação ou formulário */}
-              {!showVariationForm ? (
-                <button
-                  onClick={() => setShowVariationForm(true)}
-                  className={`w-full border-2 border-dashed border-purple-400 ${
+              {/* Botão para ADICIONAR ou o Formulário de NOVA variação */}
+              {editingVariationId === "new" ? (
+                // =================== FORMULÁRIO DE NOVA VARIAÇÃO ===================
+                <div
+                  className={`bg-[#EDECF7] border border-gray-300 rounded-lg ${
                     isMobile ? "p-4" : "p-6"
-                  } rounded-lg text-purple-600 hover:bg-purple-50 hover:border-purple-600 transition-colors`}
+                  } space-y-4 animate-fadeIn`}
                 >
-                  + Adicionar nova variação de troca
-                </button>
-              ) : (
-                <div className="bg-[#EDECF7] border border-gray-300 rounded-lg p-4 space-y-4">
                   <div className="flex items-center justify-between border-b pb-3">
                     <h3 className="text-lg font-semibold text-gray-800">
-                      {editingVariationId
-                        ? "Editar Variação"
-                        : `Variação de Troca ${variations.length + 1}`}
+                      Nova Variação ({variations.length + 1})
                     </h3>
-
                     <button
-                      onClick={() => {
-                        setShowVariationForm(false);
-                        setEditingVariationId(null);
-                        setVariationData({
-                          titulo: "",
-                          tipoCartucho: "",
-                          estadoPreservacao: "",
-                          regiao: "",
-                          idiomaAudio: "",
-                          idiomaLegenda: "",
-                          idiomaInterface: "",
-                          preco: "",
-                          estoque: "",
-                          descricao: "",
-                          imagens: Array(4).fill(null),
-                          // Condições de troca
-                          jogosTroca: "",
-                          tiposTroca: "",
-                          estadosTroca: "",
-                          regioesTroca: "",
-                          idiomasAudioTroca: "",
-                          idiomasLegendaTroca: "",
-                          idiomasInterfaceTroca: "",
-                        });
-                      }}
+                      onClick={resetAndHideVariationForm}
+                      title="Cancelar"
                     >
                       <ChevronDown className="w-8 h-8 text-gray-600" />
                     </button>
                   </div>
-
-                  <div className="space-y-3 bg-white p-4 rounded rounded-lg">
+                  <div className="space-y-3 bg-white p-4 rounded-lg">
                     <h4 className="text-sm font-semibold text-gray-800 mb-3 text-center">
-                      Detalhes do anúncio de troca
+                      Detalhes da variação
                     </h4>
+                    {/* COLE O CONTEÚDO DO FORMULÁRIO AQUI */}
                     <div
-                      className={`flex  ${
+                      className={`flex ${
                         isMobile ? "flex-col gap-2" : "items-center"
                       }`}
                     >
@@ -1043,20 +1652,19 @@ const MultiPartForm = () => {
                             : "text-end text-sm w-40"
                         } pr-2`}
                       >
-                        Título do Anúncio de Troca:
+                        Título:
                       </label>
                       <input
                         type="text"
                         name="titulo"
                         value={variationData.titulo}
                         onChange={handleVariationInputChange}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        placeholder="Ex: Troco Cartucho Super Mario Bros Usado - Repro"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                        placeholder="Ex: Cartucho Super Mario Bros - Repro"
                       />
                     </div>
-
                     <div
-                      className={`flex  ${
+                      className={`flex ${
                         isMobile ? "flex-col gap-2" : "items-center"
                       }`}
                     >
@@ -1081,15 +1689,13 @@ const MultiPartForm = () => {
                               opt.value
                             )
                           }
-                          placeholder="Retrô"
                           required={true}
                           showValidation={showValidation.step5}
                         />
                       </div>
                     </div>
-
                     <div
-                      className={`flex  ${
+                      className={`flex ${
                         isMobile ? "flex-col gap-2" : "items-center"
                       }`}
                     >
@@ -1098,9 +1704,9 @@ const MultiPartForm = () => {
                           isMobile
                             ? "text-start text-md"
                             : "text-end text-sm w-40"
-                        } `}
+                        } pr-2`}
                       >
-                        Estado de Preservação:
+                        Estado:
                       </label>
                       <div className="flex-1">
                         <CustomSelect
@@ -1114,15 +1720,13 @@ const MultiPartForm = () => {
                               opt.value
                             )
                           }
-                          placeholder="Seminovo"
                           required={true}
                           showValidation={showValidation.step5}
                         />
                       </div>
                     </div>
-
                     <div
-                      className={`flex  ${
+                      className={`flex ${
                         isMobile ? "flex-col gap-2" : "items-center"
                       }`}
                     >
@@ -1133,7 +1737,7 @@ const MultiPartForm = () => {
                             : "text-end text-sm w-40"
                         } pr-2`}
                       >
-                        Região do Cartucho:
+                        Região:
                       </label>
                       <div className="flex-1">
                         <CustomSelect
@@ -1144,15 +1748,13 @@ const MultiPartForm = () => {
                           onChange={(opt) =>
                             handleVariationSelectChange("regiao", opt.value)
                           }
-                          placeholder="EUA"
                           required={true}
                           showValidation={showValidation.step5}
                         />
                       </div>
                     </div>
-
                     <div
-                      className={`flex  ${
+                      className={`flex ${
                         isMobile ? "flex-col gap-2" : "items-center"
                       }`}
                     >
@@ -1163,7 +1765,7 @@ const MultiPartForm = () => {
                             : "text-end text-sm w-40"
                         } pr-2`}
                       >
-                        Idioma da Audio:
+                        Idioma do Audio:
                       </label>
                       <div className="flex-1">
                         <CustomSelect
@@ -1177,14 +1779,13 @@ const MultiPartForm = () => {
                               opt.value
                             )
                           }
-                          placeholder="Inglês"
                           required={true}
                           showValidation={showValidation.step5}
                         />
                       </div>
                     </div>
                     <div
-                      className={`flex  ${
+                      className={`flex ${
                         isMobile ? "flex-col gap-2" : "items-center"
                       }`}
                     >
@@ -1209,12 +1810,11 @@ const MultiPartForm = () => {
                               opt.value
                             )
                           }
-                          placeholder="Inglês"
                         />
                       </div>
                     </div>
                     <div
-                      className={`flex  ${
+                      className={`flex ${
                         isMobile ? "flex-col gap-2" : "items-center"
                       }`}
                     >
@@ -1239,13 +1839,11 @@ const MultiPartForm = () => {
                               opt.value
                             )
                           }
-                          placeholder="Inglês"
                         />
                       </div>
                     </div>
-
                     <div
-                      className={`flex  ${
+                      className={`flex ${
                         isMobile ? "flex-col gap-2" : "items-center"
                       }`}
                     >
@@ -1256,29 +1854,24 @@ const MultiPartForm = () => {
                             : "text-end text-sm w-40"
                         } pr-2`}
                       >
-                        Estoque Disponível:
+                        Estoque:
                       </label>
                       <input
                         type="number"
                         name="estoque"
                         value={variationData.estoque}
-                        placeholder="01"
+                        placeholder="1"
                         onChange={handleVariationInputChange}
-                        className={`flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                          showValidation && !variationData.estoque
+                        className={`flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none ${
+                          showValidation.step5 && !variationData.estoque
                             ? "border-red-500"
                             : "border-gray-300"
                         }`}
                         min="1"
                       />
-                      {showValidation && !variationData.estoque && (
-                        <p className="text-red-500 text-xs mt-1">
-                          *Campo obrigatório
-                        </p>
-                      )}
                     </div>
                     <div
-                      className={`flex  ${
+                      className={`flex ${
                         isMobile ? "flex-col gap-2" : "items-center"
                       }`}
                     >
@@ -1297,328 +1890,342 @@ const MultiPartForm = () => {
                         value={variationData.descricao}
                         placeholder="Descrição"
                         onChange={handleVariationInputChange}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
                       />
                     </div>
-
                     <div
-                      className={`flex  ${
-                        isMobile ? "flex-col gap-2" : "items-center"
+                      className={`flex ${
+                        isMobile ? "flex-col gap-2" : "items-start"
                       }`}
                     >
-                      <label className="w-40 text-sm font-medium text-gray-700 flex-shrink-0 text-end pr-2 pt-2">
-                        Imagens e Vídeos:
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2 pt-2`}
+                      >
+                        Imagens:
                       </label>
                       <div className="flex-1">
                         <div className="grid grid-cols-4 gap-2">
-                          {[...Array(4)].map((_, i) => {
-                            const hasImage = variationData.imagens[i];
-                            return (
-                              <div key={i} className="relative">
-                                {hasImage ? (
-                                  // Botão com imagem (não clicável)
-                                  <div className="aspect-square border-2 border-solid border-purple-400 rounded overflow-hidden bg-gray-100">
-                                    <img
-                                      src={URL.createObjectURL(hasImage)}
-                                      alt={`Imagem da variação ${i + 1}`}
-                                      className="w-full h-full object-cover"
-                                    />
-                                    <button
-                                      onClick={() => removeVariationImage(i)}
-                                      className="absolute top-1 right-1 w-5 h-5 text-[#483D9E] flex items-center justify-center text-lg hover:text-[#211C49] transition-colors font-bold shadow-sm"
-                                      title="Remover imagem"
-                                    >
-                                      ✕
-                                    </button>
-                                  </div>
-                                ) : (
-                                  // Botão vazio (clicável)
-                                  <label className="aspect-square bg-gray-200 rounded border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors">
-                                    <Camera className="w-6 h-6 text-gray-400" />
-                                    <input
-                                      type="file"
-                                      accept="image/*,video/*"
-                                      className="hidden"
-                                      onChange={(e) =>
-                                        handleVariationFileChange(e, i)
-                                      }
-                                    />
-                                  </label>
-                                )}
-                              </div>
-                            );
-                          })}
+                          {[...Array(4)].map((_, i) => (
+                            <div key={i} className="relative">
+                              {variationData.imagens[i] ? (
+                                <div className="aspect-square border-2 border-solid border-purple-400 rounded overflow-hidden bg-gray-100">
+                                  <img
+                                    src={URL.createObjectURL(
+                                      variationData.imagens[i]
+                                    )}
+                                    alt={`Imagem ${i + 1}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <button
+                                    onClick={() => removeVariationImage(i)}
+                                    className="absolute top-1 right-1 w-5 h-5 text-[#483D9E] flex items-center justify-center text-lg hover:text-[#211C49] transition-colors"
+                                    title="Remover imagem"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ) : (
+                                <label className="aspect-square bg-gray-200 rounded border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-300">
+                                  <Camera className="w-6 h-6 text-gray-400" />
+                                  <input
+                                    type="file"
+                                    accept="image/*,video/*"
+                                    className="hidden"
+                                    onChange={(e) =>
+                                      handleVariationFileChange(e, i)
+                                    }
+                                  />
+                                </label>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
-
-                    {/* Condições de Troca */}
                     <div className="border-t pt-4 mt-4">
                       <h4 className="text-sm font-semibold text-gray-800 mb-3 text-center">
-                        Condições de Troca
+                        Itens de Interesse Para Troca
                       </h4>
-
-                      <div className="space-y-3">
-                        <div
-                          className={`flex  ${
-                            isMobile ? "flex-col gap-2" : "items-center"
-                          }`}
-                        >
-                          <label
-                            className={`font-medium text-gray-700 flex-shrink-0 ${
-                              isMobile
-                                ? "text-start text-md"
-                                : "text-end text-sm w-40"
-                            } pr-2`}
+                      <div className="border-t pt-4 mt-4">
+                        <h4 className="text-sm font-semibold text-gray-800 mb-3 text-center">
+                          Condições de Troca
+                        </h4>
+                        <div className="space-y-3">
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
                           >
-                            Jogos:
-                          </label>
-                          <div className="flex-1">
-                            <CustomSelect
-                              options={jogos}
-                              value={jogos.find(
-                                (o) => o.value === variationData.jogosTroca
-                              )}
-                              onChange={(opt) =>
-                                handleVariationSelectChange(
-                                  "jogosTroca",
-                                  opt.value
-                                )
-                              }
-                              placeholder="Selecione o jogo aceito"
-                            />
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Jogos:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
+                                options={jogos}
+                                value={jogos.find(
+                                  (o) => o.value === variationData.jogosTroca
+                                )}
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "jogosTroca",
+                                    opt.value
+                                  )
+                                }
+                                required={true}
+                                showValidation={showValidation.step5}
+                              />
+                            </div>
                           </div>
-                        </div>
-
-                        <div
-                          className={`flex  ${
-                            isMobile ? "flex-col gap-2" : "items-center"
-                          }`}
-                        >
-                          <label
-                            className={`font-medium text-gray-700 flex-shrink-0 ${
-                              isMobile
-                                ? "text-start text-md"
-                                : "text-end text-sm w-40"
-                            } pr-2`}
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
                           >
-                            Tipo de Cartucho:
-                          </label>
-                          <div className="flex-1">
-                            <CustomSelect
-                              options={tiposCartucho}
-                              value={tiposCartucho.find(
-                                (o) => o.value === variationData.tiposTroca
-                              )}
-                              onChange={(opt) =>
-                                handleVariationSelectChange(
-                                  "tiposTroca",
-                                  opt.value
-                                )
-                              }
-                              placeholder="Selecione o tipo aceito"
-                            />
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Tipo de Cartucho:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
+                                options={tiposCartucho}
+                                value={tiposCartucho.find(
+                                  (o) => o.value === variationData.tiposTroca
+                                )}
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "tiposTroca",
+                                    opt.value
+                                  )
+                                }
+                                required={true}
+                                showValidation={showValidation.step5}
+                              />
+                            </div>
                           </div>
-                        </div>
-
-                        <div
-                          className={`flex  ${
-                            isMobile ? "flex-col gap-2" : "items-center"
-                          }`}
-                        >
-                          <label
-                            className={`font-medium text-gray-700 flex-shrink-0 ${
-                              isMobile
-                                ? "text-start text-md"
-                                : "text-end text-sm w-40"
-                            } pr-2`}
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
                           >
-                            Estado de Preservação:
-                          </label>
-                          <div className="flex-1">
-                            <CustomSelect
-                              options={estados}
-                              value={estados.find(
-                                (o) => o.value === variationData.estadosTroca
-                              )}
-                              onChange={(opt) =>
-                                handleVariationSelectChange(
-                                  "estadosTroca",
-                                  opt.value
-                                )
-                              }
-                              placeholder="Selecione o estado mínimo"
-                            />
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Estado de Preservação:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
+                                options={estados}
+                                value={estados.find(
+                                  (o) => o.value === variationData.estadosTroca
+                                )}
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "estadosTroca",
+                                    opt.value
+                                  )
+                                }
+                                required={true}
+                                showValidation={showValidation.step5}
+                              />
+                            </div>
                           </div>
-                        </div>
-
-                        <div
-                          className={`flex  ${
-                            isMobile ? "flex-col gap-2" : "items-center"
-                          }`}
-                        >
-                          <label
-                            className={`font-medium text-gray-700 flex-shrink-0 ${
-                              isMobile
-                                ? "text-start text-md"
-                                : "text-end text-sm w-40"
-                            } pr-2`}
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
                           >
-                            Região do Cartucho:
-                          </label>
-                          <div className="flex-1">
-                            <CustomSelect
-                              options={regioes}
-                              value={regioes.find(
-                                (o) => o.value === variationData.regioesTroca
-                              )}
-                              onChange={(opt) =>
-                                handleVariationSelectChange(
-                                  "regioesTroca",
-                                  opt.value
-                                )
-                              }
-                              placeholder="Selecione as regiões aceitas"
-                            />
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Região do Cartucho:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
+                                options={regioes}
+                                value={regioes.find(
+                                  (o) => o.value === variationData.regioesTroca
+                                )}
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "regioes",
+                                    opt.value
+                                  )
+                                }
+                                required={true}
+                                showValidation={showValidation.step5}
+                              />
+                            </div>
                           </div>
-                        </div>
-
-                        <div
-                          className={`flex  ${
-                            isMobile ? "flex-col gap-2" : "items-center"
-                          }`}
-                        >
-                          <label
-                            className={`font-medium text-gray-700 flex-shrink-0 ${
-                              isMobile
-                                ? "text-start text-md"
-                                : "text-end text-sm w-40"
-                            } pr-2`}
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
                           >
-                            Idiomas de Áudio:
-                          </label>
-                          <div className="flex-1">
-                            <CustomSelect
-                              options={idiomas}
-                              value={idiomas.find(
-                                (o) =>
-                                  o.value === variationData.idiomasAudioTroca
-                              )}
-                              onChange={(opt) =>
-                                handleVariationSelectChange(
-                                  "idiomasAudioTroca",
-                                  opt.value
-                                )
-                              }
-                              placeholder="Selecione os idiomas aceitos"
-                            />
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Idioma de Áudio:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
+                                options={idiomas}
+                                value={idiomas.find(
+                                  (o) =>
+                                    o.value === variationData.idiomasAudioTroca
+                                )}
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "idiomasAudioTroca",
+                                    opt.value
+                                  )
+                                }
+                                required={true}
+                                showValidation={showValidation.step5}
+                              />
+                            </div>
                           </div>
-                        </div>
-
-                        <div
-                          className={`flex  ${
-                            isMobile ? "flex-col gap-2" : "items-center"
-                          }`}
-                        >
-                          <label
-                            className={`font-medium text-gray-700 flex-shrink-0 ${
-                              isMobile
-                                ? "text-start text-md"
-                                : "text-end text-sm w-40"
-                            } pr-2`}
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
                           >
-                            Idiomas de Legenda Aceitos:
-                          </label>
-                          <div className="flex-1">
-                            <CustomSelect
-                              options={idiomas}
-                              value={idiomas.find(
-                                (o) =>
-                                  o.value === variationData.idiomasLegendaTroca
-                              )}
-                              onChange={(opt) =>
-                                handleVariationSelectChange(
-                                  "idiomasLegendaTroca",
-                                  opt.value
-                                )
-                              }
-                              placeholder="Selecione os idiomas aceitos"
-                            />
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Idioma de Legenda:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
+                                options={idiomas}
+                                value={idiomas.find(
+                                  (o) =>
+                                    o.value ===
+                                    variationData.idiomasLegendaTroca
+                                )}
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "idiomasLegendaTroca",
+                                    opt.value
+                                  )
+                                }
+                                required={true}
+                                showValidation={showValidation.step5}
+                              />
+                            </div>
                           </div>
-                        </div>
-
-                        <div
-                          className={`flex  ${
-                            isMobile ? "flex-col gap-2" : "items-center"
-                          }`}
-                        >
-                          <label
-                            className={`font-medium text-gray-700 flex-shrink-0 ${
-                              isMobile
-                                ? "text-start text-md"
-                                : "text-end text-sm w-40"
-                            } pr-2`}
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
                           >
-                            Idiomas de Interface Aceitos:
-                          </label>
-                          <div className="flex-1">
-                            <CustomSelect
-                              options={idiomas}
-                              value={idiomas.find(
-                                (o) =>
-                                  o.value ===
-                                  variationData.idiomasInterfaceTroca
-                              )}
-                              onChange={(opt) =>
-                                handleVariationSelectChange(
-                                  "idiomasInterfaceTroca",
-                                  opt.value
-                                )
-                              }
-                              placeholder="Selecione os idiomas aceitos"
-                            />
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Idioma de Interface:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
+                                options={idiomas}
+                                value={idiomas.find(
+                                  (o) =>
+                                    o.value ===
+                                    variationData.idiomasInterfaceTroca
+                                )}
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "idiomasInterfaceTroca",
+                                    opt.value
+                                  )
+                                }
+                                required={true}
+                                showValidation={showValidation.step5}
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-
                   <div className="flex justify-end gap-2 pt-4 border-t">
                     <button
-                      onClick={() => {
-                        setShowVariationForm(false);
-                        setEditingVariationId(null);
-                        setVariationData({
-                          titulo: "",
-                          tipoCartucho: "",
-                          estadoPreservacao: "",
-                          regiao: "",
-                          idiomaAudio: "",
-                          idiomaLegenda: "",
-                          idiomaInterface: "",
-                          preco: "",
-                          estoque: "",
-                          descricao: "",
-                          imagens: Array(4).fill(null),
-                          // Condições de troca
-                          jogosTroca: "",
-                          tiposTroca: "",
-                          estadosTroca: "",
-                          regioesTroca: "",
-                          idiomasAudioTroca: "",
-                          idiomasLegendaTroca: "",
-                          idiomasInterfaceTroca: "",
-                        });
-                      }}
+                      onClick={resetAndHideVariationForm}
                       className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
                     >
                       Cancelar
                     </button>
                     <ConfirmButton onClick={handleSaveVariation}>
-                      Confirmar
+                      Adicionar Variação
                     </ConfirmButton>
                   </div>
                 </div>
+              ) : (
+                // =================== BOTÃO DE ADICIONAR ===================
+                <button
+                  onClick={() => {
+                    setVariationData({
+                      titulo: formData.titulo || "",
+                      tipoCartucho: formData.tipoCartucho || "",
+                      estadoPreservacao: formData.estadoPreservacao || "",
+                      regiao: formData.regiao || "",
+                      idiomaAudio: formData.idiomaAudio || "",
+                      idiomaLegenda: formData.idiomaLegenda || "",
+                      idiomaInterface: formData.idiomaInterface || "",
+                      preco: formData.preco || "",
+                      estoque: formData.estoque || "",
+                      descricao: formData.descricao || "",
+                      imagens: Array(4).fill(null),
+                      // Condições de troca
+                      jogosTroca: formData.jogosTroca || "",
+                      tiposTroca: formData.tiposTroca || "",
+                      estadosTroca: formData.estadosTroca || "",
+                      regioesTroca: formData.regioesTroca || "",
+                      idiomasAudioTroca: formData.idiomasAudioTroca || "",
+                      idiomasLegendaTroca: formData.idiomasLegendaTroca || "",
+                      idiomasInterfaceTroca: formData.idiomasInterfaceTroca || "",
+                    });
+                    setEditingVariationId("new");
+                  }}
+                  className={`w-full border-2 border-dashed border-purple-400 ${
+                    isMobile ? "p-4" : "p-6"
+                  } rounded-lg text-purple-600 hover:bg-purple-50 hover:border-purple-600 transition-colors font-semibold`}
+                >
+                  + Adicionar nova variação de troca
+                </button>
               )}
             </div>
           </>
@@ -1847,7 +2454,7 @@ const MultiPartForm = () => {
                       {/* Idiomas do Audio */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-500">
-                          Idiomas do Audio
+                          Idioma do Audio
                         </label>
                         <p className="text-gray-800 font-medium">
                           {getLanguageName(formData.idiomaAudio)}
@@ -1857,7 +2464,7 @@ const MultiPartForm = () => {
                       {/* Idiomas da Legenda */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-500">
-                          Idiomas da Legenda
+                          Idioma da Legenda
                         </label>
                         <p className="text-gray-800 font-medium">
                           {getLanguageName(formData.idiomaLegenda)}
@@ -1867,7 +2474,7 @@ const MultiPartForm = () => {
                       {/* Idiomas da Interface */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-500">
-                          Idiomas da Interface
+                          Idioma da Interface
                         </label>
                         <p className="text-gray-800 font-medium">
                           {getLanguageName(formData.idiomaInterface)}
@@ -2016,7 +2623,7 @@ const MultiPartForm = () => {
                           <div>
                             <h2 className="text-lg font-semibold text-gray-800">
                               {variation.titulo ||
-                                `Variação de Troca ${index + 1}`}
+                                `Variação ${index + 1}`}
                             </h2>
                             <p className="text-sm text-gray-600">
                               {getCartridgeTypeName(variation.tipoCartucho)} -{" "}
@@ -2099,7 +2706,7 @@ const MultiPartForm = () => {
                         {/* Título da variação */}
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-500">
-                            Título da Variação de Troca
+                            Título da Variação
                           </label>
                           <p className="text-gray-800 font-medium">
                             {variation.titulo || "Não informado"}
@@ -2151,7 +2758,7 @@ const MultiPartForm = () => {
                         {/* Idiomas */}
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-500">
-                            Idiomas do Áudio
+                            Idioma do Áudio
                           </label>
                           <p className="text-gray-800 font-medium">
                             {getLanguageName(variation.idiomaAudio)}
@@ -2160,7 +2767,7 @@ const MultiPartForm = () => {
 
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-500">
-                            Idiomas da Legenda
+                            Idioma da Legenda
                           </label>
                           <p className="text-gray-800 font-medium">
                             {getLanguageName(variation.idiomaLegenda)}
@@ -2169,7 +2776,7 @@ const MultiPartForm = () => {
 
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-500">
-                            Idiomas da Interface
+                            Idioma da Interface
                           </label>
                           <p className="text-gray-800 font-medium">
                             {getLanguageName(variation.idiomaInterface)}

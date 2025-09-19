@@ -1,5 +1,11 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import FilterTopBar from "../components/FilterTopBar";
 import FilterSidebar from "../components/FilterSidebar";
@@ -13,18 +19,129 @@ import {
   cleanBackendFilters,
   FrontendFilters,
 } from "../utils/filterMapper";
+import Footer from "../components/Footer";
 
 // Removido mockProducts - agora usando dados do backend
 
 const ProductListing: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState("all");
-  const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>(
-    {}
-  );
+  // Função para inicializar estado baseado na URL
+  const initializeStateFromURL = () => {
+    const searchParams = new URLSearchParams(location.search);
+    const search = searchParams.get("search");
+    const genre = searchParams.get("genre");
+    const theme = searchParams.get("theme");
+
+    let initialCategory = "all";
+    const initialFilters: Record<string, string[]> = {};
+    let initialSearchQuery = "";
+
+    if (search) {
+      initialSearchQuery = search;
+    }
+
+    if (genre) {
+      initialCategory = genre;
+      initialFilters.genre = [genre];
+    } else if (theme) {
+      initialCategory = theme;
+      initialFilters.theme = [theme];
+    }
+
+    // Ler todos os outros filtros da URL
+    const filterKeys = [
+      "conditions",
+      "preservation",
+      "cartridgeType",
+      "gameMode",
+      "audioLanguage",
+      "subtitleLanguage",
+      "interfaceLanguage",
+      "region",
+      "price",
+    ];
+
+    filterKeys.forEach((key) => {
+      const value = searchParams.get(key);
+      if (value) {
+        // Para price, pode ter formato "min,max"
+        if (key === "price") {
+          const [min, max] = value.split(",");
+          initialFilters[key] = [min || "", max || ""];
+        } else {
+          // Para outros filtros, pode ter múltiplos valores separados por vírgula
+          initialFilters[key] = value.split(",");
+        }
+      }
+    });
+
+    console.log("Initial filters from URL:", initialFilters);
+    return { initialCategory, initialFilters, initialSearchQuery };
+  };
+
+  const { initialCategory, initialFilters, initialSearchQuery } =
+    initializeStateFromURL();
+
+  const [activeCategory, setActiveCategory] = useState(initialCategory);
+  const [activeFilters, setActiveFilters] =
+    useState<Record<string, string[]>>(initialFilters);
   const [priceRange, setPriceRange] = useState({ min: "", max: "" });
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
+
+  // Função para criar filtros iniciais baseados na URL
+  const createInitialFilters = () => {
+    const searchParams = new URLSearchParams(location.search);
+    const search = searchParams.get("search");
+    const genre = searchParams.get("genre");
+    const theme = searchParams.get("theme");
+
+    const initialFilters: Record<string, string | string[] | number> = {
+      status: "Active",
+    };
+
+    if (search) {
+      initialFilters.title = search;
+    }
+
+    if (genre) {
+      initialFilters.genre = [genre];
+    }
+
+    if (theme) {
+      initialFilters.theme = [theme];
+    }
+
+    // Ler todos os outros filtros da URL para o backend
+    const filterKeys = [
+      "conditions",
+      "preservation",
+      "cartridgeType",
+      "gameMode",
+      "audioLanguage",
+      "subtitleLanguage",
+      "interfaceLanguage",
+      "region",
+      "price",
+    ];
+
+    filterKeys.forEach((key) => {
+      const value = searchParams.get(key);
+      if (value) {
+        if (key === "price") {
+          const [min, max] = value.split(",");
+          if (min) initialFilters.minPrice = parseFloat(min);
+          if (max) initialFilters.maxPrice = parseFloat(max);
+        } else {
+          initialFilters[key] = value.split(",");
+        }
+      }
+    });
+
+    console.log("Creating initial filters from URL:", initialFilters);
+    return initialFilters;
+  };
 
   // Hook para buscar anúncios do backend
   const {
@@ -39,6 +156,7 @@ const ProductListing: React.FC = () => {
     setPagination,
     fetchAdvertisements,
   } = useAdvertisements({
+    initialFilters: createInitialFilters(), // Filtrar baseado na URL desde o início
     initialPagination: { page: 1, pageSize: 12 },
     initialOrdering: { orderBy: "createdAt", orderDirection: "desc" },
   });
@@ -48,12 +166,82 @@ const ProductListing: React.FC = () => {
     return mapAdvertisementsToProducts(advertisements);
   }, [advertisements]);
 
-  const handleSearch = (query: string) => setSearchQuery(query);
+  // Refs para evitar loop
+  const prevLocationRef = useRef(location.search);
+
+  // Atualizar estado quando a URL mudar
+  useEffect(() => {
+    // Só atualiza se a URL mudou
+    if (prevLocationRef.current === location.search) {
+      return;
+    }
+
+    prevLocationRef.current = location.search;
+
+    const searchParams = new URLSearchParams(location.search);
+    const search = searchParams.get("search");
+    const genre = searchParams.get("genre");
+    const theme = searchParams.get("theme");
+
+    console.log("URL changed - search params:", location.search);
+    console.log("Search query from URL:", search);
+    console.log("Genre from URL:", genre);
+    console.log("Theme from URL:", theme);
+
+    // Atualizar searchQuery se mudou
+    if (search !== searchQuery) {
+      setSearchQuery(search || "");
+    }
+
+    // Atualizar categoria e filtros se mudaram
+    let newCategory = "all";
+    const newFilters: Record<string, string[]> = {};
+
+    if (genre) {
+      newCategory = genre;
+      newFilters.genre = [genre];
+    } else if (theme) {
+      newCategory = theme;
+      newFilters.theme = [theme];
+    }
+
+    // Ler todos os outros filtros da URL
+    const filterKeys = [
+      "conditions",
+      "preservation",
+      "cartridgeType",
+      "gameMode",
+      "audioLanguage",
+      "subtitleLanguage",
+      "interfaceLanguage",
+      "region",
+      "price",
+    ];
+
+    filterKeys.forEach((key) => {
+      const value = searchParams.get(key);
+      if (value) {
+        if (key === "price") {
+          const [min, max] = value.split(",");
+          newFilters[key] = [min || "", max || ""];
+        } else {
+          newFilters[key] = value.split(",");
+        }
+      }
+    });
+
+    if (newCategory !== activeCategory) {
+      setActiveCategory(newCategory);
+    }
+
+    if (JSON.stringify(newFilters) !== JSON.stringify(activeFilters)) {
+      setActiveFilters(newFilters);
+    }
+  }, [location.search, searchQuery, activeCategory, activeFilters]);
+
   const handleProductClick = (productId: string) =>
     navigate(`/anuncio/${productId}`);
-  const handleFavoritesClick = () => navigate("/favoritos");
   const handleProfileClick = () => navigate("/perfil");
-  const handleCategoryClick = (category: string) => setActiveCategory(category);
 
   // Atualizar filtros e aplicar ao backend
   const handleFiltersChange = useCallback(
@@ -82,12 +270,23 @@ const ProductListing: React.FC = () => {
   // Aplicar filtros ao backend quando eles mudarem
   useEffect(() => {
     const frontendFilters: FrontendFilters = activeFilters as FrontendFilters;
-    const backendFilters = mapFrontendFiltersToBackend(
-      frontendFilters,
-      searchQuery
-    );
-    const cleanedFilters = cleanBackendFilters(backendFilters);
-    setBackendFilters(cleanedFilters);
+    const mapped = mapFrontendFiltersToBackend(frontendFilters, searchQuery);
+    const cleaned = cleanBackendFilters(mapped);
+
+    console.log("=== FILTER DEBUG ===");
+    console.log("Frontend filters:", frontendFilters);
+    console.log("Search query in backend filters:", searchQuery);
+    console.log("Mapped backend filters:", mapped);
+    console.log("Cleaned backend filters:", cleaned);
+    console.log("Conditions filter:", frontendFilters.conditions);
+    console.log("IsSale in mapped:", mapped.isSale);
+    console.log("IsTrade in mapped:", mapped.isTrade);
+    console.log("===================");
+
+    // Garantir que sempre filtre apenas produtos ativos
+    const finalFilters = { ...cleaned, status: "Active" };
+    console.log("Setting backend filters:", finalFilters);
+    setBackendFilters(finalFilters);
   }, [activeFilters, searchQuery, setBackendFilters]);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
@@ -106,23 +305,15 @@ const ProductListing: React.FC = () => {
         <TopBar
           logoPosition="left"
           showSearchBar
-          onSearch={handleSearch}
           searchPlaceholder="Pesquisa na Toca do Cartucho"
           showUserMenu
           userName="Nome Sobrenome"
-          onFavoritesClick={handleFavoritesClick}
           onProfileClick={handleProfileClick}
         />
-        <FilterTopBar
-          onCategoryClick={handleCategoryClick}
-          onFavoritesClick={handleFavoritesClick}
-          activeCategory={activeCategory}
-          onFilterChange={handleFiltersChange}
-          currentFilters={activeFilters}
-        />
+        <FilterTopBar currentFilters={activeFilters} />
       </div>
 
-      <div className="pt-32">
+      <div className="pt-36">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex gap-6">
             <div className="hidden lg:block">
@@ -284,13 +475,10 @@ const ProductListing: React.FC = () => {
         </div>
       )}
 
-      <footer className="bg-[#211C49] text-white py-8 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <button className="bg-[#2B2560] hover:bg-[#1a1640] px-8 py-3 rounded-lg font-semibold transition-colors">
-            VOLTAR AO INICIO
-          </button>
-        </div>
-      </footer>
+      <Footer
+        showBackToTopButton={true}
+        onBackToTop={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      />
     </div>
   );
 };
