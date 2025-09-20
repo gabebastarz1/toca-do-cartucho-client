@@ -28,3 +28,4 @@ export function useOutsideClick<T extends HTMLElement = HTMLElement>(
 
   return ref;
 }
+

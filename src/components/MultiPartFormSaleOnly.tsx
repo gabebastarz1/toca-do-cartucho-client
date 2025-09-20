@@ -171,18 +171,6 @@ const MultiPartFormSaleOnly = () => {
       }
     }
 
-    // Remover zeros à esquerda para campos de estoque
-    if (name === "estoque" && value) {
-      const numericValue = parseInt(value, 10);
-      if (!isNaN(numericValue)) {
-        setVariationData((prev) => ({
-          ...prev,
-          [name]: numericValue.toString(),
-        }));
-        return;
-      }
-    }
-
     setVariationData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -204,15 +192,6 @@ const MultiPartFormSaleOnly = () => {
         return;
       } else {
         setFormData((prev) => ({ ...prev, [name]: "" }));
-        return;
-      }
-    }
-
-    // Remover zeros à esquerda para campos de estoque
-    if (name === "estoque" && value) {
-      const numericValue = parseInt(value, 10);
-      if (!isNaN(numericValue)) {
-        setFormData((prev) => ({ ...prev, [name]: numericValue.toString() }));
         return;
       }
     }
@@ -836,912 +815,242 @@ const MultiPartFormSaleOnly = () => {
           </>
         )}
         {/* STEP 4 */}
-        {step === 4 && (
-          <>
-            <StepHeader
-              title="Adicionar Variações"
-              subtitle="Tem mais de um cartucho do mesmo jogo para vender?"
-              step={3}
-              steps={stepsArray}
-              onBack={prevStep}
-            />
-            <div
-              className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-6`}
-            >
-              {/* Lista de variações existentes */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3
-                    className={`${
-                      isMobile ? "hidden" : ""
-                    } text-lg font-semibold text-gray-800`}
+      {step === 4 && (
+        <>
+          <StepHeader
+            title="Adicionar Variações"
+            subtitle="Tem mais de um cartucho do mesmo jogo para vender?"
+            step={3}
+            steps={stepsArray}
+            onBack={prevStep}
+          />
+          <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-6`}>
+            {/* Lista de variações existentes */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3
+                  className={`${
+                    isMobile ? "hidden" : ""
+                  } text-lg font-semibold text-gray-800`}
+                >
+                  Variações do Anúncio
+                </h3>
+                {variations.length > 0 && (
+                  <button
+                    onClick={clearVariationsStorage}
+                    className="px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md border border-red-200 hover:border-red-300 transition-colors"
                   >
-                    Variações do Anúncio
-                  </h3>
-                  {variations.length > 0 && (
-                    <button
-                      onClick={clearVariationsStorage}
-                      className="px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md border border-red-200 hover:border-red-300 transition-colors"
-                    >
-                      Limpar Todas
-                    </button>
-                  )}
-                </div>
-
-                {variations.map((variation, index) => {
-                  // Se o ID desta variação é o que está sendo editado, mostre o formulário
-                  if (editingVariationId === variation.id) {
-                    return (
-                      // =================== FORMULÁRIO DE EDIÇÃO ===================
-                      <div
-                        key={`editing-${variation.id}`}
-                        className={`bg-[#EDECF7] border border-gray-300 rounded-lg ${
-                          isMobile ? "p-4" : "p-6"
-                        } space-y-4 animate-fadeIn`}
-                      >
-                        <div className="flex items-center justify-between border-b pb-3">
-                          <h3 className="text-lg font-semibold text-gray-800">
-                            Editando Variação
-                          </h3>
-                          <button
-                            onClick={handleCancelEdit}
-                            title="Fechar edição"
-                          >
-                            <ChevronDown className="w-8 h-8 text-gray-600" />
-                          </button>
-                        </div>
-
-                        <div className="space-y-3 bg-white p-4 rounded-lg">
-                          {/* COLE O CONTEÚDO DO FORMULÁRIO AQUI */}
-                          <div
-                            className={`flex ${
-                              isMobile ? "flex-col gap-2" : "items-center"
-                            }`}
-                          >
-                            <label
-                              className={`font-medium text-gray-700 flex-shrink-0 ${
-                                isMobile
-                                  ? "text-start text-md"
-                                  : "text-end text-sm w-40"
-                              } pr-2`}
-                            >
-                              Título do Anúncio:
-                            </label>
-                            <input
-                              type="text"
-                              name="titulo"
-                              value={variationData.titulo}
-                              onChange={handleVariationInputChange}
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                              placeholder="Ex: Cartucho Super Mario Bros - Repro"
-                            />
-                          </div>
-                          <div
-                            className={`flex ${
-                              isMobile ? "flex-col gap-2" : "items-center"
-                            }`}
-                          >
-                            <label
-                              className={`font-medium text-gray-700 flex-shrink-0 ${
-                                isMobile
-                                  ? "text-start text-md"
-                                  : "text-end text-sm w-40"
-                              } pr-2`}
-                            >
-                              Tipo do Cartucho:
-                            </label>
-                            <div className="flex-1">
-                              <CustomSelect
-                                options={tiposCartucho}
-                                value={tiposCartucho.find(
-                                  (o) => o.value === variationData.tipoCartucho
-                                )}
-                                onChange={(opt) =>
-                                  handleVariationSelectChange(
-                                    "tipoCartucho",
-                                    opt.value
-                                  )
-                                }
-                                required={true}
-                                showValidation={showValidation.step5}
-                              />
-                            </div>
-                          </div>
-                          <div
-                            className={`flex ${
-                              isMobile ? "flex-col gap-2" : "items-center"
-                            }`}
-                          >
-                            <label
-                              className={`font-medium text-gray-700 flex-shrink-0 ${
-                                isMobile
-                                  ? "text-start text-md"
-                                  : "text-end text-sm w-40"
-                              } pr-2`}
-                            >
-                              Estado de Preservação:
-                            </label>
-                            <div className="flex-1">
-                              <CustomSelect
-                                options={estados}
-                                value={estados.find(
-                                  (o) =>
-                                    o.value === variationData.estadoPreservacao
-                                )}
-                                onChange={(opt) =>
-                                  handleVariationSelectChange(
-                                    "estadoPreservacao",
-                                    opt.value
-                                  )
-                                }
-                                required={true}
-                                showValidation={showValidation.step5}
-                              />
-                            </div>
-                          </div>
-                          <div
-                            className={`flex ${
-                              isMobile ? "flex-col gap-2" : "items-center"
-                            }`}
-                          >
-                            <label
-                              className={`font-medium text-gray-700 flex-shrink-0 ${
-                                isMobile
-                                  ? "text-start text-md"
-                                  : "text-end text-sm w-40"
-                              } pr-2`}
-                            >
-                              Região do Cartucho:
-                            </label>
-                            <div className="flex-1">
-                              <CustomSelect
-                                options={regioes}
-                                value={regioes.find(
-                                  (o) => o.value === variationData.regiao
-                                )}
-                                onChange={(opt) =>
-                                  handleVariationSelectChange(
-                                    "regiao",
-                                    opt.value
-                                  )
-                                }
-                                required={true}
-                                showValidation={showValidation.step5}
-                              />
-                            </div>
-                          </div>
-                          <div
-                            className={`flex ${
-                              isMobile ? "flex-col gap-2" : "items-center"
-                            }`}
-                          >
-                            <label
-                              className={`font-medium text-gray-700 flex-shrink-0 ${
-                                isMobile
-                                  ? "text-start text-md"
-                                  : "text-end text-sm w-40"
-                              } pr-2`}
-                            >
-                              Idioma do Audio:
-                            </label>
-                            <div className="flex-1">
-                              <CustomSelect
-                                options={idiomas}
-                                value={idiomas.find(
-                                  (o) => o.value === variationData.idiomaAudio
-                                )}
-                                onChange={(opt) =>
-                                  handleVariationSelectChange(
-                                    "idiomaAudio",
-                                    opt.value
-                                  )
-                                }
-                                required={true}
-                                showValidation={showValidation.step5}
-                              />
-                            </div>
-                          </div>
-                          <div
-                            className={`flex ${
-                              isMobile ? "flex-col gap-2" : "items-center"
-                            }`}
-                          >
-                            <label
-                              className={`font-medium text-gray-700 flex-shrink-0 ${
-                                isMobile
-                                  ? "text-start text-md"
-                                  : "text-end text-sm w-40"
-                              } pr-2`}
-                            >
-                              Idioma da Legenda:
-                            </label>
-                            <div className="flex-1">
-                              <CustomSelect
-                                options={idiomas}
-                                value={idiomas.find(
-                                  (o) => o.value === variationData.idiomaLegenda
-                                )}
-                                onChange={(opt) =>
-                                  handleVariationSelectChange(
-                                    "idiomaLegenda",
-                                    opt.value
-                                  )
-                                }
-                                required={true}
-                                showValidation={showValidation.step5}
-                              />
-                            </div>
-                          </div>
-                          <div
-                            className={`flex ${
-                              isMobile ? "flex-col gap-2" : "items-center"
-                            }`}
-                          >
-                            <label
-                              className={`font-medium text-gray-700 flex-shrink-0 ${
-                                isMobile
-                                  ? "text-start text-md"
-                                  : "text-end text-sm w-40"
-                              } pr-2`}
-                            >
-                              Idioma da Interface:
-                            </label>
-                            <div className="flex-1">
-                              <CustomSelect
-                                options={idiomas}
-                                value={idiomas.find(
-                                  (o) =>
-                                    o.value === variationData.idiomaInterface
-                                )}
-                                onChange={(opt) =>
-                                  handleVariationSelectChange(
-                                    "idiomaInterface",
-                                    opt.value
-                                  )
-                                }
-                                required={true}
-                                showValidation={showValidation.step5}
-                              />
-                            </div>
-                          </div>
-                          <div
-                            className={`flex ${
-                              isMobile ? "flex-col gap-2" : "items-center"
-                            }`}
-                          >
-                            <label
-                              className={`font-medium text-gray-700 flex-shrink-0 ${
-                                isMobile
-                                  ? "text-start text-md"
-                                  : "text-end text-sm w-40"
-                              } pr-2`}
-                            >
-                              Estoque Disponível:
-                            </label>
-                            <input
-                              type="number"
-                              name="estoque"
-                              value={variationData.estoque}
-                              placeholder="1"
-                              onChange={handleVariationInputChange}
-                              className={`flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none ${
-                                showValidation.step5 && !variationData.estoque
-                                  ? "border-red-500"
-                                  : "border-gray-300"
-                              }`}
-                              min="1"
-                            />
-                          </div>
-                          <div
-                            className={`flex ${
-                              isMobile ? "flex-col gap-2" : "items-center"
-                            }`}
-                          >
-                            <label
-                              className={`font-medium text-gray-700 flex-shrink-0 ${
-                                isMobile
-                                  ? "text-start text-md"
-                                  : "text-end text-sm w-40"
-                              } pr-2`}
-                            >
-                              Preço de Venda:
-                            </label>
-                            <div className="flex-1 flex items-center space-x-2">
-                              <span className="text-gray-600">R$</span>
-                              <input
-                                type="text"
-                                name="preco"
-                                value={variationData.preco}
-                                placeholder="0,00"
-                                onChange={handleVariationInputChange}
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                              />
-                            </div>
-                          </div>
-                          <div
-                            className={`flex ${
-                              isMobile ? "flex-col gap-2" : "items-center"
-                            }`}
-                          >
-                            <label
-                              className={`font-medium text-gray-700 flex-shrink-0 ${
-                                isMobile
-                                  ? "text-start text-md"
-                                  : "text-end text-sm w-40"
-                              } pr-2`}
-                            >
-                              Descrição:
-                            </label>
-                            <input
-                              type="text"
-                              name="descricao"
-                              value={variationData.descricao}
-                              placeholder="Descrição"
-                              onChange={handleVariationInputChange}
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                            />
-                          </div>
-                          <div
-                            className={`flex ${
-                              isMobile ? "flex-col gap-2" : "items-center"
-                            }`}
-                          >
-                            <label
-                              className={`font-medium text-gray-700 flex-shrink-0 ${
-                                isMobile
-                                  ? "text-start text-md"
-                                  : "text-end text-sm w-40"
-                              } pr-2`}
-                            >
-                              Imagens e Vídeos:
-                            </label>
-                            <div className="flex-1">
-                              <div className="grid grid-cols-4 gap-2">
-                                {[...Array(4)].map((_, i) => (
-                                  <div key={i} className="relative">
-                                    {variationData.imagens[i] ? (
-                                      <div className="aspect-square border-2 border-solid border-purple-400 rounded overflow-hidden bg-gray-100">
-                                        <img
-                                          src={URL.createObjectURL(
-                                            variationData.imagens[i]
-                                          )}
-                                          alt={`Imagem ${i + 1}`}
-                                          className="w-full h-full object-cover"
-                                        />
-                                        <button
-                                          onClick={() =>
-                                            removeVariationImage(i)
-                                          }
-                                          className="absolute top-1 right-1 w-5 h-5 text-[#483D9E] flex items-center justify-center text-lg hover:text-[#211C49] transition-colors"
-                                          title="Remover imagem"
-                                        >
-                                          ✕
-                                        </button>
-                                      </div>
-                                    ) : (
-                                      <label className="aspect-square bg-gray-200 rounded border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-300">
-                                        <Camera className="w-6 h-6 text-gray-400" />
-                                        <input
-                                          type="file"
-                                          accept="image/*,video/*"
-                                          className="hidden"
-                                          onChange={(e) =>
-                                            handleVariationFileChange(e, i)
-                                          }
-                                        />
-                                      </label>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-4 border-t">
-                          <button
-                            onClick={handleCancelEdit}
-                            className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
-                          >
-                            Cancelar
-                          </button>
-                          <ConfirmButton onClick={handleSaveVariation}>
-                            Salvar Alterações
-                          </ConfirmButton>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  // =================== MODO DE VISUALIZAÇÃO NORMAL ===================
-                  return (
-                    <div
-                      key={variation.id}
-                      className="border border-gray-200 rounded-lg overflow-hidden animate-fadeIn"
-                    >
-                      <div
-                        className="bg-[#EDECF7] px-4 py-3 cursor-pointer transition-colors"
-                        onClick={() => toggleVariation(variation.id)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
-                              {variation.imagens && variation.imagens[0] ? (
-                                <img
-                                  src={URL.createObjectURL(
-                                    variation.imagens[0]
-                                  )}
-                                  alt={`Imagem da variação`}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-gray-300"></div>
-                              )}
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-800">
-                                Variação {index + 1}
-                              </span>
-                              <p className="text-sm text-gray-600 truncate max-w-xs md:max-w-md">
-                                {getCartridgeTypeName(variation.tipoCartucho)} -{" "}
-                                {getPreservationStateName(
-                                  variation.estadoPreservacao
-                                )}{" "}
-                                - {getRegionName(variation.regiao)}
-                              </p>
-                            </div>
-                          </div>
-                          <ChevronDown
-                            className={`w-5 h-5 text-gray-600 transition-transform duration-300 ${
-                              expandedVariations[variation.id]
-                                ? "rotate-180"
-                                : ""
-                            }`}
-                          />
-                        </div>
-                      </div>
-
-                      {expandedVariations[variation.id] && (
-                        <div className="bg-white p-4 border-x-8 border-[#EDECF7] border-b-8">
-                          <div className="flex items-start space-x-4">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-800 leading-relaxed">
-                                <strong>Título:</strong> {variation.titulo}
-                              </p>
-                              <p className="text-sm text-gray-600 mt-1">
-                                <strong>Descrição:</strong>{" "}
-                                {variation.descricao || "Nenhuma descrição."}
-                              </p>
-                              <p className="text-sm text-gray-600 mt-1">
-                                <strong>Estoque:</strong> {variation.estoque}
-                              </p>
-                              <p className="text-sm text-gray-600 mt-1">
-                                <strong>Preço:</strong> R${" "}
-                                {variation.preco || "0,00"}
-                              </p>
-                            </div>
-                            <div className="flex items-center space-x-2 flex-shrink-0">
-                              <button
-                                onClick={() => handleEditVariation(variation)}
-                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full"
-                                title="Editar"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleDeleteVariation(variation.id)
-                                }
-                                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-full"
-                                title="Excluir"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                    Limpar Todas
+                  </button>
+                )}
               </div>
 
-              {/* Botão para ADICIONAR ou o Formulário de NOVA variação */}
-              {editingVariationId === "new" ? (
-                // =================== FORMULÁRIO DE NOVA VARIAÇÃO ===================
-                <div
-                  className={`bg-[#EDECF7] border border-gray-300 rounded-lg ${
-                    isMobile ? "p-4" : "p-6"
-                  } space-y-4 animate-fadeIn`}
-                >
-                  <div className="flex items-center justify-between border-b pb-3">
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      Nova Variação ({variations.length + 1})
-                    </h3>
-                    <button onClick={handleCancelEdit} title="Cancelar">
-                      <ChevronDown className="w-8 h-8 text-gray-600" />
-                    </button>
-                  </div>
-                  <div className="space-y-3 bg-white p-4 rounded-lg">
-                    {/* COLE O CONTEÚDO DO FORMULÁRIO AQUI */}
+              
+
+              {variations.map((variation, index) => {
+                // Se o ID desta variação é o que está sendo editado, mostre o formulário
+                if (editingVariationId === variation.id) {
+                  return (
+                    // =================== FORMULÁRIO DE EDIÇÃO ===================
                     <div
-                      className={`flex ${
-                        isMobile ? "flex-col gap-2" : "items-center"
-                      }`}
+                      key={`editing-${variation.id}`}
+                      className={`bg-[#EDECF7] border border-gray-300 rounded-lg ${
+                        isMobile ? "p-4" : "p-6"
+                      } space-y-4 animate-fadeIn`}
                     >
-                      <label
-                        className={`font-medium text-gray-700 flex-shrink-0 ${
-                          isMobile
-                            ? "text-start text-md"
-                            : "text-end text-sm w-40"
-                        } pr-2`}
-                      >
-                        Título do Anúncio:
-                      </label>
-                      <input
-                        type="text"
-                        name="titulo"
-                        value={variationData.titulo}
-                        onChange={handleVariationInputChange}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="Ex: Cartucho Super Mario Bros - Repro"
-                      />
-                    </div>
-                    <div
-                      className={`flex ${
-                        isMobile ? "flex-col gap-2" : "items-center"
-                      }`}
-                    >
-                      <label
-                        className={`font-medium text-gray-700 flex-shrink-0 ${
-                          isMobile
-                            ? "text-start text-md"
-                            : "text-end text-sm w-40"
-                        } pr-2`}
-                      >
-                        Tipo do Cartucho:
-                      </label>
-                      <div className="flex-1">
-                        <CustomSelect
-                          options={tiposCartucho}
-                          value={tiposCartucho.find(
-                            (o) => o.value === variationData.tipoCartucho
-                          )}
-                          onChange={(opt) =>
-                            handleVariationSelectChange(
-                              "tipoCartucho",
-                              opt.value
-                            )
-                          }
-                          required={true}
-                          showValidation={showValidation.step5}
-                        />
+                      <div className="flex items-center justify-between border-b pb-3">
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          Editando Variação
+                        </h3>
+                        <button onClick={handleCancelEdit} title="Fechar edição">
+                          <ChevronDown className="w-8 h-8 text-gray-600" />
+                        </button>
                       </div>
-                    </div>
-                    <div
-                      className={`flex ${
-                        isMobile ? "flex-col gap-2" : "items-center"
-                      }`}
-                    >
-                      <label
-                        className={`font-medium text-gray-700 flex-shrink-0 ${
-                          isMobile
-                            ? "text-start text-md"
-                            : "text-end text-sm w-40"
-                        } pr-2`}
-                      >
-                        Estado de Preservação:
-                      </label>
-                      <div className="flex-1">
-                        <CustomSelect
-                          options={estados}
-                          value={estados.find(
-                            (o) => o.value === variationData.estadoPreservacao
-                          )}
-                          onChange={(opt) =>
-                            handleVariationSelectChange(
-                              "estadoPreservacao",
-                              opt.value
-                            )
-                          }
-                          required={true}
-                          showValidation={showValidation.step5}
-                        />
-                      </div>
-                    </div>
-                    <div
-                      className={`flex ${
-                        isMobile ? "flex-col gap-2" : "items-center"
-                      }`}
-                    >
-                      <label
-                        className={`font-medium text-gray-700 flex-shrink-0 ${
-                          isMobile
-                            ? "text-start text-md"
-                            : "text-end text-sm w-40"
-                        } pr-2`}
-                      >
-                        Região do Cartucho:
-                      </label>
-                      <div className="flex-1">
-                        <CustomSelect
-                          options={regioes}
-                          value={regioes.find(
-                            (o) => o.value === variationData.regiao
-                          )}
-                          onChange={(opt) =>
-                            handleVariationSelectChange("regiao", opt.value)
-                          }
-                          required={true}
-                          showValidation={showValidation.step5}
-                        />
-                      </div>
-                    </div>
-                    <div
-                      className={`flex ${
-                        isMobile ? "flex-col gap-2" : "items-center"
-                      }`}
-                    >
-                      <label
-                        className={`font-medium text-gray-700 flex-shrink-0 ${
-                          isMobile
-                            ? "text-start text-md"
-                            : "text-end text-sm w-40"
-                        } pr-2`}
-                      >
-                        Idioma do Audio:
-                      </label>
-                      <div className="flex-1">
-                        <CustomSelect
-                          options={idiomas}
-                          value={idiomas.find(
-                            (o) => o.value === variationData.idiomaAudio
-                          )}
-                          onChange={(opt) =>
-                            handleVariationSelectChange(
-                              "idiomaAudio",
-                              opt.value
-                            )
-                          }
-                          required={true}
-                          showValidation={showValidation.step5}
-                        />
-                      </div>
-                    </div>
-                    <div
-                      className={`flex ${
-                        isMobile ? "flex-col gap-2" : "items-center"
-                      }`}
-                    >
-                      <label
-                        className={`font-medium text-gray-700 flex-shrink-0 ${
-                          isMobile
-                            ? "text-start text-md"
-                            : "text-end text-sm w-40"
-                        } pr-2`}
-                      >
-                        Idioma da Legenda:
-                      </label>
-                      <div className="flex-1">
-                        <CustomSelect
-                          options={idiomas}
-                          value={idiomas.find(
-                            (o) => o.value === variationData.idiomaLegenda
-                          )}
-                          onChange={(opt) =>
-                            handleVariationSelectChange(
-                              "idiomaLegenda",
-                              opt.value
-                            )
-                          }
-                          required={true}
-                          showValidation={showValidation.step5}
-                        />
-                      </div>
-                    </div>
-                    <div
-                      className={`flex ${
-                        isMobile ? "flex-col gap-2" : "items-center"
-                      }`}
-                    >
-                      <label
-                        className={`font-medium text-gray-700 flex-shrink-0 ${
-                          isMobile
-                            ? "text-start text-md"
-                            : "text-end text-sm w-40"
-                        } pr-2`}
-                      >
-                        Idioma da Interface:
-                      </label>
-                      <div className="flex-1">
-                        <CustomSelect
-                          options={idiomas}
-                          value={idiomas.find(
-                            (o) => o.value === variationData.idiomaInterface
-                          )}
-                          onChange={(opt) =>
-                            handleVariationSelectChange(
-                              "idiomaInterface",
-                              opt.value
-                            )
-                          }
-                          required={true}
-                          showValidation={showValidation.step5}
-                        />
-                      </div>
-                    </div>
-                    <div
-                      className={`flex ${
-                        isMobile ? "flex-col gap-2" : "items-center"
-                      }`}
-                    >
-                      <label
-                        className={`font-medium text-gray-700 flex-shrink-0 ${
-                          isMobile
-                            ? "text-start text-md"
-                            : "text-end text-sm w-40"
-                        } pr-2`}
-                      >
-                        Estoque Disponível:
-                      </label>
-                      <input
-                        type="number"
-                        name="estoque"
-                        value={variationData.estoque}
-                        placeholder="1"
-                        onChange={handleVariationInputChange}
-                        className={`flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none ${
-                          showValidation.step5 && !variationData.estoque
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        }`}
-                        min="1"
-                      />
-                    </div>
-                    <div
-                      className={`flex ${
-                        isMobile ? "flex-col gap-2" : "items-center"
-                      }`}
-                    >
-                      <label
-                        className={`font-medium text-gray-700 flex-shrink-0 ${
-                          isMobile
-                            ? "text-start text-md"
-                            : "text-end text-sm w-40"
-                        } pr-2`}
-                      >
-                        Preço de Venda:
-                      </label>
-                      <div className="flex-1 flex items-center space-x-2">
-                        <span className="text-gray-600">R$</span>
-                        <input
-                          type="text"
-                          name="preco"
-                          value={variationData.preco}
-                          placeholder="0,00"
-                          onChange={handleVariationInputChange}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                        />
-                      </div>
-                    </div>
-                    <div
-                      className={`flex ${
-                        isMobile ? "flex-col gap-2" : "items-center"
-                      }`}
-                    >
-                      <label
-                        className={`font-medium text-gray-700 flex-shrink-0 ${
-                          isMobile
-                            ? "text-start text-md"
-                            : "text-end text-sm w-40"
-                        } pr-2`}
-                      >
-                        Descrição:
-                      </label>
-                      <input
-                        type="text"
-                        name="descricao"
-                        value={variationData.descricao}
-                        placeholder="Descrição"
-                        onChange={handleVariationInputChange}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                      />
-                    </div>
-                    <div
-                      className={`flex ${
-                        isMobile ? "flex-col gap-2" : "items-center"
-                      }`}
-                    >
-                      <label
-                        className={`font-medium text-gray-700 flex-shrink-0 ${
-                          isMobile
-                            ? "text-start text-md"
-                            : "text-end text-sm w-40"
-                        } pr-2`}
-                      >
-                        Imagens e Vídeos:
-                      </label>
-                      <div className="flex-1">
-                        <div className="grid grid-cols-4 gap-2">
-                          {[...Array(4)].map((_, i) => (
-                            <div key={i} className="relative">
-                              {variationData.imagens[i] ? (
-                                <div className="aspect-square border-2 border-solid border-purple-400 rounded overflow-hidden bg-gray-100">
-                                  <img
-                                    src={URL.createObjectURL(
-                                      variationData.imagens[i]
-                                    )}
-                                    alt={`Imagem ${i + 1}`}
-                                    className="w-full h-full object-cover"
-                                  />
-                                  <button
-                                    onClick={() => removeVariationImage(i)}
-                                    className="absolute top-1 right-1 w-5 h-5 text-[#483D9E] flex items-center justify-center text-lg hover:text-[#211C49] transition-colors"
-                                    title="Remover imagem"
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-                              ) : (
-                                <label className="aspect-square bg-gray-200 rounded border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-300">
-                                  <Camera className="w-6 h-6 text-gray-400" />
-                                  <input
-                                    type="file"
-                                    accept="image/*,video/*"
-                                    className="hidden"
-                                    onChange={(e) =>
-                                      handleVariationFileChange(e, i)
-                                    }
-                                  />
-                                </label>
-                              )}
-                            </div>
-                          ))}
+
+                      <div className="space-y-3 bg-white p-4 rounded-lg">
+                        {/* COLE O CONTEÚDO DO FORMULÁRIO AQUI */}
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Título do Anúncio:</label>
+                          <input type="text" name="titulo" value={variationData.titulo} onChange={handleVariationInputChange} className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Ex: Cartucho Super Mario Bros - Repro"/>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Tipo do Cartucho:</label>
+                          <div className="flex-1"><CustomSelect options={tiposCartucho} value={tiposCartucho.find((o) => o.value === variationData.tipoCartucho)} onChange={(opt) => handleVariationSelectChange("tipoCartucho", opt.value)} required={true} showValidation={showValidation.step5}/></div>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Estado de Preservação:</label>
+                          <div className="flex-1"><CustomSelect options={estados} value={estados.find((o) => o.value === variationData.estadoPreservacao)} onChange={(opt) => handleVariationSelectChange("estadoPreservacao", opt.value)} required={true} showValidation={showValidation.step5}/></div>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Região do Cartucho:</label>
+                          <div className="flex-1"><CustomSelect options={regioes} value={regioes.find((o) => o.value === variationData.regiao)} onChange={(opt) => handleVariationSelectChange("regiao", opt.value)} required={true} showValidation={showValidation.step5}/></div>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Idioma do Audio:</label>
+                          <div className="flex-1"><CustomSelect options={idiomas} value={idiomas.find((o) => o.value === variationData.idiomaAudio)} onChange={(opt) => handleVariationSelectChange("idiomaAudio", opt.value)} required={true} showValidation={showValidation.step5}/></div>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Idioma da Legenda:</label>
+                          <div className="flex-1"><CustomSelect options={idiomas} value={idiomas.find((o) => o.value === variationData.idiomaLegenda)} onChange={(opt) => handleVariationSelectchange("idiomaLegenda", opt.value)} required={true} showValidation={showValidation.step5}/></div>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Idioma da Interface:</label>
+                          <div className="flex-1"><CustomSelect options={idiomas} value={idiomas.find((o) => o.value === variationData.idiomaInterface)} onChange={(opt) => handleVariationSelectChange("idiomaInterface", opt.value)} required={true} showValidation={showValidation.step5}/></div>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                           <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Estoque Disponível:</label>
+                           <input type="number" name="estoque" value={variationData.estoque} placeholder="1" onChange={handleVariationInputChange} className={`flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none ${showValidation.step5 && !variationData.estoque ? "border-red-500" : "border-gray-300"}`} min="1"/>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Preço de Venda:</label>
+                          <div className="flex-1 flex items-center space-x-2"><span className="text-gray-600">R$</span><input type="text" name="preco" value={variationData.preco} placeholder="0,00" onChange={handleVariationInputChange} className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"/></div>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Descrição:</label>
+                          <input type="text" name="descricao" value={variationData.descricao} placeholder="Descrição" onChange={handleVariationInputChange} className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"/>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Imagens e Vídeos:</label>
+                          <div className="flex-1"><div className="grid grid-cols-4 gap-2">{[...Array(4)].map((_, i) => (<div key={i} className="relative">{variationData.imagens[i] ? (<div className="aspect-square border-2 border-solid border-purple-400 rounded overflow-hidden bg-gray-100"><img src={URL.createObjectURL(variationData.imagens[i])} alt={`Imagem ${i+1}`} className="w-full h-full object-cover"/><button onClick={() => removeVariationImage(i)} className="absolute top-1 right-1 w-5 h-5 text-[#483D9E] flex items-center justify-center text-lg hover:text-[#211C49] transition-colors" title="Remover imagem">✕</button></div>) : (<label className="aspect-square bg-gray-200 rounded border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-300"><Camera className="w-6 h-6 text-gray-400"/><input type="file" accept="image/*,video/*" className="hidden" onChange={(e) => handleVariationFileChange(e, i)}/></label>)}</div>))}</div></div>
                         </div>
                       </div>
+
+                      <div className="flex justify-end gap-2 pt-4 border-t">
+                        <button onClick={handleCancelEdit} className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors">Cancelar</button>
+                        <ConfirmButton onClick={handleSaveVariation}>Salvar Alterações</ConfirmButton>
+                      </div>
                     </div>
+                  );
+                }
+
+                // =================== MODO DE VISUALIZAÇÃO NORMAL ===================
+                return (
+                  <div key={variation.id} className="border border-gray-200 rounded-lg overflow-hidden animate-fadeIn">
+                    <div className="bg-[#EDECF7] px-4 py-3 cursor-pointer transition-colors" onClick={() => toggleVariation(variation.id)}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
+                            {variation.imagens && variation.imagens[0] ? (<img src={URL.createObjectURL(variation.imagens[0])} alt={`Imagem da variação`} className="w-full h-full object-cover"/>) : (<div className="w-full h-full bg-gray-300"></div>)}
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-800">Variação {index + 1}</span>
+                            <p className="text-sm text-gray-600 truncate max-w-xs md:max-w-md">{getCartridgeTypeName(variation.tipoCartucho)} - {getPreservationStateName(variation.estadoPreservacao)} - {getRegionName(variation.regiao)}</p>
+                          </div>
+                        </div>
+                        <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform duration-300 ${expandedVariations[variation.id] ? "rotate-180" : ""}`}/>
+                      </div>
+                    </div>
+
+                    {expandedVariations[variation.id] && (
+                      <div className="bg-white p-4 border-x-8 border-[#EDECF7] border-b-8">
+                        <div className="flex items-start space-x-4">
+                           <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-800 leading-relaxed"><strong>Título:</strong> {variation.titulo}</p>
+                              <p className="text-sm text-gray-600 mt-1"><strong>Descrição:</strong> {variation.descricao || "Nenhuma descrição."}</p>
+                              <p className="text-sm text-gray-600 mt-1"><strong>Estoque:</strong> {variation.estoque}</p>
+                              <p className="text-sm text-gray-600 mt-1"><strong>Preço:</strong> R$ {variation.preco || "0,00"}</p>
+                           </div>
+                           <div className="flex items-center space-x-2 flex-shrink-0">
+                            <button onClick={() => handleEditVariation(variation)} className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full" title="Editar"><Edit className="w-4 h-4"/></button>
+                            <button onClick={() => handleDeleteVariation(variation.id)} className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-full" title="Excluir"><Trash2 className="w-4 h-4"/></button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-end gap-2 pt-4 border-t">
-                    <button
-                      onClick={handleCancelEdit}
-                      className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                    <ConfirmButton onClick={handleSaveVariation}>
-                      Adicionar Variação
-                    </ConfirmButton>
-                  </div>
-                </div>
-              ) : (
-                // =================== BOTÃO DE ADICIONAR ===================
-                <button
-                  onClick={() => {
-                    setVariationData({
-                      titulo: formData.titulo || "",
-                      tipoCartucho: formData.tipoCartucho || "",
-                      estadoPreservacao: formData.estadoPreservacao || "",
-                      regiao: formData.regiao || "",
-                      idiomaAudio: formData.idiomaAudio || "",
-                      idiomaLegenda: formData.idiomaLegenda || "",
-                      idiomaInterface: formData.idiomaInterface || "",
-                      preco: formData.preco || "",
-                      estoque: formData.estoque || "",
-                      descricao: formData.descricao || "",
-                      imagens: Array(4).fill(null),
-                    });
-                    setEditingVariationId("new");
-                  }}
-                  className={`w-full border-2 border-dashed border-purple-400 ${
-                    isMobile ? "p-4" : "p-6"
-                  } rounded-lg text-purple-600 hover:bg-purple-50 hover:border-purple-600 transition-colors font-semibold`}
-                >
-                  + Adicionar nova variação
-                </button>
-              )}
+                );
+              })}
             </div>
-          </>
-        )}
+
+            {/* Botão para ADICIONAR ou o Formulário de NOVA variação */}
+            {editingVariationId === "new" ? (
+              // =================== FORMULÁRIO DE NOVA VARIAÇÃO ===================
+              <div className={`bg-[#EDECF7] border border-gray-300 rounded-lg ${isMobile ? "p-4" : "p-6"} space-y-4 animate-fadeIn`}>
+                 <div className="flex items-center justify-between border-b pb-3">
+                    <h3 className="text-lg font-semibold text-gray-800">Nova Variação ({variations.length + 1})</h3>
+                    <button onClick={handleCancelEdit} title="Cancelar"><ChevronDown className="w-8 h-8 text-gray-600"/></button>
+                 </div>
+                 <div className="space-y-3 bg-white p-4 rounded-lg">
+                    {/* COLE O CONTEÚDO DO FORMULÁRIO AQUI */}
+                    <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Título do Anúncio:</label>
+                          <input type="text" name="titulo" value={variationData.titulo} onChange={handleVariationInputChange} className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Ex: Cartucho Super Mario Bros - Repro"/>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Tipo do Cartucho:</label>
+                          <div className="flex-1"><CustomSelect options={tiposCartucho} value={tiposCartucho.find((o) => o.value === variationData.tipoCartucho)} onChange={(opt) => handleVariationSelectChange("tipoCartucho", opt.value)} required={true} showValidation={showValidation.step5}/></div>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Estado de Preservação:</label>
+                          <div className="flex-1"><CustomSelect options={estados} value={estados.find((o) => o.value === variationData.estadoPreservacao)} onChange={(opt) => handleVariationSelectChange("estadoPreservacao", opt.value)} required={true} showValidation={showValidation.step5}/></div>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Região do Cartucho:</label>
+                          <div className="flex-1"><CustomSelect options={regioes} value={regioes.find((o) => o.value === variationData.regiao)} onChange={(opt) => handleVariationSelectChange("regiao", opt.value)} required={true} showValidation={showValidation.step5}/></div>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Idioma do Audio:</label>
+                          <div className="flex-1"><CustomSelect options={idiomas} value={idiomas.find((o) => o.value === variationData.idiomaAudio)} onChange={(opt) => handleVariationSelectChange("idiomaAudio", opt.value)} required={true} showValidation={showValidation.step5}/></div>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Idioma da Legenda:</label>
+                          <div className="flex-1"><CustomSelect options={idiomas} value={idiomas.find((o) => o.value === variationData.idiomaLegenda)} onChange={(opt) => handleVariationSelectchange("idiomaLegenda", opt.value)} required={true} showValidation={showValidation.step5}/></div>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Idioma da Interface:</label>
+                          <div className="flex-1"><CustomSelect options={idiomas} value={idiomas.find((o) => o.value === variationData.idiomaInterface)} onChange={(opt) => handleVariationSelectChange("idiomaInterface", opt.value)} required={true} showValidation={showValidation.step5}/></div>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                           <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Estoque Disponível:</label>
+                           <input type="number" name="estoque" value={variationData.estoque} placeholder="1" onChange={handleVariationInputChange} className={`flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none ${showValidation.step5 && !variationData.estoque ? "border-red-500" : "border-gray-300"}`} min="1"/>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Preço de Venda:</label>
+                          <div className="flex-1 flex items-center space-x-2"><span className="text-gray-600">R$</span><input type="text" name="preco" value={variationData.preco} placeholder="0,00" onChange={handleVariationInputChange} className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"/></div>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Descrição:</label>
+                          <input type="text" name="descricao" value={variationData.descricao} placeholder="Descrição" onChange={handleVariationInputChange} className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"/>
+                        </div>
+                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
+                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Imagens e Vídeos:</label>
+                          <div className="flex-1"><div className="grid grid-cols-4 gap-2">{[...Array(4)].map((_, i) => (<div key={i} className="relative">{variationData.imagens[i] ? (<div className="aspect-square border-2 border-solid border-purple-400 rounded overflow-hidden bg-gray-100"><img src={URL.createObjectURL(variationData.imagens[i])} alt={`Imagem ${i+1}`} className="w-full h-full object-cover"/><button onClick={() => removeVariationImage(i)} className="absolute top-1 right-1 w-5 h-5 text-[#483D9E] flex items-center justify-center text-lg hover:text-[#211C49] transition-colors" title="Remover imagem">✕</button></div>) : (<label className="aspect-square bg-gray-200 rounded border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-300"><Camera className="w-6 h-6 text-gray-400"/><input type="file" accept="image/*,video/*" className="hidden" onChange={(e) => handleVariationFileChange(e, i)}/></label>)}</div>))}</div></div>
+                        </div>
+                 </div>
+                 <div className="flex justify-end gap-2 pt-4 border-t">
+                    <button onClick={handleCancelEdit} className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors">Cancelar</button>
+                    <ConfirmButton onClick={handleSaveVariation}>Adicionar Variação</ConfirmButton>
+                 </div>
+              </div>
+            ) : (
+              // =================== BOTÃO DE ADICIONAR ===================
+              <button
+                onClick={() => {
+                  setVariationData({
+                    titulo: formData.titulo || "",
+                    tipoCartucho: formData.tipoCartucho || "",
+                    estadoPreservacao: formData.estadoPreservacao || "",
+                    regiao: formData.regiao || "",
+                    idiomaAudio: formData.idiomaAudio || "",
+                    idiomaLegenda: formData.idiomaLegenda || "",
+                    idiomaInterface: formData.idiomaInterface || "",
+                    preco: formData.preco || "",
+                    estoque: formData.estoque || "",
+                    descricao: formData.descricao || "",
+                    imagens: Array(4).fill(null),
+                  });
+                  setEditingVariationId("new");
+                }}
+                className={`w-full border-2 border-dashed border-purple-400 ${
+                  isMobile ? "p-4" : "p-6"
+                } rounded-lg text-purple-600 hover:bg-purple-50 hover:border-purple-600 transition-colors font-semibold`}
+              >
+                + Adicionar nova variação
+              </button>
+            )}
+          </div>
+        </>
+      )}
         {/* STEP 5 - Publicar Anúncio */}
         {step === 5 && (
           <>
