@@ -38,6 +38,15 @@ export interface FrontendVariationData {
   estoque: string;
   descricao: string;
   imagens: (File | null)[];
+  
+  // Campos específicos para troca nas variações (se aplicável)
+  jogosTroca?: string;
+  tiposTroca?: string;
+  estadosTroca?: string;
+  regioesTroca?: string;
+  idiomasAudioTroca?: string;
+  idiomasLegendaTroca?: string;
+  idiomasInterfaceTroca?: string;
 }
 
 // Função para converter string para ID usando dados de referência
@@ -62,7 +71,7 @@ function convertStringToId(
 }
 
 // Função para converter dados do formulário principal
-export function convertFormDataToBackend(
+export async function convertFormDataToBackend(
   formData: FrontendFormData,
   variations: FrontendVariationData[] = [],
   referenceData?: {
@@ -72,7 +81,8 @@ export function convertFormDataToBackend(
     languages: Array<{ id: number; name: string }>;
   },
   gameLocalizationId?: number,
-  languageSupportsIds?: number[]
+  languageSupportsIds?: number[],
+  getTradeLanguageSupportIds?: (gameId: number, audioLanguage?: string, subtitleLanguage?: string, interfaceLanguage?: string) => Promise<number[]>
 ): AdvertisementForCreationDTO {
   console.log('=== INICIANDO CONVERSÃO DE DADOS ===');
   console.log('FormData recebido:', formData);
@@ -81,27 +91,83 @@ export function convertFormDataToBackend(
   const isTrade = formData.condicoes.includes('Troca');
   console.log('É troca?', isTrade);
   
-  // Converter variações
-  const backendVariations: AdvertisementVariationForCreationDTO[] = variations.map(variation => ({
-    title: variation.titulo,
-    description: variation.descricao,
-    availableStock: parseInt(variation.estoque) || 1,
-    preservationStateId: referenceData ? 
-      convertStringToId(variation.estadoPreservacao, referenceData.preservationStates) || 0 : 
-      parseInt(variation.estadoPreservacao) || 0,
-    cartridgeTypeId: referenceData ? 
-      convertStringToId(variation.tipoCartucho, referenceData.cartridgeTypes) || 0 : 
-      parseInt(variation.tipoCartucho) || 0,
-    gameLocalizationId: gameLocalizationId,
-    languageSupportsIds: languageSupportsIds || [],
-    price: variation.preco ? parseFloat(variation.preco.replace(',', '.')) : undefined,
-    isTrade: isTrade,
-    acceptedTradeGameIds: isTrade ? [] : undefined,
-    acceptedTradeCartridgeTypeIds: isTrade ? [] : undefined,
-    acceptedTradePreservationStateIds: isTrade ? [] : undefined,
-    acceptedTradeLanguageSupportIds: isTrade ? [] : undefined,
-    acceptedTradeRegionIds: isTrade ? [] : undefined,
-  }));
+  // Converter variações (processar de forma assíncrona)
+  const backendVariations: AdvertisementVariationForCreationDTO[] = await Promise.all(
+    variations.map(async (variation) => {
+      // Processar dados de trade para variações (se aplicável)
+      const acceptedTradeGameIds = isTrade && variation.jogosTroca ? [parseInt(variation.jogosTroca)] : [];
+      const acceptedTradeCartridgeTypeIds = isTrade && variation.tiposTroca ? 
+        [referenceData ? convertStringToId(variation.tiposTroca, referenceData.cartridgeTypes) || 0 : parseInt(variation.tiposTroca) || 0] : [];
+      const acceptedTradePreservationStateIds = isTrade && variation.estadosTroca ? 
+        [referenceData ? convertStringToId(variation.estadosTroca, referenceData.preservationStates) || 0 : parseInt(variation.estadosTroca) || 0] : [];
+      
+      // Para regiões e idiomas de trade, precisamos buscar os IDs corretos
+      const acceptedTradeRegionIds = isTrade && variation.regioesTroca ? [parseInt(variation.regioesTroca)] : [];
+      
+      // Para idiomas de trade nas variações, precisamos buscar os language_support IDs correspondentes
+      let acceptedTradeLanguageSupportIds: number[] = [];
+      if (isTrade && getTradeLanguageSupportIds && variation.jogosTroca) {
+        try {
+          acceptedTradeLanguageSupportIds = await getTradeLanguageSupportIds(
+            parseInt(variation.jogosTroca),
+            variation.idiomasAudioTroca,
+            variation.idiomasLegendaTroca,
+            variation.idiomasInterfaceTroca
+          );
+        } catch (error) {
+          console.error("Erro ao buscar language support IDs para trade na variação:", error);
+          acceptedTradeLanguageSupportIds = [];
+        }
+      }
+
+      return {
+        title: variation.titulo,
+        description: variation.descricao,
+        availableStock: parseInt(variation.estoque) || 1,
+        preservationStateId: referenceData ? 
+          convertStringToId(variation.estadoPreservacao, referenceData.preservationStates) || 0 : 
+          parseInt(variation.estadoPreservacao) || 0,
+        cartridgeTypeId: referenceData ? 
+          convertStringToId(variation.tipoCartucho, referenceData.cartridgeTypes) || 0 : 
+          parseInt(variation.tipoCartucho) || 0,
+        gameLocalizationId: gameLocalizationId,
+        languageSupportsIds: languageSupportsIds || [],
+        price: variation.preco ? parseFloat(variation.preco.replace(',', '.')) : undefined,
+        isTrade: isTrade,
+        acceptedTradeGameIds: acceptedTradeGameIds,
+        acceptedTradeCartridgeTypeIds: acceptedTradeCartridgeTypeIds,
+        acceptedTradePreservationStateIds: acceptedTradePreservationStateIds,
+        acceptedTradeLanguageSupportIds: acceptedTradeLanguageSupportIds,
+        acceptedTradeRegionIds: acceptedTradeRegionIds,
+      };
+    })
+  );
+
+  // Processar dados de trade para o formulário principal
+  const acceptedTradeGameIds = isTrade && formData.jogosTroca ? [parseInt(formData.jogosTroca)] : [];
+  const acceptedTradeCartridgeTypeIds = isTrade && formData.tiposTroca ? 
+    [referenceData ? convertStringToId(formData.tiposTroca, referenceData.cartridgeTypes) || 0 : parseInt(formData.tiposTroca) || 0] : [];
+  const acceptedTradePreservationStateIds = isTrade && formData.estadosTroca ? 
+    [referenceData ? convertStringToId(formData.estadosTroca, referenceData.preservationStates) || 0 : parseInt(formData.estadosTroca) || 0] : [];
+  
+  // Para regiões e idiomas de trade do formulário principal
+  const acceptedTradeRegionIds = isTrade && formData.regioesTroca ? [parseInt(formData.regioesTroca)] : [];
+  
+  // Para idiomas de trade, precisamos buscar os language_support IDs correspondentes
+  let acceptedTradeLanguageSupportIds: number[] = [];
+  if (isTrade && getTradeLanguageSupportIds && formData.jogosTroca) {
+    try {
+      acceptedTradeLanguageSupportIds = await getTradeLanguageSupportIds(
+        parseInt(formData.jogosTroca),
+        formData.idiomasAudioTroca,
+        formData.idiomasLegendaTroca,
+        formData.idiomasInterfaceTroca
+      );
+    } catch (error) {
+      console.error("Erro ao buscar language support IDs para trade:", error);
+      acceptedTradeLanguageSupportIds = [];
+    }
+  }
 
   // Construir dados principais
   const backendData: AdvertisementForCreationDTO = {
@@ -119,11 +185,11 @@ export function convertFormDataToBackend(
     gameId: parseInt(formData.jogo) || 0,
     price: formData.preco ? parseFloat(formData.preco.replace(',', '.')) : undefined,
     isTrade: isTrade,
-    acceptedTradeGameIds: isTrade ? [] : undefined,
-    acceptedTradeCartridgeTypeIds: isTrade ? [] : undefined,
-    acceptedTradePreservationStateIds: isTrade ? [] : undefined,
-    acceptedTradeLanguageSupportIds: isTrade ? [] : undefined,
-    acceptedTradeRegionIds: isTrade ? [] : undefined,
+    acceptedTradeGameIds: acceptedTradeGameIds,
+    acceptedTradeCartridgeTypeIds: acceptedTradeCartridgeTypeIds,
+    acceptedTradePreservationStateIds: acceptedTradePreservationStateIds,
+    acceptedTradeLanguageSupportIds: acceptedTradeLanguageSupportIds,
+    acceptedTradeRegionIds: acceptedTradeRegionIds,
     variations: backendVariations,
   };
 

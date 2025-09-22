@@ -27,7 +27,6 @@ class AdvertisementCreationService {
       console.error('Request Data:', error.config?.data);
       console.error('==============================');
       
-      // Tratar erros específicos do backend
       if (error.response?.data?.error) {
         const backendError = error.response.data.error;
         
@@ -39,7 +38,6 @@ class AdvertisementCreationService {
           throw new Error('Sua sessão expirou. Faça login novamente.');
         }
         
-        // Usar a mensagem do backend se disponível
         throw new Error(backendError);
       }
       
@@ -71,63 +69,55 @@ class AdvertisementCreationService {
     }
   ): Promise<AdvertisementCreationResponse> {
     try {
-      console.log('=== CONVERTENDO DADOS DO FORMULÁRIO ===');
-      console.log('FormData:', formData);
-      console.log('Variations:', variations);
-      console.log('ReferenceData:', referenceData);
-      
-      // Buscar gameLocalizationId correto
+      // 1. Converter todos os dados do formulário para o formato que o backend espera
       const gameLocalizationId = await this.getGameLocalizationId(
         parseInt(formData.jogo), 
         formData.regiao, 
         referenceData
       );
-      
-      console.log('=== GAME LOCALIZATION ID ENCONTRADO ===');
-      console.log('GameLocalizationId:', gameLocalizationId);
-      
-      // Buscar languageSupportsIds corretos
       const languageSupportsIds = await this.getLanguageSupportsIds(
         parseInt(formData.jogo),
         formData.idiomaAudio,
         formData.idiomaLegenda,
         formData.idiomaInterface
       );
-      
-      console.log('=== LANGUAGE SUPPORTS IDS ENCONTRADOS ===');
-      console.log('LanguageSupportsIds:', languageSupportsIds);
-      
-      // Converter dados do formulário para formato do backend
       const backendData = convertFormDataToBackend(formData, variations, referenceData, gameLocalizationId, languageSupportsIds);
       
-      console.log('=== DADOS CONVERTIDOS ===');
-      console.log('Backend Data:', backendData);
-      
-      // Validar dados antes do envio
       const validationErrors = this.validateAdvertisementData(backendData);
       if (validationErrors.length > 0) {
-        console.error('=== ERROS DE VALIDAÇÃO ===');
-        validationErrors.forEach(error => console.error('-', error));
         throw new Error(`Dados inválidos: ${validationErrors.join(', ')}`);
       }
       
-      // Criar anúncio sem imagens primeiro
+      // 2. Criar o anúncio principal e suas variações de uma só vez.
+      //    A resposta deve conter os IDs reais de tudo que foi criado.
       const advertisement = await this.createAdvertisement(backendData);
 
-      // Se há imagens, fazer upload delas
+      // 3. Fazer upload das imagens do anúncio principal
       const mainImages = extractValidImages(formData.imagens);
       if (mainImages.length > 0) {
         await this.uploadImages(advertisement.id, mainImages);
       }
 
-      // Upload de imagens das variações (se houver)
-      for (let i = 0; i < variations.length; i++) {
-        const variationImages = extractValidImages(variations[i].imagens);
-        if (variationImages.length > 0) {
-          // Note: O backend pode precisar de ajustes para suportar imagens por variação
-          // Por enquanto, vamos fazer upload para o anúncio principal
-          await this.uploadImages(advertisement.id, variationImages);
+      // 4. Fazer upload das imagens de cada variação, usando os IDs reais retornados pelo backend
+      if (advertisement.variations && advertisement.variations.length === variations.length) {
+        for (let i = 0; i < variations.length; i++) {
+          const frontendVariation = variations[i];
+          const createdVariation = advertisement.variations[i]; // Variação com ID real do backend
+          
+          const variationImages = extractValidImages(frontendVariation.imagens);
+          
+          if (variationImages.length > 0) {
+            console.log(`Fazendo upload de imagens para a variação ID: ${createdVariation.id}`);
+
+            // Vincula a imagem à VARIAÇÃO específica, enviando o 'createdVariation.id' no corpo da requisição.
+            await this.uploadImages(advertisement.id, variationImages, createdVariation.id);
+            
+            // Vincula a MESMA imagem ao ANÚNCIO PRINCIPAL, chamando a função sem o 'variationId'.
+            await this.uploadImages(advertisement.id, variationImages);
+          }
         }
+      } else {
+        console.warn('A resposta do backend não continha as variações criadas ou o número de variações não corresponde. O upload de imagens das variações foi ignorado.');
       }
 
       return advertisement;
@@ -140,7 +130,6 @@ class AdvertisementCreationService {
   // Criar anúncio com formulário (com imagens)
   async createAdvertisementWithForm(formData: AdvertisementFormData): Promise<AdvertisementCreationResponse> {
     try {
-      // Primeiro, criar o anúncio sem imagens
       const advertisementData: AdvertisementForCreationDTO = {
         title: formData.title,
         description: formData.description,
@@ -175,14 +164,9 @@ class AdvertisementCreationService {
         }))
       };
 
-      // Testar dados primeiro
-      console.log('Testando dados antes de criar anúncio...');
       await this.testAdvertisement(advertisementData);
-      console.log('Dados validados com sucesso!');
-
       const advertisement = await this.createAdvertisement(advertisementData);
 
-      // Se há imagens, fazer upload delas
       if (formData.images && formData.images.length > 0) {
         await this.uploadImages(advertisement.id, formData.images);
       }
@@ -194,22 +178,32 @@ class AdvertisementCreationService {
     }
   }
 
-  // Upload de imagens para um anúncio
-  async uploadImages(advertisementId: number, images: File[]): Promise<void> {
+  /**
+   * Faz upload de imagens para um anúncio. Se um 'variationId' for fornecido,
+   * ele é enviado no corpo do formulário para que o backend associe a imagem
+   * à variação correta.
+   * @param advertisementId - O ID do anúncio principal (pai).
+   * @param images - Um array de arquivos de imagem.
+   * @param variationId - (Opcional) O ID da variação específica à qual a imagem pertence.
+   */
+  async uploadImages(advertisementId: number, images: File[], variationId?: number): Promise<void> {
     try {
       const formData = new FormData();
-      
-      images.forEach((image, index) => {
-        formData.append('images', image);
-      });
+      images.forEach(image => formData.append('images', image));
 
-      await api.post(`${this.baseUrl}/${advertisementId}/images`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      // Se um ID de variação for fornecido, adicione-o ao corpo do formulário.
+      if (variationId) {
+        formData.append('variationId', variationId.toString());
+      }
+
+      const url = `${this.baseUrl}/${advertisementId}/images`;
+      console.log(`Enviando imagens para ${url}` + (variationId ? ` com variationId: ${variationId}` : ''));
+
+      await api.post(url, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
     } catch (error) {
-      console.error('Erro ao fazer upload das imagens:', error);
+      console.error(`Erro ao fazer upload de imagens para o anúncio ${advertisementId}` + (variationId ? ` (variação ${variationId})` : '') + ':', error);
       throw error;
     }
   }
@@ -221,9 +215,7 @@ class AdvertisementCreationService {
       formData.append('image', image);
 
       await api.post(`${this.baseUrl}/${advertisementId}/image`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
     } catch (error) {
       console.error('Erro ao fazer upload da imagem:', error);
@@ -252,7 +244,7 @@ class AdvertisementCreationService {
     }
   }
 
-  // Buscar languageSupportsIds baseado no gameId e tipos de idioma
+  // Métodos privados para buscar IDs de referência
   private async getLanguageSupportsIds(
     gameId: number,
     audioLanguage?: string,
@@ -261,31 +253,20 @@ class AdvertisementCreationService {
   ): Promise<number[]> {
     try {
       const languageSupportsIds: number[] = [];
+      const languageSupportTypes = { audio: 1, subtitles: 2, interface: 3 };
 
-      // Mapear tipos de suporte de idioma
-      const languageSupportTypes = {
-        audio: 1,      // Audio
-        subtitles: 2,  // Subtitles  
-        interface: 3   // Interface
-      };
-
-      // Buscar LanguageSupport para cada tipo de idioma selecionado
       if (audioLanguage) {
         const audioSupport = await this.findLanguageSupport(gameId, parseInt(audioLanguage), languageSupportTypes.audio);
         if (audioSupport) languageSupportsIds.push(audioSupport.id);
       }
-
       if (subtitleLanguage) {
         const subtitleSupport = await this.findLanguageSupport(gameId, parseInt(subtitleLanguage), languageSupportTypes.subtitles);
         if (subtitleSupport) languageSupportsIds.push(subtitleSupport.id);
       }
-
       if (interfaceLanguage) {
         const interfaceSupport = await this.findLanguageSupport(gameId, parseInt(interfaceLanguage), languageSupportTypes.interface);
         if (interfaceSupport) languageSupportsIds.push(interfaceSupport.id);
       }
-
-      console.log('LanguageSupportsIds encontrados:', languageSupportsIds);
       return languageSupportsIds;
     } catch (error) {
       console.error('Erro ao buscar LanguageSupports:', error);
@@ -293,141 +274,57 @@ class AdvertisementCreationService {
     }
   }
 
-  // Buscar um LanguageSupport específico
   private async findLanguageSupport(gameId: number, languageId: number, supportTypeId: number): Promise<any> {
     try {
-      console.log(`Buscando LanguageSupport para GameId: ${gameId}, LanguageId: ${languageId}, SupportTypeId: ${supportTypeId}`);
-      
       const response = await api.get('/api/language-supports', {
-        params: {
-          GameId: gameId,
-          LanguageSupportTypeId: supportTypeId
-        }
+        params: { GameId: gameId, LanguageSupportTypeId: supportTypeId }
       });
-
-      const languageSupports = response.data;
-      console.log('LanguageSupports encontrados:', languageSupports);
-
-      // Encontrar o LanguageSupport que corresponde ao idioma selecionado
-      const languageSupport = languageSupports.find((ls: any) => ls.language.id === languageId);
-      
-      if (languageSupport) {
-        console.log('LanguageSupport encontrado:', languageSupport);
-        return languageSupport;
-      }
-
-      console.log('Nenhum LanguageSupport encontrado para o idioma selecionado');
-      return null;
+      return response.data.find((ls: any) => ls.language.id === languageId) || null;
     } catch (error) {
       console.error('Erro ao buscar LanguageSupport específico:', error);
       return null;
     }
   }
 
-  // Buscar gameLocalizationId baseado no gameId e regionId
   private async getGameLocalizationId(
     gameId: number, 
     regionValue: string, 
-    referenceData?: { 
-      regions: Array<{ id: number; name?: string; identifier?: string }>;
-    }
+    referenceData?: { regions: Array<{ id: number; name?: string; identifier?: string }> }
   ): Promise<number | undefined> {
     try {
-      // Se não temos dados de referência, retornar undefined
-      if (!referenceData?.regions) {
-        console.log('Sem dados de região disponíveis');
-        return undefined;
-      }
-
-      // Encontrar o regionId baseado no valor da região
+      if (!referenceData?.regions) return undefined;
       const region = referenceData.regions.find(r => 
-        r.id.toString() === regionValue || 
-        r.name === regionValue || 
-        r.identifier === regionValue
+        r.id.toString() === regionValue || r.name === regionValue || r.identifier === regionValue
       );
+      if (!region) return undefined;
 
-      if (!region) {
-        console.log('Região não encontrada:', regionValue);
-        return undefined;
-      }
-
-      console.log('Buscando GameLocalization para GameId:', gameId, 'RegionId:', region.id);
-
-      // Buscar game localizations para este jogo e região
       const response = await api.get('/api/game-localizations', {
-        params: {
-          GameId: gameId,
-          Region: region.identifier || region.name || region.id.toString()
-        }
+        params: { GameId: gameId, Region: region.identifier || region.name || region.id.toString() }
       });
-
-      const gameLocalizations = response.data;
-      console.log('GameLocalizations encontrados:', gameLocalizations);
-
-      if (gameLocalizations && gameLocalizations.length > 0) {
-        const gameLocalization = gameLocalizations[0]; // Pegar o primeiro
-        console.log('GameLocalization selecionado:', gameLocalization);
-        return gameLocalization.id;
-      }
-
-      console.log('Nenhum GameLocalization encontrado');
-      return undefined;
+      return response.data?.[0]?.id;
     } catch (error) {
       console.error('Erro ao buscar GameLocalization:', error);
       return undefined;
     }
   }
 
-  // Validar dados do anúncio antes do envio
+  // Validador de dados
   private validateAdvertisementData(data: AdvertisementForCreationDTO): string[] {
     const errors: string[] = [];
+    if (!data.title?.trim()) errors.push('Título é obrigatório');
+    if (!data.gameId || data.gameId <= 0) errors.push('GameId deve ser maior que 0');
+    if (!data.preservationStateId || data.preservationStateId <= 0) errors.push('PreservationStateId deve ser maior que 0');
+    if (!data.cartridgeTypeId || data.cartridgeTypeId <= 0) errors.push('CartridgeTypeId deve ser maior que 0');
+    if (data.availableStock < 1) errors.push('Estoque deve ser pelo menos 1');
+    if ((!data.price || data.price <= 0) && !data.isTrade) errors.push('Anúncio deve ter preço OU permitir troca');
 
-    // Validar campos obrigatórios
-    if (!data.title || data.title.trim() === '') {
-      errors.push('Título é obrigatório');
-    }
-
-    if (!data.gameId || data.gameId <= 0) {
-      errors.push('GameId deve ser maior que 0');
-    }
-
-    if (!data.preservationStateId || data.preservationStateId <= 0) {
-      errors.push('PreservationStateId deve ser maior que 0');
-    }
-
-    if (!data.cartridgeTypeId || data.cartridgeTypeId <= 0) {
-      errors.push('CartridgeTypeId deve ser maior que 0');
-    }
-
-    if (data.availableStock < 1) {
-      errors.push('Estoque deve ser pelo menos 1');
-    }
-
-    // Validar regra de negócio: deve ter preço OU ser troca
-    if ((!data.price || data.price <= 0) && !data.isTrade) {
-      errors.push('Anúncio deve ter preço OU permitir troca');
-    }
-
-    // Validar variações
-    if (data.variations && data.variations.length > 0) {
-      data.variations.forEach((variation, index) => {
-        if (!variation.title || variation.title.trim() === '') {
-          errors.push(`Variação ${index + 1}: Título é obrigatório`);
-        }
-        if (!variation.preservationStateId || variation.preservationStateId <= 0) {
-          errors.push(`Variação ${index + 1}: PreservationStateId deve ser maior que 0`);
-        }
-        if (!variation.cartridgeTypeId || variation.cartridgeTypeId <= 0) {
-          errors.push(`Variação ${index + 1}: CartridgeTypeId deve ser maior que 0`);
-        }
-        if (variation.availableStock < 1) {
-          errors.push(`Variação ${index + 1}: Estoque deve ser pelo menos 1`);
-        }
-        if ((!variation.price || variation.price <= 0) && !variation.isTrade) {
-          errors.push(`Variação ${index + 1}: Deve ter preço OU permitir troca`);
-        }
-      });
-    }
+    data.variations?.forEach((variation, index) => {
+      if (!variation.title?.trim()) errors.push(`Variação ${index + 1}: Título é obrigatório`);
+      if (!variation.preservationStateId || variation.preservationStateId <= 0) errors.push(`Variação ${index + 1}: PreservationStateId deve ser maior que 0`);
+      if (!variation.cartridgeTypeId || variation.cartridgeTypeId <= 0) errors.push(`Variação ${index + 1}: CartridgeTypeId deve ser maior que 0`);
+      if (variation.availableStock < 1) errors.push(`Variação ${index + 1}: Estoque deve ser pelo menos 1`);
+      if ((!variation.price || variation.price <= 0) && !variation.isTrade) errors.push(`Variação ${index + 1}: Deve ter preço OU permitir troca`);
+    });
 
     return errors;
   }

@@ -6,6 +6,11 @@ import SellerInfo from "./SellerInfo";
 import ProductDescription from "./ProductDescription";
 import ProductVariations from "./ProductVariations";
 import ProductCharacteristics from "./ProductCharacteristics";
+import { AdvertisementDTO } from "../api/types";
+
+interface AdDetailsProps {
+  advertisement?: AdvertisementDTO;
+}
 
 // Dados mockados (sem alterações)
 const mockAdData = {
@@ -71,53 +76,103 @@ Produto sem garantia.`,
   },
 };
 
-const AdDetails: React.FC = () => {
+const AdDetails: React.FC<AdDetailsProps> = ({ advertisement }) => {
+  // Criar mock data compatível com AdvertisementDTO se não houver dados reais
+
+  // Usar dados reais se disponíveis, senão usar mock compatível
+  const adData = advertisement;
+
+  // Criar breadcrumb dinâmico baseado no anúncio
+  const createBreadcrumb = () => {
+    if (adData) {
+      const breadcrumbs = ["Voltar"];
+
+      // Adicionar plataforma do jogo se disponível
+      if (adData.game?.platform?.name) {
+        breadcrumbs.push(adData.game.platform.name);
+      }
+
+      // Adicionar gêneros se disponível
+      if (adData.game?.genres && adData.game.genres.length > 0) {
+        breadcrumbs.push(adData.game.genres[0].name);
+      }
+
+      // Adicionar estado de preservação
+      if (adData.preservationState?.name) {
+        breadcrumbs.push(adData.preservationState.name);
+      }
+
+      // Adicionar tipo de cartucho
+      if (adData.cartridgeType?.name) {
+        breadcrumbs.push(adData.cartridgeType.name);
+      }
+
+      // Adicionar nome do jogo
+      if (adData.game?.name) {
+        breadcrumbs.push(adData.game.name);
+      } else {
+        // Extrair nome do jogo do título se não estiver disponível
+        const title = adData.title || "";
+        const gameName = title.split(" - ")[0] || title;
+        breadcrumbs.push(gameName);
+      }
+
+      return { breadcrumbs };
+    }
+    return mockAdData.navigation;
+  };
+
+  const navigationData = createBreadcrumb();
+
   return (
     <>
-    <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
-      <NavigationHistoryBar data={mockAdData.navigation} />
-      <div className="max-w-7xl mx-auto bg-white font-sans rounded-lg p-4">
-        
-        {/* Container Principal: Coluna em mobile, linha em telas grandes */}
-        <div className="flex flex-col lg:flex-row lg:gap-2">
-          
-          {/* Coluna Principal de Conteúdo (Esquerda) */}
-          <div className="flex-1 flex flex-col gap-2">
-            
-            {/* Seção Superior: Imagem e Informações do Produto */}
-            <div className="flex flex-col md:flex-row md:gap-2">
-              {/* Galeria de Imagens */}
-              <div className="w-full md:w-2/3">
-                <ProductImageGallery data={mockAdData.images} />
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+        <NavigationHistoryBar data={navigationData} />
+        <div className="max-w-8xl mx-auto bg-white font-sans rounded-lg p-4">
+          {/* Container Principal: Coluna em mobile, linha em telas grandes */}
+          <div className="flex flex-col lg:flex-row lg:gap-2">
+            {/* Coluna Principal de Conteúdo (Esquerda) */}
+            <div className="flex-1 flex flex-col gap-2">
+              {/* Seção Superior: Imagem e Informações do Produto */}
+              <div className="flex flex-col md:flex-row md:gap-2">
+                {/* Galeria de Imagens */}
+                <div className="w-full md:w-2/3">
+                  <ProductImageGallery
+                    images={
+                      Array.isArray(adData.images) ? adData.images : undefined
+                    }
+                    fallbackImage="/logo.svg"
+                  />
+                </div>
+
+                {/* Informações do Produto (título, preço, etc.) */}
+                <div className="w-full md:w-1/3 mt-4 md:mt-0">
+                  <ProductInfo advertisement={adData} />
+                </div>
               </div>
-              
-              {/* Informações do Produto (título, preço, etc.) */}
-              <div className="w-full md:w-1/3 mt-4 md:mt-0">
-                <ProductInfo data={mockAdData} />
+
+              {/* Informações do Vendedor */}
+              <div className="w-full">
+                <SellerInfo advertisement={adData} />
               </div>
             </div>
 
-            {/* Informações do Vendedor */}
-            <div className="w-full">
-              <SellerInfo data={mockAdData.seller} />
+            {/* Coluna da Direita: Variações do Produto */}
+            <div className="w-full lg:w-1/4 mt-6 lg:mt-0">
+              <ProductVariations
+                variations={
+                  Array.isArray(adData.variations) ? adData.variations : []
+                }
+                mainAdvertisement={adData}
+              />
             </div>
-            
-            
           </div>
-
-          {/* Coluna da Direita: Variações do Produto */}
-          <div className="w-full lg:w-1/4 mt-6 lg:mt-0">
-            <ProductVariations data={mockAdData.variations} />
-          </div>
-          
         </div>
-      </div>
-      {/* Descrição do Produto */}
-      <div className="w-full">
-               <ProductDescription data={mockAdData.description} />
-               <ProductCharacteristics />
-      </div>
-
+        {/* Descrição do Produto */}
+        <div className="w-full">
+          <ProductDescription advertisement={adData} />
+          <ProductCharacteristics />
+        </div>
       </div>
     </>
   );

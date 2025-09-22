@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Camera, ChevronDown, Edit, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import InfoTooltip from "./InfoToolTip";
@@ -11,6 +11,7 @@ import StepHeader from "./StepHeader";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useAdvertisementCreation } from "../hooks/useAdvertisementCreation";
 import { useReferenceData } from "../hooks/useReferenceData";
+import { useGameSpecificData } from "../hooks/useGameSpecificData";
 import {
   validateFormData,
   validateVariations,
@@ -25,9 +26,6 @@ const MultiPartFormSaleAndTrade = () => {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   // Hook para dados de referência
-  const handleReferenceDataError = useCallback((error: Error) => {
-    console.error("Erro ao carregar dados de referência:", error);
-  }, []);
 
   const resetAndHideVariationForm = () => {
     setEditingVariationId(null);
@@ -62,17 +60,16 @@ const MultiPartFormSaleAndTrade = () => {
     getGameOptions,
     getPreservationStateOptions,
     getCartridgeTypeOptions,
-    getRegionOptions,
-    getLanguageOptions,
     getGameById,
     getPreservationStateById,
     getCartridgeTypeById,
     getRegionById,
     getLanguageById,
-  } = useReferenceData({
-    autoLoad: true,
-    onError: handleReferenceDataError,
-  });
+  } = useReferenceData();
+
+  // Hooks para dados específicos de cada jogo separadamente
+  const mainGameData = useGameSpecificData();
+  const tradeGameData = useGameSpecificData();
 
   // Hook para criação de anúncios
   const {
@@ -96,8 +93,8 @@ const MultiPartFormSaleAndTrade = () => {
   const saveVariationsToStorage = (variationsToSave) => {
     try {
       localStorage.setItem("tcc-variations", JSON.stringify(variationsToSave));
-    } catch (error) {
-      console.error("Erro ao salvar variações no localStorage:", error);
+    } catch {
+      // Ignore storage errors
     }
   };
 
@@ -105,8 +102,7 @@ const MultiPartFormSaleAndTrade = () => {
     try {
       const saved = localStorage.getItem("tcc-variations");
       return saved ? JSON.parse(saved) : [];
-    } catch (error) {
-      console.error("Erro ao carregar variações do localStorage:", error);
+    } catch {
       return [];
     }
   };
@@ -172,10 +168,37 @@ const MultiPartFormSaleAndTrade = () => {
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Quando um jogo é selecionado, buscar dados específicos do jogo principal
+    if (name === "jogo" && value) {
+      console.log(`🎮 Jogo principal selecionado: ${value}`);
+      mainGameData.fetchGameData(parseInt(value));
+    } else if (name === "jogo" && !value) {
+      // Se o jogo for desmarcado, limpar os dados específicos
+      mainGameData.clearData();
+    }
+
+    // Quando um jogo de troca é selecionado, buscar dados específicos do jogo de troca
+    if (name === "jogosTroca" && value) {
+      console.log(`🎮 Jogo de troca selecionado: ${value}`);
+      tradeGameData.fetchGameData(parseInt(value));
+    } else if (name === "jogosTroca" && !value) {
+      // Se o jogo de troca for desmarcado, limpar os dados específicos
+      tradeGameData.clearData();
+    }
   };
 
   const handleVariationSelectChange = (name: string, value: string) => {
     setVariationData((prev) => ({ ...prev, [name]: value }));
+
+    // Quando um jogo de troca é selecionado na variação, buscar dados específicos do jogo de troca
+    if (name === "jogosTroca" && value) {
+      console.log(`🎮 Jogo de troca selecionado na variação: ${value}`);
+      tradeGameData.fetchGameData(parseInt(value));
+    } else if (name === "jogosTroca" && !value) {
+      // Se o jogo de troca for desmarcado, limpar os dados específicos
+      tradeGameData.clearData();
+    }
   };
 
   const handleVariationInputChange = (
@@ -334,28 +357,51 @@ const MultiPartFormSaleAndTrade = () => {
       // Ativar validação apenas do step 2
       setShowValidation((prev) => ({ ...prev, step2: true }));
 
-      if (
-        !formData.jogo ||
-        !formData.tipoCartucho ||
-        !formData.estadoPreservacao ||
-        !formData.regiao ||
-        !formData.idiomaAudio
-      ) {
+      // Verificar se campos obrigatórios estão preenchidos
+      const hasRequiredFields =
+        formData.jogo && formData.tipoCartucho && formData.estadoPreservacao;
+
+      // Verificar campos condicionais (apenas se estão visíveis)
+      const hasRegionField =
+        formData.jogo && mainGameData.getAvailableRegions().length > 0;
+      const hasAudioField =
+        formData.jogo && mainGameData.getAvailableAudioLanguages().length > 0;
+
+      const hasConditionalFields =
+        (!hasRegionField || formData.regiao) &&
+        (!hasAudioField || formData.idiomaAudio);
+
+      if (!hasRequiredFields || !hasConditionalFields) {
         return; // Não prosseguir se campos obrigatórios estiverem vazios
       }
     } else if (step === 3) {
       // Ativar validação apenas do step 3
       setShowValidation((prev) => ({ ...prev, step3: true }));
 
-      if (
-        !formData.jogosTroca ||
-        !formData.tiposTroca ||
-        !formData.estadosTroca ||
-        !formData.regioesTroca ||
-        !formData.idiomasAudioTroca ||
-        !formData.idiomasLegendaTroca ||
-        !formData.idiomasInterfaceTroca
-      ) {
+      // Verificar se campos obrigatórios estão preenchidos
+      const hasRequiredFields =
+        formData.jogosTroca && formData.tiposTroca && formData.estadosTroca;
+
+      // Verificar campos condicionais da troca (apenas se estão visíveis)
+      const hasRegionFieldTroca =
+        formData.jogosTroca && tradeGameData.getAvailableRegions().length > 0;
+      const hasAudioFieldTroca =
+        formData.jogosTroca &&
+        tradeGameData.getAvailableAudioLanguages().length > 0;
+      const hasSubtitleFieldTroca =
+        formData.jogosTroca &&
+        tradeGameData.getAvailableSubtitleLanguages().length > 0;
+      const hasInterfaceFieldTroca =
+        formData.jogosTroca &&
+        tradeGameData.getAvailableInterfaceLanguages().length > 0;
+
+      const hasConditionalFieldsTroca =
+        (!hasRegionFieldTroca || formData.regioesTroca) &&
+        (!hasAudioFieldTroca || formData.idiomasAudioTroca) &&
+        (!hasSubtitleFieldTroca || formData.idiomasLegendaTroca) &&
+        (!hasInterfaceFieldTroca || formData.idiomasInterfaceTroca);
+
+      if (!hasRequiredFields || !hasConditionalFieldsTroca) {
         return; // Não prosseguir se campos obrigatórios estiverem vazios
       }
     }
@@ -412,12 +458,47 @@ const MultiPartFormSaleAndTrade = () => {
   const handleSaveVariation = () => {
     setShowValidation((prev) => ({ ...prev, step5: true }));
 
-    const isDataValid =
+    // Verificar se campos obrigatórios estão preenchidos
+    const hasRequiredFields =
       variationData.tipoCartucho &&
       variationData.estadoPreservacao &&
-      variationData.regiao &&
-      variationData.idiomaAudio &&
       variationData.estoque;
+
+    // Verificar campos condicionais da variação principal (apenas se estão visíveis)
+    const hasRegionField =
+      formData.jogo && mainGameData.getAvailableRegions().length > 0;
+    const hasAudioField =
+      formData.jogo && mainGameData.getAvailableAudioLanguages().length > 0;
+    const hasSubtitleField =
+      formData.jogo && mainGameData.getAvailableSubtitleLanguages().length > 0;
+    const hasInterfaceField =
+      formData.jogo && mainGameData.getAvailableInterfaceLanguages().length > 0;
+
+    // Verificar campos condicionais da variação de troca (apenas se estão visíveis)
+    const hasRegionFieldTroca =
+      variationData.jogosTroca &&
+      tradeGameData.getAvailableRegions().length > 0;
+    const hasAudioFieldTroca =
+      variationData.jogosTroca &&
+      tradeGameData.getAvailableAudioLanguages().length > 0;
+    const hasSubtitleFieldTroca =
+      variationData.jogosTroca &&
+      tradeGameData.getAvailableSubtitleLanguages().length > 0;
+    const hasInterfaceFieldTroca =
+      variationData.jogosTroca &&
+      tradeGameData.getAvailableInterfaceLanguages().length > 0;
+
+    const hasConditionalFields =
+      (!hasRegionField || variationData.regiao) &&
+      (!hasAudioField || variationData.idiomaAudio) &&
+      (!hasSubtitleField || variationData.idiomaLegenda) &&
+      (!hasInterfaceField || variationData.idiomaInterface) &&
+      (!hasRegionFieldTroca || variationData.regioesTroca) &&
+      (!hasAudioFieldTroca || variationData.idiomasAudioTroca) &&
+      (!hasSubtitleFieldTroca || variationData.idiomasLegendaTroca) &&
+      (!hasInterfaceFieldTroca || variationData.idiomasInterfaceTroca);
+
+    const isDataValid = hasRequiredFields && hasConditionalFields;
 
     if (isDataValid) {
       if (editingVariationId && editingVariationId !== "new") {
@@ -467,9 +548,6 @@ const MultiPartFormSaleAndTrade = () => {
   const jogos = getGameOptions();
   const tiposCartucho = getCartridgeTypeOptions();
   const estados = getPreservationStateOptions();
-  const regioes = getRegionOptions();
-  const regioesTroca = getRegionOptions();
-  const idiomas = getLanguageOptions();
 
   // =================== Funções para obter nomes dos IDs ===================
   const getGameName = (gameId: string) => {
@@ -695,25 +773,69 @@ const MultiPartFormSaleAndTrade = () => {
                   showValidation={showValidation.step2}
                 />
               </div>
+              {/* Mostrar campo de região apenas se um jogo está selecionado E há regiões disponíveis */}
+              {formData.jogo &&
+              mainGameData.getAvailableRegions().length > 0 ? (
               <div>
                 <label className="block mb-1 text-sm font-semibold">
                   Região do Cartucho
                 </label>
                 <CustomSelect
-                  options={regioes}
-                  value={regioes.find((o) => o.value === formData.regiao)}
+                    options={mainGameData.getAvailableRegions().map((r) => ({
+                      value: r.id.toString(),
+                      label: r.name,
+                    }))}
+                    value={
+                      mainGameData
+                        .getAvailableRegions()
+                        .find((r) => r.id.toString() === formData.regiao)
+                        ? {
+                            value: formData.regiao,
+                            label:
+                              mainGameData
+                                .getAvailableRegions()
+                                .find(
+                                  (r) => r.id.toString() === formData.regiao
+                                )?.name || "",
+                          }
+                        : null
+                    }
                   onChange={(opt) => handleSelectChange("regiao", opt.value)}
                   required={true}
                   showValidation={showValidation.step2}
                 />
               </div>
+              ) : null}
+              {/* Mostrar campo de idioma do áudio apenas se um jogo está selecionado E há idiomas disponíveis */}
+              {formData.jogo &&
+              mainGameData.getAvailableAudioLanguages().length > 0 ? (
               <div>
                 <label className="block mb-1 text-sm font-semibold">
                   Idioma do Áudio
                 </label>
                 <CustomSelect
-                  options={idiomas}
-                  value={idiomas.find((o) => o.value === formData.idiomaAudio)}
+                    options={mainGameData
+                      .getAvailableAudioLanguages()
+                      .map((l) => ({
+                        value: l.id.toString(),
+                        label: l.name,
+                      }))}
+                    value={
+                      mainGameData
+                        .getAvailableAudioLanguages()
+                        .find((l) => l.id.toString() === formData.idiomaAudio)
+                        ? {
+                            value: formData.idiomaAudio,
+                            label:
+                              mainGameData
+                                .getAvailableAudioLanguages()
+                                .find(
+                                  (l) =>
+                                    l.id.toString() === formData.idiomaAudio
+                                )?.name || "",
+                          }
+                        : null
+                    }
                   onChange={(opt) =>
                     handleSelectChange("idiomaAudio", opt.value)
                   }
@@ -721,15 +843,37 @@ const MultiPartFormSaleAndTrade = () => {
                   showValidation={showValidation.step2}
                 />
               </div>
+              ) : null}
+              {/* Mostrar campo de idioma da legenda apenas se um jogo está selecionado E há idiomas disponíveis */}
+              {formData.jogo &&
+              mainGameData.getAvailableSubtitleLanguages().length > 0 ? (
               <div>
                 <label className="block mb-1 text-sm font-semibold">
                   Idioma da Legenda
                 </label>
                 <CustomSelect
-                  options={idiomas}
-                  value={idiomas.find(
-                    (o) => o.value === formData.idiomaLegenda
-                  )}
+                    options={mainGameData
+                      .getAvailableSubtitleLanguages()
+                      .map((l) => ({
+                        value: l.id.toString(),
+                        label: l.name,
+                      }))}
+                    value={
+                      mainGameData
+                        .getAvailableSubtitleLanguages()
+                        .find((l) => l.id.toString() === formData.idiomaLegenda)
+                        ? {
+                            value: formData.idiomaLegenda,
+                            label:
+                              mainGameData
+                                .getAvailableSubtitleLanguages()
+                                .find(
+                                  (l) =>
+                                    l.id.toString() === formData.idiomaLegenda
+                                )?.name || "",
+                          }
+                        : null
+                    }
                   onChange={(opt) =>
                     handleSelectChange("idiomaLegenda", opt.value)
                   }
@@ -737,15 +881,39 @@ const MultiPartFormSaleAndTrade = () => {
                   showValidation={showValidation.step2}
                 />
               </div>
+              ) : null}
+              {/* Mostrar campo de idioma da interface apenas se um jogo está selecionado E há idiomas disponíveis */}
+              {formData.jogo &&
+              mainGameData.getAvailableInterfaceLanguages().length > 0 ? (
               <div>
                 <label className="block mb-1 text-sm font-semibold">
                   Idioma da Interface
                 </label>
                 <CustomSelect
-                  options={idiomas}
-                  value={idiomas.find(
-                    (o) => o.value === formData.idiomaInterface
-                  )}
+                    options={mainGameData
+                      .getAvailableInterfaceLanguages()
+                      .map((l) => ({
+                        value: l.id.toString(),
+                        label: l.name,
+                      }))}
+                    value={
+                      mainGameData
+                        .getAvailableInterfaceLanguages()
+                        .find(
+                          (l) => l.id.toString() === formData.idiomaInterface
+                        )
+                        ? {
+                            value: formData.idiomaInterface,
+                            label:
+                              mainGameData
+                                .getAvailableInterfaceLanguages()
+                                .find(
+                                  (l) =>
+                                    l.id.toString() === formData.idiomaInterface
+                                )?.name || "",
+                          }
+                        : null
+                    }
                   onChange={(opt) =>
                     handleSelectChange("idiomaInterface", opt.value)
                   }
@@ -753,6 +921,7 @@ const MultiPartFormSaleAndTrade = () => {
                   showValidation={showValidation.step2}
                 />
               </div>
+              ) : null}
 
               <p className="text-sm">
                 Acesse o guia{" "}
@@ -830,15 +999,34 @@ const MultiPartFormSaleAndTrade = () => {
                   showValidation={showValidation.step3}
                 />
               </div>
+              {/* Mostrar campo de região apenas se um jogo de troca está selecionado E há regiões disponíveis */}
+              {formData.jogosTroca &&
+              tradeGameData.getAvailableRegions().length > 0 ? (
               <div>
                 <label className="block mb-1 text-sm font-semibold">
                   Região do Cartucho
                 </label>
                 <CustomSelect
-                  options={regioesTroca}
-                  value={regioesTroca.find(
-                    (o) => o.value === formData.regioesTroca
-                  )}
+                    options={tradeGameData.getAvailableRegions().map((r) => ({
+                      value: r.id.toString(),
+                      label: r.name,
+                    }))}
+                    value={
+                      tradeGameData
+                        .getAvailableRegions()
+                        .find((r) => r.id.toString() === formData.regioesTroca)
+                        ? {
+                            value: formData.regioesTroca,
+                            label:
+                              tradeGameData
+                                .getAvailableRegions()
+                                .find(
+                                  (r) =>
+                                    r.id.toString() === formData.regioesTroca
+                                )?.name || "",
+                          }
+                        : null
+                    }
                   onChange={(opt) =>
                     handleSelectChange("regioesTroca", opt.value)
                   }
@@ -846,15 +1034,40 @@ const MultiPartFormSaleAndTrade = () => {
                   showValidation={showValidation.step3}
                 />
               </div>
+              ) : null}
+              {/* Mostrar campo de idioma do áudio apenas se um jogo de troca está selecionado E há idiomas disponíveis */}
+              {formData.jogosTroca &&
+              tradeGameData.getAvailableAudioLanguages().length > 0 ? (
               <div>
                 <label className="block mb-1 text-sm font-semibold">
                   Idioma do Áudio
                 </label>
                 <CustomSelect
-                  options={idiomas}
-                  value={idiomas.find(
-                    (o) => o.value === formData.idiomasAudioTroca
-                  )}
+                    options={tradeGameData
+                      .getAvailableAudioLanguages()
+                      .map((l) => ({
+                        value: l.id.toString(),
+                        label: l.name,
+                      }))}
+                    value={
+                      tradeGameData
+                        .getAvailableAudioLanguages()
+                        .find(
+                          (l) => l.id.toString() === formData.idiomasAudioTroca
+                        )
+                        ? {
+                            value: formData.idiomasAudioTroca,
+                            label:
+                              tradeGameData
+                                .getAvailableAudioLanguages()
+                                .find(
+                                  (l) =>
+                                    l.id.toString() ===
+                                    formData.idiomasAudioTroca
+                                )?.name || "",
+                          }
+                        : null
+                    }
                   onChange={(opt) =>
                     handleSelectChange("idiomasAudioTroca", opt.value)
                   }
@@ -862,15 +1075,41 @@ const MultiPartFormSaleAndTrade = () => {
                   showValidation={showValidation.step3}
                 />
               </div>
+              ) : null}
+              {/* Mostrar campo de idioma da legenda apenas se um jogo de troca está selecionado E há idiomas disponíveis */}
+              {formData.jogosTroca &&
+              tradeGameData.getAvailableSubtitleLanguages().length > 0 ? (
               <div>
                 <label className="block mb-1 text-sm font-semibold">
                   Idioma da Legenda
                 </label>
                 <CustomSelect
-                  options={idiomas}
-                  value={idiomas.find(
-                    (o) => o.value === formData.idiomasLegendaTroca
-                  )}
+                    options={tradeGameData
+                      .getAvailableSubtitleLanguages()
+                      .map((l) => ({
+                        value: l.id.toString(),
+                        label: l.name,
+                      }))}
+                    value={
+                      tradeGameData
+                        .getAvailableSubtitleLanguages()
+                        .find(
+                          (l) =>
+                            l.id.toString() === formData.idiomasLegendaTroca
+                        )
+                        ? {
+                            value: formData.idiomasLegendaTroca,
+                            label:
+                              tradeGameData
+                                .getAvailableSubtitleLanguages()
+                                .find(
+                                  (l) =>
+                                    l.id.toString() ===
+                                    formData.idiomasLegendaTroca
+                                )?.name || "",
+                          }
+                        : null
+                    }
                   onChange={(opt) =>
                     handleSelectChange("idiomasLegendaTroca", opt.value)
                   }
@@ -878,15 +1117,41 @@ const MultiPartFormSaleAndTrade = () => {
                   showValidation={showValidation.step3}
                 />
               </div>
+              ) : null}
+              {/* Mostrar campo de idioma da interface apenas se um jogo de troca está selecionado E há idiomas disponíveis */}
+              {formData.jogosTroca &&
+              tradeGameData.getAvailableInterfaceLanguages().length > 0 ? (
               <div>
                 <label className="block mb-1 text-sm font-semibold">
                   Idioma da Interface
                 </label>
                 <CustomSelect
-                  options={idiomas}
-                  value={idiomas.find(
-                    (o) => o.value === formData.idiomasInterfaceTroca
-                  )}
+                    options={tradeGameData
+                      .getAvailableInterfaceLanguages()
+                      .map((l) => ({
+                        value: l.id.toString(),
+                        label: l.name,
+                      }))}
+                    value={
+                      tradeGameData
+                        .getAvailableInterfaceLanguages()
+                        .find(
+                          (l) =>
+                            l.id.toString() === formData.idiomasInterfaceTroca
+                        )
+                        ? {
+                            value: formData.idiomasInterfaceTroca,
+                            label:
+                              tradeGameData
+                                .getAvailableInterfaceLanguages()
+                                .find(
+                                  (l) =>
+                                    l.id.toString() ===
+                                    formData.idiomasInterfaceTroca
+                                )?.name || "",
+                          }
+                        : null
+                    }
                   onChange={(opt) =>
                     handleSelectChange("idiomasInterfaceTroca", opt.value)
                   }
@@ -894,6 +1159,7 @@ const MultiPartFormSaleAndTrade = () => {
                   showValidation={showValidation.step3}
                 />
               </div>
+              ) : null}
             </div>
           </>
         )}
@@ -930,7 +1196,7 @@ const MultiPartFormSaleAndTrade = () => {
                             <img
                               src={URL.createObjectURL(hasImage)}
                               alt={`Imagem ${i + 1}`}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-contain bg-white"
                             />
                             <button
                               onClick={() => removeImage(i)}
@@ -1133,6 +1399,9 @@ const MultiPartFormSaleAndTrade = () => {
                               />
                             </div>
                           </div>
+                          {/* Mostrar campo de região apenas se um jogo está selecionado E há regiões disponíveis */}
+                          {formData.jogo &&
+                          mainGameData.getAvailableRegions().length > 0 ? (
                           <div
                             className={`flex ${
                               isMobile ? "flex-col gap-2" : "items-center"
@@ -1149,10 +1418,33 @@ const MultiPartFormSaleAndTrade = () => {
                             </label>
                             <div className="flex-1">
                               <CustomSelect
-                                options={regioes}
-                                value={regioes.find(
-                                  (o) => o.value === variationData.regiao
-                                )}
+                                  options={mainGameData
+                                    .getAvailableRegions()
+                                    .map((r) => ({
+                                      value: r.id.toString(),
+                                      label: r.name,
+                                    }))}
+                                  value={
+                                    mainGameData
+                                      .getAvailableRegions()
+                                      .find(
+                                        (r) =>
+                                          r.id.toString() ===
+                                          variationData.regiao
+                                      )
+                                      ? {
+                                          value: variationData.regiao,
+                                          label:
+                                            mainGameData
+                                              .getAvailableRegions()
+                                              .find(
+                                                (r) =>
+                                                  r.id.toString() ===
+                                                  variationData.regiao
+                                              )?.name || "",
+                                        }
+                                      : null
+                                  }
                                 onChange={(opt) =>
                                   handleVariationSelectChange(
                                     "regiao",
@@ -1164,6 +1456,11 @@ const MultiPartFormSaleAndTrade = () => {
                               />
                             </div>
                           </div>
+                          ) : null}
+                          {/* Mostrar campo de idioma do áudio apenas se um jogo está selecionado E há idiomas disponíveis */}
+                          {formData.jogo &&
+                          mainGameData.getAvailableAudioLanguages().length >
+                            0 ? (
                           <div
                             className={`flex ${
                               isMobile ? "flex-col gap-2" : "items-center"
@@ -1180,10 +1477,33 @@ const MultiPartFormSaleAndTrade = () => {
                             </label>
                             <div className="flex-1">
                               <CustomSelect
-                                options={idiomas}
-                                value={idiomas.find(
-                                  (o) => o.value === variationData.idiomaAudio
-                                )}
+                                  options={mainGameData
+                                    .getAvailableAudioLanguages()
+                                    .map((l) => ({
+                                      value: l.id.toString(),
+                                      label: l.name,
+                                    }))}
+                                  value={
+                                    mainGameData
+                                      .getAvailableAudioLanguages()
+                                      .find(
+                                        (l) =>
+                                          l.id.toString() ===
+                                          variationData.idiomaAudio
+                                      )
+                                      ? {
+                                          value: variationData.idiomaAudio,
+                                          label:
+                                            mainGameData
+                                              .getAvailableAudioLanguages()
+                                              .find(
+                                                (l) =>
+                                                  l.id.toString() ===
+                                                  variationData.idiomaAudio
+                                              )?.name || "",
+                                        }
+                                      : null
+                                  }
                                 onChange={(opt) =>
                                   handleVariationSelectChange(
                                     "idiomaAudio",
@@ -1195,6 +1515,11 @@ const MultiPartFormSaleAndTrade = () => {
                               />
                             </div>
                           </div>
+                          ) : null}
+                          {/* Mostrar campo de idioma da legenda apenas se um jogo está selecionado E há idiomas disponíveis */}
+                          {formData.jogo &&
+                          mainGameData.getAvailableSubtitleLanguages().length >
+                            0 ? (
                           <div
                             className={`flex ${
                               isMobile ? "flex-col gap-2" : "items-center"
@@ -1211,10 +1536,33 @@ const MultiPartFormSaleAndTrade = () => {
                             </label>
                             <div className="flex-1">
                               <CustomSelect
-                                options={idiomas}
-                                value={idiomas.find(
-                                  (o) => o.value === variationData.idiomaLegenda
-                                )}
+                                  options={mainGameData
+                                    .getAvailableSubtitleLanguages()
+                                    .map((l) => ({
+                                      value: l.id.toString(),
+                                      label: l.name,
+                                    }))}
+                                  value={
+                                    mainGameData
+                                      .getAvailableSubtitleLanguages()
+                                      .find(
+                                        (l) =>
+                                          l.id.toString() ===
+                                          variationData.idiomaLegenda
+                                      )
+                                      ? {
+                                          value: variationData.idiomaLegenda,
+                                          label:
+                                            mainGameData
+                                              .getAvailableSubtitleLanguages()
+                                              .find(
+                                                (l) =>
+                                                  l.id.toString() ===
+                                                  variationData.idiomaLegenda
+                                              )?.name || "",
+                                        }
+                                      : null
+                                  }
                                 onChange={(opt) =>
                                   handleVariationSelectChange(
                                     "idiomaLegenda",
@@ -1226,6 +1574,11 @@ const MultiPartFormSaleAndTrade = () => {
                               />
                             </div>
                           </div>
+                          ) : null}
+                          {/* Mostrar campo de idioma da interface apenas se um jogo está selecionado E há idiomas disponíveis */}
+                          {formData.jogo &&
+                          mainGameData.getAvailableInterfaceLanguages().length >
+                            0 ? (
                           <div
                             className={`flex ${
                               isMobile ? "flex-col gap-2" : "items-center"
@@ -1242,11 +1595,33 @@ const MultiPartFormSaleAndTrade = () => {
                             </label>
                             <div className="flex-1">
                               <CustomSelect
-                                options={idiomas}
-                                value={idiomas.find(
-                                  (o) =>
-                                    o.value === variationData.idiomaInterface
-                                )}
+                                  options={mainGameData
+                                    .getAvailableInterfaceLanguages()
+                                    .map((l) => ({
+                                      value: l.id.toString(),
+                                      label: l.name,
+                                    }))}
+                                  value={
+                                    mainGameData
+                                      .getAvailableInterfaceLanguages()
+                                      .find(
+                                        (l) =>
+                                          l.id.toString() ===
+                                          variationData.idiomaInterface
+                                      )
+                                      ? {
+                                          value: variationData.idiomaInterface,
+                                          label:
+                                            mainGameData
+                                              .getAvailableInterfaceLanguages()
+                                              .find(
+                                                (l) =>
+                                                  l.id.toString() ===
+                                                  variationData.idiomaInterface
+                                              )?.name || "",
+                                        }
+                                      : null
+                                  }
                                 onChange={(opt) =>
                                   handleVariationSelectChange(
                                     "idiomaInterface",
@@ -1258,6 +1633,7 @@ const MultiPartFormSaleAndTrade = () => {
                               />
                             </div>
                           </div>
+                          ) : null}
                           <div
                             className={`flex ${
                               isMobile ? "flex-col gap-2" : "items-center"
@@ -1360,7 +1736,7 @@ const MultiPartFormSaleAndTrade = () => {
                                             variationData.imagens[i]
                                           )}
                                           alt={`Imagem ${i + 1}`}
-                                          className="w-full h-full object-cover"
+                                          className="w-full h-full object-contain bg-white"
                                         />
                                         <button
                                           onClick={() =>
@@ -1493,6 +1869,29 @@ const MultiPartFormSaleAndTrade = () => {
                                   />
                                 </div>
                               </div>
+                              {/* Mostrar campo de região de troca apenas se um jogo de troca está selecionado E há regiões disponíveis */}
+                              {(() => {
+                                const shouldShow =
+                                  variationData.jogosTroca &&
+                                  tradeGameData.getAvailableRegions().length >
+                                    0;
+                                console.log("🔍 Condições de troca variação:", {
+                                  variationData_jogosTroca:
+                                    variationData.jogosTroca,
+                                  tradeGameData_regions:
+                                    tradeGameData.getAvailableRegions(),
+                                  tradeGameData_regions_length:
+                                    tradeGameData.getAvailableRegions().length,
+                                  tradeGameData_audioLanguages:
+                                    tradeGameData.getAvailableAudioLanguages(),
+                                  tradeGameData_subtitleLanguages:
+                                    tradeGameData.getAvailableSubtitleLanguages(),
+                                  tradeGameData_interfaceLanguages:
+                                    tradeGameData.getAvailableInterfaceLanguages(),
+                                  shouldShow: shouldShow,
+                                });
+                                return shouldShow;
+                              })() ? (
                               <div
                                 className={`flex ${
                                   isMobile ? "flex-col gap-2" : "items-center"
@@ -1509,11 +1908,33 @@ const MultiPartFormSaleAndTrade = () => {
                                 </label>
                                 <div className="flex-1">
                                   <CustomSelect
-                                    options={regioesTroca}
-                                    value={regioesTroca.find(
-                                      (o) =>
-                                        o.value === variationData.regioesTroca
-                                    )}
+                                      options={tradeGameData
+                                        .getAvailableRegions()
+                                        .map((r) => ({
+                                          value: r.id.toString(),
+                                          label: r.name,
+                                        }))}
+                                      value={
+                                        tradeGameData
+                                          .getAvailableRegions()
+                                          .find(
+                                            (r) =>
+                                              r.id.toString() ===
+                                              variationData.regioesTroca
+                                          )
+                                          ? {
+                                              value: variationData.regioesTroca,
+                                              label:
+                                                tradeGameData
+                                                  .getAvailableRegions()
+                                                  .find(
+                                                    (r) =>
+                                                      r.id.toString() ===
+                                                      variationData.regioesTroca
+                                                  )?.name || "",
+                                            }
+                                          : null
+                                      }
                                     onChange={(opt) =>
                                       handleVariationSelectChange(
                                         "regioesTroca",
@@ -1525,6 +1946,11 @@ const MultiPartFormSaleAndTrade = () => {
                                   />
                                 </div>
                               </div>
+                              ) : null}
+                              {/* Mostrar campo de idioma do áudio de troca apenas se um jogo de troca está selecionado E há idiomas disponíveis */}
+                              {variationData.jogosTroca &&
+                              tradeGameData.getAvailableAudioLanguages()
+                                .length > 0 ? (
                               <div
                                 className={`flex ${
                                   isMobile ? "flex-col gap-2" : "items-center"
@@ -1541,12 +1967,34 @@ const MultiPartFormSaleAndTrade = () => {
                                 </label>
                                 <div className="flex-1">
                                   <CustomSelect
-                                    options={idiomas}
-                                    value={idiomas.find(
-                                      (o) =>
-                                        o.value ===
+                                      options={tradeGameData
+                                        .getAvailableAudioLanguages()
+                                        .map((l) => ({
+                                          value: l.id.toString(),
+                                          label: l.name,
+                                        }))}
+                                      value={
+                                        tradeGameData
+                                          .getAvailableAudioLanguages()
+                                          .find(
+                                            (l) =>
+                                              l.id.toString() ===
                                         variationData.idiomasAudioTroca
-                                    )}
+                                          )
+                                          ? {
+                                              value:
+                                                variationData.idiomasAudioTroca,
+                                              label:
+                                                tradeGameData
+                                                  .getAvailableAudioLanguages()
+                                                  .find(
+                                                    (l) =>
+                                                      l.id.toString() ===
+                                                      variationData.idiomasAudioTroca
+                                                  )?.name || "",
+                                            }
+                                          : null
+                                      }
                                     onChange={(opt) =>
                                       handleVariationSelectChange(
                                         "idiomasAudioTroca",
@@ -1558,6 +2006,11 @@ const MultiPartFormSaleAndTrade = () => {
                                   />
                                 </div>
                               </div>
+                              ) : null}
+                              {/* Mostrar campo de idioma da legenda de troca apenas se um jogo de troca está selecionado E há idiomas disponíveis */}
+                              {variationData.jogosTroca &&
+                              tradeGameData.getAvailableSubtitleLanguages()
+                                .length > 0 ? (
                               <div
                                 className={`flex ${
                                   isMobile ? "flex-col gap-2" : "items-center"
@@ -1574,12 +2027,34 @@ const MultiPartFormSaleAndTrade = () => {
                                 </label>
                                 <div className="flex-1">
                                   <CustomSelect
-                                    options={idiomas}
-                                    value={idiomas.find(
-                                      (o) =>
-                                        o.value ===
+                                      options={tradeGameData
+                                        .getAvailableSubtitleLanguages()
+                                        .map((l) => ({
+                                          value: l.id.toString(),
+                                          label: l.name,
+                                        }))}
+                                      value={
+                                        tradeGameData
+                                          .getAvailableSubtitleLanguages()
+                                          .find(
+                                            (l) =>
+                                              l.id.toString() ===
                                         variationData.idiomasLegendaTroca
-                                    )}
+                                          )
+                                          ? {
+                                              value:
+                                                variationData.idiomasLegendaTroca,
+                                              label:
+                                                tradeGameData
+                                                  .getAvailableSubtitleLanguages()
+                                                  .find(
+                                                    (l) =>
+                                                      l.id.toString() ===
+                                                      variationData.idiomasLegendaTroca
+                                                  )?.name || "",
+                                            }
+                                          : null
+                                      }
                                     onChange={(opt) =>
                                       handleVariationSelectChange(
                                         "idiomasLegendaTroca",
@@ -1591,6 +2066,11 @@ const MultiPartFormSaleAndTrade = () => {
                                   />
                                 </div>
                               </div>
+                              ) : null}
+                              {/* Mostrar campo de idioma da interface de troca apenas se um jogo de troca está selecionado E há idiomas disponíveis */}
+                              {variationData.jogosTroca &&
+                              tradeGameData.getAvailableInterfaceLanguages()
+                                .length > 0 ? (
                               <div
                                 className={`flex ${
                                   isMobile ? "flex-col gap-2" : "items-center"
@@ -1607,12 +2087,34 @@ const MultiPartFormSaleAndTrade = () => {
                                 </label>
                                 <div className="flex-1">
                                   <CustomSelect
-                                    options={idiomas}
-                                    value={idiomas.find(
-                                      (o) =>
-                                        o.value ===
+                                      options={tradeGameData
+                                        .getAvailableInterfaceLanguages()
+                                        .map((l) => ({
+                                          value: l.id.toString(),
+                                          label: l.name,
+                                        }))}
+                                      value={
+                                        tradeGameData
+                                          .getAvailableInterfaceLanguages()
+                                          .find(
+                                            (l) =>
+                                              l.id.toString() ===
                                         variationData.idiomasInterfaceTroca
-                                    )}
+                                          )
+                                          ? {
+                                              value:
+                                                variationData.idiomasInterfaceTroca,
+                                              label:
+                                                tradeGameData
+                                                  .getAvailableInterfaceLanguages()
+                                                  .find(
+                                                    (l) =>
+                                                      l.id.toString() ===
+                                                      variationData.idiomasInterfaceTroca
+                                                  )?.name || "",
+                                            }
+                                          : null
+                                      }
                                     onChange={(opt) =>
                                       handleVariationSelectChange(
                                         "idiomasInterfaceTroca",
@@ -1624,6 +2126,7 @@ const MultiPartFormSaleAndTrade = () => {
                                   />
                                 </div>
                               </div>
+                              ) : null}
                             </div>
                           </div>
                         </div>
@@ -1662,7 +2165,7 @@ const MultiPartFormSaleAndTrade = () => {
                                     variation.imagens[0]
                                   )}
                                   alt="Imagem da variação"
-                                  className="w-full h-full object-cover"
+                                  className="w-full h-full object-contain bg-white"
                                 />
                               ) : (
                                 <div className="w-full h-full bg-gray-300"></div>
@@ -1844,6 +2347,9 @@ const MultiPartFormSaleAndTrade = () => {
                         />
                       </div>
                     </div>
+                    {/* Mostrar campo de região apenas se um jogo está selecionado E há regiões disponíveis */}
+                    {formData.jogo &&
+                    mainGameData.getAvailableRegions().length > 0 ? (
                     <div
                       className={`flex ${
                         isMobile ? "flex-col gap-2" : "items-center"
@@ -1860,10 +2366,32 @@ const MultiPartFormSaleAndTrade = () => {
                       </label>
                       <div className="flex-1">
                         <CustomSelect
-                          options={regioes}
-                          value={regioes.find(
-                            (o) => o.value === variationData.regiao
-                          )}
+                            options={mainGameData
+                              .getAvailableRegions()
+                              .map((r) => ({
+                                value: r.id.toString(),
+                                label: r.name,
+                              }))}
+                            value={
+                              mainGameData
+                                .getAvailableRegions()
+                                .find(
+                                  (r) =>
+                                    r.id.toString() === variationData.regiao
+                                )
+                                ? {
+                                    value: variationData.regiao,
+                                    label:
+                                      mainGameData
+                                        .getAvailableRegions()
+                                        .find(
+                                          (r) =>
+                                            r.id.toString() ===
+                                            variationData.regiao
+                                        )?.name || "",
+                                  }
+                                : null
+                            }
                           onChange={(opt) =>
                             handleVariationSelectChange("regiao", opt.value)
                           }
@@ -1872,6 +2400,10 @@ const MultiPartFormSaleAndTrade = () => {
                         />
                       </div>
                     </div>
+                    ) : null}
+                    {/* Mostrar campo de idioma do áudio apenas se um jogo está selecionado E há idiomas disponíveis */}
+                    {formData.jogo &&
+                    mainGameData.getAvailableAudioLanguages().length > 0 ? (
                     <div
                       className={`flex ${
                         isMobile ? "flex-col gap-2" : "items-center"
@@ -1888,10 +2420,33 @@ const MultiPartFormSaleAndTrade = () => {
                       </label>
                       <div className="flex-1">
                         <CustomSelect
-                          options={idiomas}
-                          value={idiomas.find(
-                            (o) => o.value === variationData.idiomaAudio
-                          )}
+                            options={mainGameData
+                              .getAvailableAudioLanguages()
+                              .map((l) => ({
+                                value: l.id.toString(),
+                                label: l.name,
+                              }))}
+                            value={
+                              mainGameData
+                                .getAvailableAudioLanguages()
+                                .find(
+                                  (l) =>
+                                    l.id.toString() ===
+                                    variationData.idiomaAudio
+                                )
+                                ? {
+                                    value: variationData.idiomaAudio,
+                                    label:
+                                      mainGameData
+                                        .getAvailableAudioLanguages()
+                                        .find(
+                                          (l) =>
+                                            l.id.toString() ===
+                                            variationData.idiomaAudio
+                                        )?.name || "",
+                                  }
+                                : null
+                            }
                           onChange={(opt) =>
                             handleVariationSelectChange(
                               "idiomaAudio",
@@ -1903,6 +2458,10 @@ const MultiPartFormSaleAndTrade = () => {
                         />
                       </div>
                     </div>
+                    ) : null}
+                    {/* Mostrar campo de idioma da legenda apenas se um jogo está selecionado E há idiomas disponíveis */}
+                    {formData.jogo &&
+                    mainGameData.getAvailableSubtitleLanguages().length > 0 ? (
                     <div
                       className={`flex ${
                         isMobile ? "flex-col gap-2" : "items-center"
@@ -1919,10 +2478,33 @@ const MultiPartFormSaleAndTrade = () => {
                       </label>
                       <div className="flex-1">
                         <CustomSelect
-                          options={idiomas}
-                          value={idiomas.find(
-                            (o) => o.value === variationData.idiomaLegenda
-                          )}
+                            options={mainGameData
+                              .getAvailableSubtitleLanguages()
+                              .map((l) => ({
+                                value: l.id.toString(),
+                                label: l.name,
+                              }))}
+                            value={
+                              mainGameData
+                                .getAvailableSubtitleLanguages()
+                                .find(
+                                  (l) =>
+                                    l.id.toString() ===
+                                    variationData.idiomaLegenda
+                                )
+                                ? {
+                                    value: variationData.idiomaLegenda,
+                                    label:
+                                      mainGameData
+                                        .getAvailableSubtitleLanguages()
+                                        .find(
+                                          (l) =>
+                                            l.id.toString() ===
+                                            variationData.idiomaLegenda
+                                        )?.name || "",
+                                  }
+                                : null
+                            }
                           onChange={(opt) =>
                             handleVariationSelectChange(
                               "idiomaLegenda",
@@ -1934,6 +2516,10 @@ const MultiPartFormSaleAndTrade = () => {
                         />
                       </div>
                     </div>
+                    ) : null}
+                    {/* Mostrar campo de idioma da interface apenas se um jogo está selecionado E há idiomas disponíveis */}
+                    {formData.jogo &&
+                    mainGameData.getAvailableInterfaceLanguages().length > 0 ? (
                     <div
                       className={`flex ${
                         isMobile ? "flex-col gap-2" : "items-center"
@@ -1950,10 +2536,33 @@ const MultiPartFormSaleAndTrade = () => {
                       </label>
                       <div className="flex-1">
                         <CustomSelect
-                          options={idiomas}
-                          value={idiomas.find(
-                            (o) => o.value === variationData.idiomaInterface
-                          )}
+                            options={mainGameData
+                              .getAvailableInterfaceLanguages()
+                              .map((l) => ({
+                                value: l.id.toString(),
+                                label: l.name,
+                              }))}
+                            value={
+                              mainGameData
+                                .getAvailableInterfaceLanguages()
+                                .find(
+                                  (l) =>
+                                    l.id.toString() ===
+                                    variationData.idiomaInterface
+                                )
+                                ? {
+                                    value: variationData.idiomaInterface,
+                                    label:
+                                      mainGameData
+                                        .getAvailableInterfaceLanguages()
+                                        .find(
+                                          (l) =>
+                                            l.id.toString() ===
+                                            variationData.idiomaInterface
+                                        )?.name || "",
+                                  }
+                                : null
+                            }
                           onChange={(opt) =>
                             handleVariationSelectChange(
                               "idiomaInterface",
@@ -1965,6 +2574,7 @@ const MultiPartFormSaleAndTrade = () => {
                         />
                       </div>
                     </div>
+                    ) : null}
                     <div
                       className={`flex ${
                         isMobile ? "flex-col gap-2" : "items-center"
@@ -2067,7 +2677,7 @@ const MultiPartFormSaleAndTrade = () => {
                                       variationData.imagens[i]
                                     )}
                                     alt={`Imagem ${i + 1}`}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-contain bg-white"
                                   />
                                   <button
                                     onClick={() => removeVariationImage(i)}
@@ -2193,6 +2803,9 @@ const MultiPartFormSaleAndTrade = () => {
                             />
                           </div>
                         </div>
+                        {/* Mostrar campo de região de troca apenas se um jogo de troca está selecionado E há regiões disponíveis */}
+                        {variationData.jogosTroca &&
+                        tradeGameData.getAvailableRegions().length > 0 ? (
                         <div
                           className={`flex ${
                             isMobile ? "flex-col gap-2" : "items-center"
@@ -2209,10 +2822,33 @@ const MultiPartFormSaleAndTrade = () => {
                           </label>
                           <div className="flex-1">
                             <CustomSelect
-                              options={regioesTroca}
-                              value={regioesTroca.find(
-                                (o) => o.value === variationData.regioesTroca
-                              )}
+                                options={tradeGameData
+                                  .getAvailableRegions()
+                                  .map((r) => ({
+                                    value: r.id.toString(),
+                                    label: r.name,
+                                  }))}
+                                value={
+                                  tradeGameData
+                                    .getAvailableRegions()
+                                    .find(
+                                      (r) =>
+                                        r.id.toString() ===
+                                        variationData.regioesTroca
+                                    )
+                                    ? {
+                                        value: variationData.regioesTroca,
+                                        label:
+                                          tradeGameData
+                                            .getAvailableRegions()
+                                            .find(
+                                              (r) =>
+                                                r.id.toString() ===
+                                                variationData.regioesTroca
+                                            )?.name || "",
+                                      }
+                                    : null
+                                }
                               onChange={(opt) =>
                                 handleVariationSelectChange(
                                   "regioesTroca",
@@ -2224,6 +2860,11 @@ const MultiPartFormSaleAndTrade = () => {
                             />
                           </div>
                         </div>
+                        ) : null}
+                        {/* Mostrar campo de idioma do áudio de troca apenas se um jogo de troca está selecionado E há idiomas disponíveis */}
+                        {variationData.jogosTroca &&
+                        tradeGameData.getAvailableAudioLanguages().length >
+                          0 ? (
                         <div
                           className={`flex ${
                             isMobile ? "flex-col gap-2" : "items-center"
@@ -2240,11 +2881,33 @@ const MultiPartFormSaleAndTrade = () => {
                           </label>
                           <div className="flex-1">
                             <CustomSelect
-                              options={idiomas}
-                              value={idiomas.find(
-                                (o) =>
-                                  o.value === variationData.idiomasAudioTroca
-                              )}
+                                options={tradeGameData
+                                  .getAvailableAudioLanguages()
+                                  .map((l) => ({
+                                    value: l.id.toString(),
+                                    label: l.name,
+                                  }))}
+                                value={
+                                  tradeGameData
+                                    .getAvailableAudioLanguages()
+                                    .find(
+                                      (l) =>
+                                        l.id.toString() ===
+                                        variationData.idiomasAudioTroca
+                                    )
+                                    ? {
+                                        value: variationData.idiomasAudioTroca,
+                                        label:
+                                        tradeGameData
+                                            .getAvailableAudioLanguages()
+                                            .find(
+                                              (l) =>
+                                                l.id.toString() ===
+                                                variationData.idiomasAudioTroca
+                                            )?.name || "",
+                                      }
+                                    : null
+                                }
                               onChange={(opt) =>
                                 handleVariationSelectChange(
                                   "idiomasAudioTroca",
@@ -2256,6 +2919,11 @@ const MultiPartFormSaleAndTrade = () => {
                             />
                           </div>
                         </div>
+                        ) : null}
+                        {/* Mostrar campo de idioma da legenda de troca apenas se um jogo de troca está selecionado E há idiomas disponíveis */}
+                        {variationData.jogosTroca &&
+                        tradeGameData.getAvailableSubtitleLanguages().length >
+                          0 ? (
                         <div
                           className={`flex ${
                             isMobile ? "flex-col gap-2" : "items-center"
@@ -2272,11 +2940,34 @@ const MultiPartFormSaleAndTrade = () => {
                           </label>
                           <div className="flex-1">
                             <CustomSelect
-                              options={idiomas}
-                              value={idiomas.find(
-                                (o) =>
-                                  o.value === variationData.idiomasLegendaTroca
-                              )}
+                                options={tradeGameData
+                                  .getAvailableSubtitleLanguages()
+                                  .map((l) => ({
+                                    value: l.id.toString(),
+                                    label: l.name,
+                                  }))}
+                                value={
+                                  tradeGameData
+                                    .getAvailableSubtitleLanguages()
+                                    .find(
+                                      (l) =>
+                                        l.id.toString() ===
+                                        variationData.idiomasLegendaTroca
+                                    )
+                                    ? {
+                                        value:
+                                          variationData.idiomasLegendaTroca,
+                                        label:
+                                        tradeGameData
+                                            .getAvailableSubtitleLanguages()
+                                            .find(
+                                              (l) =>
+                                                l.id.toString() ===
+                                                variationData.idiomasLegendaTroca
+                                            )?.name || "",
+                                      }
+                                    : null
+                                }
                               onChange={(opt) =>
                                 handleVariationSelectChange(
                                   "idiomasLegendaTroca",
@@ -2288,6 +2979,11 @@ const MultiPartFormSaleAndTrade = () => {
                             />
                           </div>
                         </div>
+                        ) : null}
+                        {/* Mostrar campo de idioma da interface de troca apenas se um jogo de troca está selecionado E há idiomas disponíveis */}
+                        {variationData.jogosTroca &&
+                        tradeGameData.getAvailableInterfaceLanguages().length >
+                          0 ? (
                         <div
                           className={`flex ${
                             isMobile ? "flex-col gap-2" : "items-center"
@@ -2304,12 +3000,34 @@ const MultiPartFormSaleAndTrade = () => {
                           </label>
                           <div className="flex-1">
                             <CustomSelect
-                              options={idiomas}
-                              value={idiomas.find(
-                                (o) =>
-                                  o.value ===
+                                options={tradeGameData
+                                  .getAvailableInterfaceLanguages()
+                                  .map((l) => ({
+                                    value: l.id.toString(),
+                                    label: l.name,
+                                  }))}
+                                value={
+                                  tradeGameData
+                                    .getAvailableInterfaceLanguages()
+                                    .find(
+                                      (l) =>
+                                        l.id.toString() ===
                                   variationData.idiomasInterfaceTroca
-                              )}
+                                    )
+                                    ? {
+                                        value:
+                                          variationData.idiomasInterfaceTroca,
+                                        label:
+                                        tradeGameData
+                                            .getAvailableInterfaceLanguages()
+                                            .find(
+                                              (l) =>
+                                                l.id.toString() ===
+                                                variationData.idiomasInterfaceTroca
+                                            )?.name || "",
+                                      }
+                                    : null
+                                }
                               onChange={(opt) =>
                                 handleVariationSelectChange(
                                   "idiomasInterfaceTroca",
@@ -2321,6 +3039,7 @@ const MultiPartFormSaleAndTrade = () => {
                             />
                           </div>
                         </div>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -2527,7 +3246,7 @@ const MultiPartFormSaleAndTrade = () => {
                                 <img
                                   src={URL.createObjectURL(imagem)}
                                   alt={`Imagem ${index + 1}`}
-                                  className="w-full h-full object-cover"
+                                  className="w-full h-full object-contain bg-white"
                                 />
                               ) : (
                                 <div className="w-full h-full bg-gray-200 rounded-lg"></div>
@@ -2759,7 +3478,7 @@ const MultiPartFormSaleAndTrade = () => {
                               <img
                                 src={URL.createObjectURL(variation.imagens[0])}
                                 alt={`Imagem da variação ${index + 1}`}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-contain bg-white"
                               />
                             ) : (
                               <div className="w-full h-full bg-gray-200 rounded-lg"></div>
@@ -2827,7 +3546,7 @@ const MultiPartFormSaleAndTrade = () => {
                                       <img
                                         src={URL.createObjectURL(imagem)}
                                         alt={`Imagem ${imgIndex + 1}`}
-                                        className="w-full h-full object-cover"
+                                        className="w-full h-full object-contain bg-white"
                                       />
                                     ) : (
                                       <div className="w-full h-full bg-gray-200 rounded-lg"></div>

@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useReferenceData } from "../hooks/useReferenceData";
+import { AdvertisementDTO } from "../api/types";
 
-// --- Componente de Botão de Opção Estilizado ---
+// --- Componente de Botão de Opção Estilizado (Sem alterações) ---
 interface OptionButtonProps {
   label: string;
   value: string;
@@ -18,18 +20,18 @@ const OptionButton: React.FC<OptionButtonProps> = ({
 }) => {
   const isSelected = selectedValue === value && !disabled;
 
-  // Define as classes de estilo com base no estado do botão
-  const baseClasses = "px-3 py-2 text-sm  border flex-grow flex items-center justify-center transition-colors duration-200";
+  const baseClasses =
+    "px-3 py-2 text-sm border flex-grow flex items-center justify-center transition-colors duration-200";
   let stateClasses = "";
 
   if (disabled) {
-    stateClasses = "border-dashed border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed";
+    stateClasses =
+      "border-dashed border-gray-300 text-gray-400 bg-gray-50 cursor-not-allowed";
   } else if (isSelected) {
-    // Estilo para o botão selecionado
     stateClasses = "border-[#4f43ae] text-[#4f43ae] font-semibold bg-white";
   } else {
-    // Estilo para o botão padrão (não selecionado)
-    stateClasses = "border-gray-300 text-gray-800 bg-white hover:border-gray-500";
+    stateClasses =
+      "border-gray-300 text-gray-800 bg-white hover:border-gray-500";
   }
 
   return (
@@ -39,140 +41,518 @@ const OptionButton: React.FC<OptionButtonProps> = ({
       disabled={disabled}
     >
       {label}
-
     </button>
   );
 };
 
+// Tipo para as seções expandidas
+type ExpandedSections = {
+  preservation: boolean;
+  cartridgeType: boolean;
+  region: boolean;
+  audioLanguages: boolean;
+  subtitleLanguages: boolean;
+  interfaceLanguages: boolean;
+};
 
-// --- Componente Principal de Variações do Produto ---
-const ProductVariations: React.FC = () => {
-    // Dados de exemplo, incluindo opções desabilitadas para corresponder à imagem
-    const data = {
-        options: {
-            preservation: ["Novo", "Seminovo", "Bom", "Normal", "Danificado"],
-            cartridgeType: ["Retrô", "Repro"],
-            region: ["Australia", "Brazil", "Europe", "North America", "Korea"],
-            audioLanguages: ["Inglês", "Português BR", "Japonês"],
-            legendLanguages: ["Inglês", "Português BR", "Japonês"],
-            interfaceLanguages: ["Inglês", "Português BR", "Japonês"],
-        },
-        disabledOptions: {
-            preservation: ["Novo", "Normal", "Danificado"],
-            cartridgeType: ["Retrô"],
-            region: ["Australia", "Brazil", "North America", "Korea"],
-        },
-        stock: 1, // Estoque conforme a imagem
-    };
+// Componente para renderizar opções com botão de expansão (Sem alterações)
+interface OptionsSectionProps {
+  title: string;
+  options: string[];
+  selectedValue: string;
+  onSelect: (value: string) => void;
+  disabledOptions: string[];
+  sectionKey: keyof ExpandedSections;
+  expandedSections: ExpandedSections;
+  onToggleExpansion: (section: keyof ExpandedSections) => void;
+  gridCols?: string;
+}
 
-  // Estados iniciais para corresponder às seleções na imagem
-  const [selectedPreservation, setSelectedPreservation] = useState<string>("Bom");
-  const [selectedType, setSelectedType] = useState<string>("Repro");
-  const [selectedRegion, setSelectedRegion] = useState<string>("Europe");
-  const [selectedAudioLang, setSelectedAudioLang] = useState<string>("Português BR");
-  const [selectedLegendLang, setSelectedLegendLang] = useState<string>("Português BR");
-  const [selectedInterfaceLang, setSelectedInterfaceLang] = useState<string>("Português BR");
+const OptionsSection: React.FC<OptionsSectionProps> = ({
+  title,
+  options,
+  selectedValue,
+  onSelect,
+  disabledOptions,
+  sectionKey,
+  expandedSections,
+  onToggleExpansion,
+  gridCols = "grid-cols-3",
+}) => {
+  const isExpanded = expandedSections[sectionKey];
+  const limitedOptions = isExpanded ? options : options.slice(0, 6);
+  const hasMore = options.length > 6;
+
+  return (
+    <div className="mb-4">
+      <p className="text-sm text-gray-800 mb-2">{title}:</p>
+      <div className={`grid ${gridCols} gap-2`}>
+        {limitedOptions.map((option) => (
+          <OptionButton
+            key={option}
+            label={option}
+            value={option}
+            selectedValue={selectedValue}
+            onClick={onSelect}
+            disabled={disabledOptions.includes(option)}
+          />
+        ))}
+      </div>
+      {hasMore && (
+        <button
+          onClick={() => onToggleExpansion(sectionKey)}
+          className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+        >
+          {isExpanded ? "Ver menos" : `Ver mais (${options.length - 6} opções)`}
+        </button>
+      )}
+    </div>
+  );
+};
+
+// Interface para os dados das variações
+interface ProductVariationsData {
+  preservation: string[];
+  cartridgeType: string[];
+  region: string[];
+  audioLanguages: string[];
+  interfaceLanguages: string[];
+  stock: number;
+}
+
+// --- Componente Principal de Variações do Produto (COM AS MODIFICAÇÕES) ---
+interface ProductVariationsProps {
+  data?: ProductVariationsData;
+  variations?: AdvertisementDTO[];
+  mainAdvertisement?: AdvertisementDTO;
+}
+
+const ProductVariations: React.FC<ProductVariationsProps> = ({
+  variations = [],
+  mainAdvertisement,
+}) => {
+  const {
+    preservationStates,
+    cartridgeTypes,
+    regions,
+    languages,
+    loading,
+    error,
+  } = useReferenceData();
+
+  // Mapeamento para acessar os nomes corretos dentro do objeto de variação.
+  // AQUI ESTÁ A CORREÇÃO PRINCIPAL
+  const variationKeyMap = useMemo(
+    () => ({
+      preservation: (v: AdvertisementDTO) => v.preservationState?.name,
+      cartridgeType: (v: AdvertisementDTO) => v.cartridgeType?.name,
+      region: (v: AdvertisementDTO) => v.gameLocalization?.region?.name,
+      // CORREÇÃO: Mapear diretamente para o nome do idioma (string)
+      audioLanguages: (v: AdvertisementDTO) => {
+        if (!v.advertisementLanguageSupports) return [];
+        return v.advertisementLanguageSupports
+          .filter((als: any) => {
+            const typeName =
+              als.languageSupport?.languageSupportType?.name?.toLowerCase() || "";
+            const typeId = als.languageSupport?.languageSupportType?.id;
+            return typeId === 1 || typeName.includes("audio");
+          })
+          .map((als: any) => als.languageSupport?.language?.name) // <-- Extrai o .name aqui
+          .filter(Boolean); // Remove quaisquer nomes nulos/undefined
+      },
+      subtitleLanguages: (v: AdvertisementDTO) => {
+        if (!v.advertisementLanguageSupports) return [];
+        return v.advertisementLanguageSupports
+          .filter((als: any) => {
+            const typeName =
+              als.languageSupport?.languageSupportType?.name?.toLowerCase() || "";
+            const typeId = als.languageSupport?.languageSupportType?.id;
+            return (
+              typeId === 2 || typeName.includes("subtitle") || typeName.includes("legenda")
+            );
+          })
+          .map((als: any) => als.languageSupport?.language?.name) // <-- Extrai o .name aqui
+          .filter(Boolean);
+      },
+      interfaceLanguages: (v: AdvertisementDTO) => {
+        if (!v.advertisementLanguageSupports) return [];
+        return v.advertisementLanguageSupports
+          .filter((als: any) => {
+            const typeName =
+              als.languageSupport?.languageSupportType?.name?.toLowerCase() || "";
+            const typeId = als.languageSupport?.languageSupportType?.id;
+            return typeId === 3 || typeName.includes("interface");
+          })
+          .map((als: any) => als.languageSupport?.language?.name) // <-- Extrai o .name aqui
+          .filter(Boolean);
+      },
+    }),
+    []
+  );
+
+  // Estado centralizado para guardar as seleções do usuário
+  const [selection, setSelection] = useState<{ [key: string]: string }>(() => {
+    if (!mainAdvertisement) return {};
+    const initialSelection: { [key: string]: string } = {};
+
+    Object.keys(variationKeyMap).forEach((key) => {
+      const getValue = variationKeyMap[key as keyof typeof variationKeyMap];
+      if (getValue) {
+        const value = getValue(mainAdvertisement);
+        if (value) {
+          if (Array.isArray(value)) {
+            if (value.length > 0) {
+              // Agora 'value' é um array de strings, então podemos pegar o primeiro diretamente
+              initialSelection[key] = value[0];
+            }
+          } else {
+            initialSelection[key] = value;
+          }
+        }
+      }
+    });
+
+    return initialSelection;
+  });
+
+  // Estado para guardar as opções que estão dinamicamente disponíveis
+  const [dynamicOptions, setDynamicOptions] = useState<{
+    [key: string]: string[];
+  }>({});
+
+  // Atualizar seleções quando mainAdvertisement mudar
+  useEffect(() => {
+    if (mainAdvertisement) {
+      const newSelection: { [key: string]: string } = {};
+
+      Object.keys(variationKeyMap).forEach((key) => {
+        const getValue = variationKeyMap[key as keyof typeof variationKeyMap];
+        if (getValue) {
+          const value = getValue(mainAdvertisement);
+          if (value) {
+            if (Array.isArray(value)) {
+              if (value.length > 0) {
+                newSelection[key] = value[0];
+              }
+            } else {
+              newSelection[key] = value;
+            }
+          }
+        }
+      });
+
+      setSelection(newSelection);
+    }
+  }, [mainAdvertisement, variationKeyMap]);
+
+  // Armazena todas as opções possíveis vindas da API (calculado apenas uma vez)
+  const allPossibleOptions = useMemo(
+    () => ({
+      preservation: preservationStates.map((state) => state.name),
+      cartridgeType: cartridgeTypes.map((type) => type.name),
+      region: regions.map((region) => region.name),
+      audioLanguages: languages.map((lang) => lang.name),
+      subtitleLanguages: languages.map((lang) => lang.name),
+      interfaceLanguages: languages.map((lang) => lang.name),
+    }),
+    [preservationStates, cartridgeTypes, regions, languages]
+  );
+
+  // EFEITO PRINCIPAL: Recalcula as opções disponíveis sempre que uma seleção é feita
+  useEffect(() => {
+    const available: { [key: string]: Set<string> } = {};
+    const variationKeys = Object.keys(variationKeyMap);
+    const allAdvertisements = [
+      ...(mainAdvertisement ? [mainAdvertisement] : []),
+      ...variations,
+    ];
+
+    variationKeys.forEach((key) => {
+      available[key] = new Set<string>();
+
+      const relevantAdvertisements = allAdvertisements.filter((ad) =>
+        Object.entries(selection).every(([selKey, selValue]) => {
+          if (!selValue || selKey === key) return true;
+          const mappedValue = variationKeyMap[selKey as keyof typeof variationKeyMap]?.(ad);
+          
+          if (Array.isArray(mappedValue)) {
+            return mappedValue.includes(selValue);
+          }
+          return mappedValue === selValue;
+        })
+      );
+
+      relevantAdvertisements.forEach((ad) => {
+        const value = variationKeyMap[key as keyof typeof variationKeyMap]?.(ad);
+        if (value) {
+          if (Array.isArray(value)) {
+            value.forEach((item) => available[key].add(item));
+          } else {
+            available[key].add(value);
+          }
+        }
+      });
+    });
+
+    const finalOptions: { [key: string]: string[] } = {};
+    Object.keys(available).forEach((key) => {
+      finalOptions[key] = Array.from(available[key]);
+    });
+
+    setDynamicOptions(finalOptions);
+  }, [selection, variations, mainAdvertisement, variationKeyMap]);
+
+  // Função para encontrar uma variação que contenha uma opção específica
+  const findVariationWithOption = (group: string, value: string) => {
+    return variations.find((variation) => {
+      const getValue = variationKeyMap[group as keyof typeof variationKeyMap];
+      if (getValue) {
+        const variationValue = getValue(variation);
+        if (Array.isArray(variationValue)) {
+          return variationValue.includes(value);
+        } else {
+          return variationValue === value;
+        }
+      }
+      return false;
+    });
+  };
+
+  // Função para verificar se uma opção pertence ao anúncio principal
+  const isMainAdvertisementOption = (group: string, value: string) => {
+    if (!mainAdvertisement) return false;
+    const getValue = variationKeyMap[group as keyof typeof variationKeyMap];
+    if (getValue) {
+      const mainAdValue = getValue(mainAdvertisement);
+      if (Array.isArray(mainAdValue)) {
+        return mainAdValue.includes(value);
+      } else {
+        return mainAdValue === value;
+      }
+    }
+    return false;
+  };
+
+  // Função para obter todas as opções de uma variação específica
+  const getVariationOptions = (variation: AdvertisementDTO) => {
+    const options: { [key: string]: string } = {};
+    Object.keys(variationKeyMap).forEach((key) => {
+      const getValue = variationKeyMap[key as keyof typeof variationKeyMap];
+      if (getValue) {
+        const value = getValue(variation);
+        if (value) {
+          if (Array.isArray(value)) {
+            if (value.length > 0) {
+              options[key] = value[0];
+            }
+          } else {
+            options[key] = value;
+          }
+        }
+      }
+    });
+    return options;
+  };
+
+  // Handler unificado para lidar com cliques nos botões de opção
+  const handleSelect = (group: string, value: string) => {
+    setSelection((prev) => {
+      const newSelection = { ...prev };
+      if (newSelection[group] === value) {
+        delete newSelection[group];
+      } else {
+        const targetVariation = findVariationWithOption(group, value);
+        if (targetVariation) {
+          const variationOptions = getVariationOptions(targetVariation);
+          Object.assign(newSelection, variationOptions);
+        } else if (isMainAdvertisementOption(group, value) && mainAdvertisement) {
+          const mainAdOptions = getVariationOptions(mainAdvertisement);
+          Object.assign(newSelection, mainAdOptions);
+        } else {
+          newSelection[group] = value;
+        }
+      }
+      return newSelection;
+    });
+  };
+
+  const totalStock = [
+    ...(mainAdvertisement ? [mainAdvertisement] : []),
+    ...variations,
+  ].reduce((sum, ad) => sum + (ad.availableStock || 0), 0);
   const [quantity, setQuantity] = useState<number>(1);
+  const [expandedSections, setExpandedSections] = useState<ExpandedSections>({
+    preservation: false,
+    cartridgeType: false,
+    region: false,
+    audioLanguages: false,
+    subtitleLanguages: false,
+    interfaceLanguages: false,
+  });
+
+  const toggleExpansion = (section: keyof ExpandedSections) => {
+    setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
 
   const handleQuantityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setQuantity(Number(event.target.value));
   };
 
+  if (loading) {
+    return (
+      <div className="p-6 bg-white rounded-xl border border-gray-200 max-w-sm mx-auto">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 rounded mb-4"></div>
+          <div className="space-y-4">
+            <div className="h-4 bg-gray-200 rounded"></div>
+            <div className="grid grid-cols-3 gap-2">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-10 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 bg-white rounded-xl border border-gray-200 max-w-sm mx-auto">
+        <div className="text-center">
+          <p className="text-red-600 mb-2">Erro ao carregar dados</p>
+          <p className="text-sm text-gray-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Função helper para calcular as opções desabilitadas para um grupo
+  const getDisabledOptionsFor = (group: keyof typeof allPossibleOptions) => {
+    const availableOptions = dynamicOptions[group] || [];
+    return allPossibleOptions[group].filter(
+      (opt) => !availableOptions.includes(opt)
+    );
+  };
+  
+  // Função para determinar qual anúncio está atualmente selecionado
+  const getCurrentSelectedAdvertisement = () => {
+    if (Object.keys(selection).length === 0 && mainAdvertisement) {
+      return mainAdvertisement;
+    }
+    const allAdvertisements = [
+      ...(mainAdvertisement ? [mainAdvertisement] : []),
+      ...variations,
+    ];
+    return (
+      allAdvertisements.find((ad) => {
+        return Object.entries(selection).every(([key, selectedValue]) => {
+          const getValue = variationKeyMap[key as keyof typeof variationKeyMap];
+          if (getValue) {
+            const adValue = getValue(ad);
+            if (Array.isArray(adValue)) {
+              return adValue.includes(selectedValue);
+            } else {
+              return adValue === selectedValue;
+            }
+          }
+          return false;
+        });
+      }) || null
+    );
+  };
+
+  const currentAd = getCurrentSelectedAdvertisement();
+
   return (
     <div className="p-6 bg-white rounded-xl border border-gray-200 max-w-sm mx-auto">
-      <h2 className="text-xl font-bold mb-4 text-gray-900">Cartuchos disponíveis:</h2>
+      <h2 className="text-xl font-bold mb-4 text-gray-900">
+        Cartuchos disponíveis:
+      </h2>
 
-      {/* Estado de Preservação */}
-      <div className="mb-4">
-        <p className="text-sm text-gray-800 mb-2">Estado de Preservação:</p>
-        <div className="grid grid-cols-3 gap-2">
-          {data.options.preservation.map((p) => (
-            <OptionButton
-              key={p} label={p} value={p}
-              selectedValue={selectedPreservation}
-              onClick={setSelectedPreservation}
-              disabled={data.disabledOptions.preservation.includes(p)}
-            />
-          ))}
+      {currentAd && (
+        <div className="mb-4 p-3 bg-gray-50 rounded-lg border">
+          <p className="text-sm font-medium text-gray-700">📦 Seleção atual:</p>
+          <p className="text-xs text-gray-600 mt-1">
+            {currentAd === mainAdvertisement
+              ? "Anúncio Principal"
+              : `Variação ID: ${currentAd.id}`}
+          </p>
+          {currentAd.availableStock && (
+            <p className="text-xs text-green-600 mt-1">
+              ✅ {currentAd.availableStock} unidade(s) em estoque
+            </p>
+          )}
         </div>
-      </div>
+      )}
 
-      {/* Tipo de Cartucho */}
-      <div className="mb-4">
-        <p className="text-sm text-gray-800 mb-2 flex items-center">
-          Tipo de cartucho
-           <span className="ml-1.5 text-gray-400 border border-gray-400 rounded-full w-4 h-4 flex items-center justify-center text-xs font-mono select-none">?</span>
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          {data.options.cartridgeType.map((type) => (
-            <OptionButton
-              key={type} label={type} value={type}
-              selectedValue={selectedType}
-              onClick={setSelectedType}
-              disabled={data.disabledOptions.cartridgeType.includes(type)}
-            />
-          ))}
-        </div>
-      </div>
+      <OptionsSection
+        title="Estado de Preservação"
+        options={allPossibleOptions.preservation}
+        selectedValue={selection.preservation || ""}
+        onSelect={(value) => handleSelect("preservation", value)}
+        disabledOptions={getDisabledOptionsFor("preservation")}
+        sectionKey="preservation"
+        expandedSections={expandedSections}
+        onToggleExpansion={toggleExpansion}
+      />
 
-      {/* Região */}
-      <div className="mb-4">
-        <p className="text-sm text-gray-800 mb-2">Região:</p>
-        <div className="grid grid-cols-3 gap-2">
-          {data.options.region.map((region) => (
-            <OptionButton
-              key={region} label={region} value={region}
-              selectedValue={selectedRegion}
-              onClick={setSelectedRegion}
-              disabled={data.disabledOptions.region.includes(region)}
-            />
-          ))}
-        </div>
-      </div>
+      <OptionsSection
+        title="Tipo de cartucho"
+        options={allPossibleOptions.cartridgeType}
+        selectedValue={selection.cartridgeType || ""}
+        onSelect={(value) => handleSelect("cartridgeType", value)}
+        disabledOptions={getDisabledOptionsFor("cartridgeType")}
+        sectionKey="cartridgeType"
+        expandedSections={expandedSections}
+        onToggleExpansion={toggleExpansion}
+        gridCols="grid-cols-2"
+      />
 
-      {/* Idiomas do Áudio */}
-      <div className="mb-4">
-        <p className="text-sm text-gray-800 mb-2">Idiomas do Áudio:</p>
-        <div className="grid grid-cols-3 gap-2">
-          {data.options.audioLanguages.map((lang) => (
-            <OptionButton
-              key={lang} label={lang} value={lang}
-              selectedValue={selectedAudioLang}
-              onClick={setSelectedAudioLang}
-            />
-          ))}
-        </div>
-      </div>
+      <OptionsSection
+        title="Região"
+        options={allPossibleOptions.region}
+        selectedValue={selection.region || ""}
+        onSelect={(value) => handleSelect("region", value)}
+        disabledOptions={getDisabledOptionsFor("region")}
+        sectionKey="region"
+        expandedSections={expandedSections}
+        onToggleExpansion={toggleExpansion}
+      />
 
-      {/* Idiomas da Legenda (Adicionado para corresponder à imagem) */}
-      <div className="mb-4">
-        <p className="text-sm text-gray-800 mb-2">Idiomas da Legenda:</p>
-        <div className="grid grid-cols-3 gap-2">
-          {data.options.legendLanguages.map((lang) => (
-            <OptionButton
-              key={lang} label={lang} value={lang}
-              selectedValue={selectedLegendLang}
-              onClick={setSelectedLegendLang}
-            />
-          ))}
-        </div>
-      </div>
+      <OptionsSection
+        title="Idiomas do Áudio"
+        options={allPossibleOptions.audioLanguages}
+        selectedValue={selection.audioLanguages || ""}
+        onSelect={(value) => handleSelect("audioLanguages", value)}
+        disabledOptions={getDisabledOptionsFor("audioLanguages")}
+        sectionKey="audioLanguages"
+        expandedSections={expandedSections}
+        onToggleExpansion={toggleExpansion}
+      />
 
-      {/* Idiomas da Interface */}
-      <div className="mb-5">
-        <p className="text-sm text-gray-800 mb-2">Idiomas da Interface:</p>
-        <div className="grid grid-cols-3 gap-2">
-          {data.options.interfaceLanguages.map((lang) => (
-            <OptionButton
-              key={lang} label={lang} value={lang}
-              selectedValue={selectedInterfaceLang}
-              onClick={setSelectedInterfaceLang}
-            />
-          ))}
-        </div>
-      </div>
+      <OptionsSection
+        title="Idiomas da Legenda"
+        options={allPossibleOptions.subtitleLanguages}
+        selectedValue={selection.subtitleLanguages || ""}
+        onSelect={(value) => handleSelect("subtitleLanguages", value)}
+        disabledOptions={getDisabledOptionsFor("subtitleLanguages")}
+        sectionKey="subtitleLanguages"
+        expandedSections={expandedSections}
+        onToggleExpansion={toggleExpansion}
+      />
 
-      {/* Estoque Disponível */}
+      <OptionsSection
+        title="Idiomas da Interface"
+        options={allPossibleOptions.interfaceLanguages}
+        selectedValue={selection.interfaceLanguages || ""}
+        onSelect={(value) => handleSelect("interfaceLanguages", value)}
+        disabledOptions={getDisabledOptionsFor("interfaceLanguages")}
+        sectionKey="interfaceLanguages"
+        expandedSections={expandedSections}
+        onToggleExpansion={toggleExpansion}
+      />
+
       <div className="mb-5">
         <label htmlFor="quantity" className="text-sm text-gray-800 block mb-2">
           Estoque Disponível:
@@ -184,21 +564,24 @@ const ProductVariations: React.FC = () => {
             value={quantity}
             onChange={handleQuantityChange}
           >
-            {Array.from({ length: data.stock }, (_, i) => (
+            {Array.from({ length: currentAd?.availableStock || 0 }, (_, i) => (
               <option key={i + 1} value={i + 1}>
                 Quantidade: {i + 1}
               </option>
             ))}
           </select>
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
-            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+            <svg
+              className="fill-current h-4 w-4"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+            >
               <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
             </svg>
           </div>
         </div>
       </div>
 
-      {/* Botões de Ação */}
       <div className="space-y-2">
         <button className="w-full border border-[#2B2560] bg-[#483d9e] text-white font-semibold py-3 px-4 rounded-lg hover:bg-[#2B2560] transition duration-200">
           Comprar pelo Whatsapp

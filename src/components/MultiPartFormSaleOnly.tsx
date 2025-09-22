@@ -11,6 +11,7 @@ import StepHeader from "./StepHeader";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useAdvertisementCreation } from "../hooks/useAdvertisementCreation";
 import { useReferenceData } from "../hooks/useReferenceData";
+import { useGameSpecificData } from "../hooks/useGameSpecificData";
 import {
   validateFormData,
   validateVariations,
@@ -24,9 +25,7 @@ const MultiPartFormSaleOnly = () => {
   const [imageError, setImageError] = useState<string>("");
 
   // Hook para dados de referência
-  const handleReferenceDataError = useCallback((error: Error) => {
-    console.error("Erro ao carregar dados de referência:", error);
-  }, []);
+  const handleReferenceDataError = useCallback(() => {}, []);
 
   const {
     preservationStates,
@@ -48,20 +47,30 @@ const MultiPartFormSaleOnly = () => {
     onError: handleReferenceDataError,
   });
 
+  // Hook para dados específicos do jogo selecionado
+  const {
+    loading: gameDataLoading,
+    error: gameDataError,
+    fetchGameData,
+    clearData: clearGameData,
+    getAvailableRegions,
+    getAvailableAudioLanguages,
+    getAvailableSubtitleLanguages,
+    getAvailableInterfaceLanguages,
+  } = useGameSpecificData();
+
   // Hook para criação de anúncios
   const {
     createAdvertisementFromExistingForm,
     loading: creationLoading,
     error: creationError,
   } = useAdvertisementCreation({
-    onSuccess: (advertisement) => {
-      console.log("Anúncio criado com sucesso:", advertisement);
+    onSuccess: () => {
       setShowSuccessMessage(true);
       // Limpar localStorage após sucesso
       localStorage.removeItem("tcc-variations");
     },
-    onError: (error) => {
-      console.error("Erro ao criar anúncio:", error);
+    onError: () => {
       // Mostrar erro para o usuário
     },
   });
@@ -83,8 +92,8 @@ const MultiPartFormSaleOnly = () => {
   const saveVariationsToStorage = (variationsToSave) => {
     try {
       localStorage.setItem("tcc-variations", JSON.stringify(variationsToSave));
-    } catch (error) {
-      console.error("Erro ao salvar variações no localStorage:", error);
+    } catch {
+      // Erro ao salvar variações no localStorage
     }
   };
 
@@ -143,6 +152,15 @@ const MultiPartFormSaleOnly = () => {
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Quando um jogo é selecionado, buscar dados específicos do jogo
+    if (name === "jogo" && value) {
+      console.log(`🎮 Jogo selecionado: ${value}`);
+      fetchGameData(parseInt(value));
+    } else if (name === "jogo" && !value) {
+      // Se o jogo for desmarcado, limpar os dados específicos
+      clearGameData();
+    }
   };
 
   const handleVariationSelectChange = (name: string, value: string) => {
@@ -284,13 +302,20 @@ const MultiPartFormSaleOnly = () => {
       // Ativar validação apenas do step 2
       setShowValidation((prev) => ({ ...prev, step2: true }));
 
-      if (
-        !formData.jogo ||
-        !formData.tipoCartucho ||
-        !formData.estadoPreservacao ||
-        !formData.regiao ||
-        !formData.idiomaAudio
-      ) {
+      // Verificar se campos obrigatórios estão preenchidos
+      const hasRequiredFields =
+        formData.jogo && formData.tipoCartucho && formData.estadoPreservacao;
+
+      // Verificar campos condicionais (apenas se estão visíveis)
+      const hasRegionField = formData.jogo && getAvailableRegions().length > 0;
+      const hasAudioField =
+        formData.jogo && getAvailableAudioLanguages().length > 0;
+
+      const hasConditionalFields =
+        (!hasRegionField || formData.regiao) &&
+        (!hasAudioField || formData.idiomaAudio);
+
+      if (!hasRequiredFields || !hasConditionalFields) {
         return; // Não prosseguir se campos obrigatórios estiverem vazios
       }
     }
@@ -346,13 +371,22 @@ const MultiPartFormSaleOnly = () => {
   const handleSaveVariation = () => {
     setShowValidation((prev) => ({ ...prev, step5: true }));
 
-    if (
+    // Verificar campos obrigatórios básicos
+    const hasRequiredFields =
       variationData.tipoCartucho &&
       variationData.estadoPreservacao &&
-      variationData.regiao &&
-      variationData.idiomaAudio &&
-      variationData.estoque
-    ) {
+      variationData.estoque;
+
+    // Verificar campos condicionais (apenas se estão visíveis)
+    const hasRegionField = formData.jogo && getAvailableRegions().length > 0;
+    const hasAudioField =
+      formData.jogo && getAvailableAudioLanguages().length > 0;
+
+    const hasConditionalFields =
+      (!hasRegionField || variationData.regiao) &&
+      (!hasAudioField || variationData.idiomaAudio);
+
+    if (hasRequiredFields && hasConditionalFields) {
       if (editingVariationId && editingVariationId !== "new") {
         // Editando variação existente
         setVariations((prev) =>
@@ -654,64 +688,204 @@ const MultiPartFormSaleOnly = () => {
                   showValidation={showValidation.step2}
                 />
               </div>
-              <div>
-                <label className="block mb-1 text-sm font-semibold">
-                  Região do Cartucho
-                </label>
-                <CustomSelect
-                  options={regioes}
-                  value={regioes.find((o) => o.value === formData.regiao)}
-                  onChange={(opt) => handleSelectChange("regiao", opt.value)}
-                  required={true}
-                  showValidation={showValidation.step2}
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-sm font-semibold">
-                  Idioma do Áudio
-                </label>
-                <CustomSelect
-                  options={idiomas}
-                  value={idiomas.find((o) => o.value === formData.idiomaAudio)}
-                  onChange={(opt) =>
-                    handleSelectChange("idiomaAudio", opt.value)
-                  }
-                  required={true}
-                  showValidation={showValidation.step2}
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-sm font-semibold">
-                  Idioma da Legenda
-                </label>
-                <CustomSelect
-                  options={idiomas}
-                  value={idiomas.find(
-                    (o) => o.value === formData.idiomaLegenda
-                  )}
-                  onChange={(opt) =>
-                    handleSelectChange("idiomaLegenda", opt.value)
-                  }
-                  required={true}
-                  showValidation={showValidation.step2}
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-sm font-semibold">
-                  Idioma da Interface
-                </label>
-                <CustomSelect
-                  options={idiomas}
-                  value={idiomas.find(
-                    (o) => o.value === formData.idiomaInterface
-                  )}
-                  onChange={(opt) =>
-                    handleSelectChange("idiomaInterface", opt.value)
-                  }
-                  required={true}
-                  showValidation={showValidation.step2}
-                />
-              </div>
+              {/* Mostrar campo de região apenas se um jogo está selecionado E há regiões disponíveis */}
+              {formData.jogo && getAvailableRegions().length > 0 ? (
+                <div>
+                  <label className="block mb-1 text-sm font-semibold">
+                    Região do Cartucho
+                  </label>
+                  <CustomSelect
+                    options={
+                      formData.jogo
+                        ? getAvailableRegions().map((r) => ({
+                            value: r.id.toString(),
+                            label: r.name,
+                          }))
+                        : regioes
+                    }
+                    value={
+                      formData.jogo
+                        ? getAvailableRegions().find(
+                            (r) => r.id.toString() === formData.regiao
+                          )
+                          ? {
+                              value: formData.regiao,
+                              label:
+                                getAvailableRegions().find(
+                                  (r) => r.id.toString() === formData.regiao
+                                )?.name || "",
+                            }
+                          : null
+                        : regioes.find((o) => o.value === formData.regiao)
+                    }
+                    onChange={(opt) => handleSelectChange("regiao", opt.value)}
+                    required={true}
+                    showValidation={showValidation.step2}
+                  />
+                </div>
+              ) : null}
+              {/* Mostrar campo de idioma do áudio apenas se um jogo está selecionado E há idiomas disponíveis */}
+              {formData.jogo && getAvailableAudioLanguages().length > 0 ? (
+                <div>
+                  <label className="block mb-1 text-sm font-semibold">
+                    Idioma do Áudio
+                  </label>
+                  <CustomSelect
+                    options={
+                      formData.jogo
+                        ? getAvailableAudioLanguages().map((l) => ({
+                            value: l.id.toString(),
+                            label: l.name,
+                          }))
+                        : idiomas
+                    }
+                    value={
+                      formData.jogo
+                        ? getAvailableAudioLanguages().find(
+                            (l) => l.id.toString() === formData.idiomaAudio
+                          )
+                          ? {
+                              value: formData.idiomaAudio,
+                              label:
+                                getAvailableAudioLanguages().find(
+                                  (l) =>
+                                    l.id.toString() === formData.idiomaAudio
+                                )?.name || "",
+                            }
+                          : null
+                        : idiomas.find((o) => o.value === formData.idiomaAudio)
+                    }
+                    onChange={(opt) =>
+                      handleSelectChange("idiomaAudio", opt.value)
+                    }
+                    required={false}
+                    showValidation={showValidation.step2}
+                  />
+                </div>
+              ) : null}
+              {/* Mostrar campo de idioma da legenda apenas se um jogo está selecionado E há idiomas disponíveis */}
+              {formData.jogo && getAvailableSubtitleLanguages().length > 0 ? (
+                <div>
+                  <label className="block mb-1 text-sm font-semibold">
+                    Idioma da Legenda
+                  </label>
+                  <CustomSelect
+                    options={
+                      formData.jogo
+                        ? getAvailableSubtitleLanguages().map((l) => ({
+                            value: l.id.toString(),
+                            label: l.name,
+                          }))
+                        : idiomas
+                    }
+                    value={
+                      formData.jogo
+                        ? getAvailableSubtitleLanguages().find(
+                            (l) => l.id.toString() === formData.idiomaLegenda
+                          )
+                          ? {
+                              value: formData.idiomaLegenda,
+                              label:
+                                getAvailableSubtitleLanguages().find(
+                                  (l) =>
+                                    l.id.toString() === formData.idiomaLegenda
+                                )?.name || "",
+                            }
+                          : null
+                        : idiomas.find(
+                            (o) => o.value === formData.idiomaLegenda
+                          )
+                    }
+                    onChange={(opt) =>
+                      handleSelectChange("idiomaLegenda", opt.value)
+                    }
+                    required={false}
+                    showValidation={showValidation.step2}
+                  />
+                </div>
+              ) : null}
+              {/* Mostrar campo de idioma da interface apenas se um jogo está selecionado E há idiomas disponíveis */}
+              {formData.jogo && getAvailableInterfaceLanguages().length > 0 ? (
+                <div>
+                  <label className="block mb-1 text-sm font-semibold">
+                    Idioma da Interface
+                  </label>
+                  <CustomSelect
+                    options={
+                      formData.jogo
+                        ? getAvailableInterfaceLanguages().map((l) => ({
+                            value: l.id.toString(),
+                            label: l.name,
+                          }))
+                        : idiomas
+                    }
+                    value={
+                      formData.jogo
+                        ? getAvailableInterfaceLanguages().find(
+                            (l) => l.id.toString() === formData.idiomaInterface
+                          )
+                          ? {
+                              value: formData.idiomaInterface,
+                              label:
+                                getAvailableInterfaceLanguages().find(
+                                  (l) =>
+                                    l.id.toString() === formData.idiomaInterface
+                                )?.name || "",
+                            }
+                          : null
+                        : idiomas.find(
+                            (o) => o.value === formData.idiomaInterface
+                          )
+                    }
+                    onChange={(opt) =>
+                      handleSelectChange("idiomaInterface", opt.value)
+                    }
+                    required={false}
+                    showValidation={showValidation.step2}
+                  />
+                </div>
+              ) : null}
+
+              {formData.jogo && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <svg
+                        className="h-5 w-5 text-blue-400"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-blue-800">
+                        Opções limitadas ao jogo selecionado
+                      </h3>
+                      <div className="mt-2 text-sm text-blue-700">
+                        <p>
+                          As opções de região e idiomas foram filtradas baseadas
+                          no que este jogo suporta.
+                        </p>
+                        {gameDataLoading && (
+                          <p className="mt-1 font-medium">
+                            🔄 Carregando dados específicos do jogo...
+                          </p>
+                        )}
+                        {gameDataError && (
+                          <p className="mt-1 text-red-600">
+                            ❌ Erro ao carregar dados: {gameDataError}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <p className="text-sm">
                 Acesse o guia{" "}
@@ -815,242 +989,1083 @@ const MultiPartFormSaleOnly = () => {
           </>
         )}
         {/* STEP 4 */}
-      {step === 4 && (
-        <>
-          <StepHeader
-            title="Adicionar Variações"
-            subtitle="Tem mais de um cartucho do mesmo jogo para vender?"
-            step={3}
-            steps={stepsArray}
-            onBack={prevStep}
-          />
-          <div className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-6`}>
-            {/* Lista de variações existentes */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3
-                  className={`${
-                    isMobile ? "hidden" : ""
-                  } text-lg font-semibold text-gray-800`}
-                >
-                  Variações do Anúncio
-                </h3>
-                {variations.length > 0 && (
-                  <button
-                    onClick={clearVariationsStorage}
-                    className="px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md border border-red-200 hover:border-red-300 transition-colors"
+        {step === 4 && (
+          <>
+            <StepHeader
+              title="Adicionar Variações"
+              subtitle="Tem mais de um cartucho do mesmo jogo para vender?"
+              step={3}
+              steps={stepsArray}
+              onBack={prevStep}
+            />
+            <div
+              className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-6`}
+            >
+              {/* Lista de variações existentes */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3
+                    className={`${
+                      isMobile ? "hidden" : ""
+                    } text-lg font-semibold text-gray-800`}
                   >
-                    Limpar Todas
-                  </button>
-                )}
-              </div>
-
-              
-
-              {variations.map((variation, index) => {
-                // Se o ID desta variação é o que está sendo editado, mostre o formulário
-                if (editingVariationId === variation.id) {
-                  return (
-                    // =================== FORMULÁRIO DE EDIÇÃO ===================
-                    <div
-                      key={`editing-${variation.id}`}
-                      className={`bg-[#EDECF7] border border-gray-300 rounded-lg ${
-                        isMobile ? "p-4" : "p-6"
-                      } space-y-4 animate-fadeIn`}
+                    Variações do Anúncio
+                  </h3>
+                  {variations.length > 0 && (
+                    <button
+                      onClick={clearVariationsStorage}
+                      className="px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md border border-red-200 hover:border-red-300 transition-colors"
                     >
-                      <div className="flex items-center justify-between border-b pb-3">
-                        <h3 className="text-lg font-semibold text-gray-800">
-                          Editando Variação
-                        </h3>
-                        <button onClick={handleCancelEdit} title="Fechar edição">
-                          <ChevronDown className="w-8 h-8 text-gray-600" />
-                        </button>
+                      Limpar Todas
+                    </button>
+                  )}
+                </div>
+
+                {variations.map((variation, index) => {
+                  // Se o ID desta variação é o que está sendo editado, mostre o formulário
+                  if (editingVariationId === variation.id) {
+                    return (
+                      // =================== FORMULÁRIO DE EDIÇÃO ===================
+                      <div
+                        key={`editing-${variation.id}`}
+                        className={`bg-[#EDECF7] border border-gray-300 rounded-lg ${
+                          isMobile ? "p-4" : "p-6"
+                        } space-y-4 animate-fadeIn`}
+                      >
+                        <div className="flex items-center justify-between border-b pb-3">
+                          <h3 className="text-lg font-semibold text-gray-800">
+                            Editando Variação
+                          </h3>
+                          <button
+                            onClick={handleCancelEdit}
+                            title="Fechar edição"
+                          >
+                            <ChevronDown className="w-8 h-8 text-gray-600" />
+                          </button>
+                        </div>
+
+                        <div className="space-y-3 bg-white p-4 rounded-lg">
+                          {/* COLE O CONTEÚDO DO FORMULÁRIO AQUI */}
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
+                          >
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Título do Anúncio:
+                            </label>
+                            <input
+                              type="text"
+                              name="titulo"
+                              value={variationData.titulo}
+                              onChange={handleVariationInputChange}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              placeholder="Ex: Cartucho Super Mario Bros - Repro"
+                            />
+                          </div>
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
+                          >
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Tipo do Cartucho:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
+                                options={tiposCartucho}
+                                value={tiposCartucho.find(
+                                  (o) => o.value === variationData.tipoCartucho
+                                )}
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "tipoCartucho",
+                                    opt.value
+                                  )
+                                }
+                                required={true}
+                                showValidation={showValidation.step5}
+                              />
+                            </div>
+                          </div>
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
+                          >
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Estado de Preservação:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
+                                options={estados}
+                                value={estados.find(
+                                  (o) =>
+                                    o.value === variationData.estadoPreservacao
+                                )}
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "estadoPreservacao",
+                                    opt.value
+                                  )
+                                }
+                                required={true}
+                                showValidation={showValidation.step5}
+                              />
+                            </div>
+                          </div>
+                          {/* Mostrar campo de região apenas se um jogo está selecionado E há regiões disponíveis */}
+                          {formData.jogo && getAvailableRegions().length > 0 ? (
+                            <div
+                              className={`flex ${
+                                isMobile ? "flex-col gap-2" : "items-center"
+                              }`}
+                            >
+                              <label
+                                className={`font-medium text-gray-700 flex-shrink-0 ${
+                                  isMobile
+                                    ? "text-start text-md"
+                                    : "text-end text-sm w-40"
+                                } pr-2`}
+                              >
+                                Região do Cartucho:
+                              </label>
+                              <div className="flex-1">
+                                <CustomSelect
+                                  options={getAvailableRegions().map((r) => ({
+                                    value: r.id.toString(),
+                                    label: r.name,
+                                  }))}
+                                  value={
+                                    getAvailableRegions().find(
+                                      (r) =>
+                                        r.id.toString() === variationData.regiao
+                                    )
+                                      ? {
+                                          value: variationData.regiao,
+                                          label:
+                                            getAvailableRegions().find(
+                                              (r) =>
+                                                r.id.toString() ===
+                                                variationData.regiao
+                                            )?.name || "",
+                                        }
+                                      : null
+                                  }
+                                  onChange={(opt) =>
+                                    handleVariationSelectChange(
+                                      "regiao",
+                                      opt.value
+                                    )
+                                  }
+                                  required={false}
+                                  showValidation={showValidation.step5}
+                                />
+                              </div>
+                            </div>
+                          ) : null}
+                          {/* Mostrar campo de idioma do áudio apenas se um jogo está selecionado E há idiomas disponíveis */}
+                          {formData.jogo &&
+                          getAvailableAudioLanguages().length > 0 ? (
+                            <div
+                              className={`flex ${
+                                isMobile ? "flex-col gap-2" : "items-center"
+                              }`}
+                            >
+                              <label
+                                className={`font-medium text-gray-700 flex-shrink-0 ${
+                                  isMobile
+                                    ? "text-start text-md"
+                                    : "text-end text-sm w-40"
+                                } pr-2`}
+                              >
+                                Idioma do Audio:
+                              </label>
+                              <div className="flex-1">
+                                <CustomSelect
+                                  options={getAvailableAudioLanguages().map(
+                                    (l) => ({
+                                      value: l.id.toString(),
+                                      label: l.name,
+                                    })
+                                  )}
+                                  value={
+                                    getAvailableAudioLanguages().find(
+                                      (l) =>
+                                        l.id.toString() ===
+                                        variationData.idiomaAudio
+                                    )
+                                      ? {
+                                          value: variationData.idiomaAudio,
+                                          label:
+                                            getAvailableAudioLanguages().find(
+                                              (l) =>
+                                                l.id.toString() ===
+                                                variationData.idiomaAudio
+                                            )?.name || "",
+                                        }
+                                      : null
+                                  }
+                                  onChange={(opt) =>
+                                    handleVariationSelectChange(
+                                      "idiomaAudio",
+                                      opt.value
+                                    )
+                                  }
+                                  required={false}
+                                  showValidation={showValidation.step5}
+                                />
+                              </div>
+                            </div>
+                          ) : null}
+                          {/* Mostrar campo de idioma da legenda apenas se um jogo está selecionado E há idiomas disponíveis */}
+                          {formData.jogo &&
+                          getAvailableSubtitleLanguages().length > 0 ? (
+                            <div
+                              className={`flex ${
+                                isMobile ? "flex-col gap-2" : "items-center"
+                              }`}
+                            >
+                              <label
+                                className={`font-medium text-gray-700 flex-shrink-0 ${
+                                  isMobile
+                                    ? "text-start text-md"
+                                    : "text-end text-sm w-40"
+                                } pr-2`}
+                              >
+                                Idioma da Legenda:
+                              </label>
+                              <div className="flex-1">
+                                <CustomSelect
+                                  options={getAvailableSubtitleLanguages().map(
+                                    (l) => ({
+                                      value: l.id.toString(),
+                                      label: l.name,
+                                    })
+                                  )}
+                                  value={
+                                    getAvailableSubtitleLanguages().find(
+                                      (l) =>
+                                        l.id.toString() ===
+                                        variationData.idiomaLegenda
+                                    )
+                                      ? {
+                                          value: variationData.idiomaLegenda,
+                                          label:
+                                            getAvailableSubtitleLanguages().find(
+                                              (l) =>
+                                                l.id.toString() ===
+                                                variationData.idiomaLegenda
+                                            )?.name || "",
+                                        }
+                                      : null
+                                  }
+                                  onChange={(opt) =>
+                                    handleVariationSelectChange(
+                                      "idiomaLegenda",
+                                      opt.value
+                                    )
+                                  }
+                                  required={false}
+                                  showValidation={showValidation.step5}
+                                />
+                              </div>
+                            </div>
+                          ) : null}
+                          {/* Mostrar campo de idioma da interface apenas se um jogo está selecionado E há idiomas disponíveis */}
+                          {formData.jogo &&
+                          getAvailableInterfaceLanguages().length > 0 ? (
+                            <div
+                              className={`flex ${
+                                isMobile ? "flex-col gap-2" : "items-center"
+                              }`}
+                            >
+                              <label
+                                className={`font-medium text-gray-700 flex-shrink-0 ${
+                                  isMobile
+                                    ? "text-start text-md"
+                                    : "text-end text-sm w-40"
+                                } pr-2`}
+                              >
+                                Idioma da Interface:
+                              </label>
+                              <div className="flex-1">
+                                <CustomSelect
+                                  options={getAvailableInterfaceLanguages().map(
+                                    (l) => ({
+                                      value: l.id.toString(),
+                                      label: l.name,
+                                    })
+                                  )}
+                                  value={
+                                    getAvailableInterfaceLanguages().find(
+                                      (l) =>
+                                        l.id.toString() ===
+                                        variationData.idiomaInterface
+                                    )
+                                      ? {
+                                          value: variationData.idiomaInterface,
+                                          label:
+                                            getAvailableInterfaceLanguages().find(
+                                              (l) =>
+                                                l.id.toString() ===
+                                                variationData.idiomaInterface
+                                            )?.name || "",
+                                        }
+                                      : null
+                                  }
+                                  onChange={(opt) =>
+                                    handleVariationSelectChange(
+                                      "idiomaInterface",
+                                      opt.value
+                                    )
+                                  }
+                                  required={false}
+                                  showValidation={showValidation.step5}
+                                />
+                              </div>
+                            </div>
+                          ) : null}
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
+                          >
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Estoque Disponível:
+                            </label>
+                            <input
+                              type="number"
+                              name="estoque"
+                              value={variationData.estoque}
+                              placeholder="1"
+                              onChange={handleVariationInputChange}
+                              className={`flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none ${
+                                showValidation.step5 && !variationData.estoque
+                                  ? "border-red-500"
+                                  : "border-gray-300"
+                              }`}
+                              min="1"
+                            />
+                          </div>
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
+                          >
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Preço de Venda:
+                            </label>
+                            <div className="flex-1 flex items-center space-x-2">
+                              <span className="text-gray-600">R$</span>
+                              <input
+                                type="text"
+                                name="preco"
+                                value={variationData.preco}
+                                placeholder="0,00"
+                                onChange={handleVariationInputChange}
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                              />
+                            </div>
+                          </div>
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
+                          >
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Descrição:
+                            </label>
+                            <input
+                              type="text"
+                              name="descricao"
+                              value={variationData.descricao}
+                              placeholder="Descrição"
+                              onChange={handleVariationInputChange}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                            />
+                          </div>
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
+                          >
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Imagens e Vídeos:
+                            </label>
+                            <div className="flex-1">
+                              <div className="grid grid-cols-4 gap-2">
+                                {[...Array(4)].map((_, i) => (
+                                  <div key={i} className="relative">
+                                    {variationData.imagens[i] ? (
+                                      <div className="aspect-square border-2 border-solid border-purple-400 rounded overflow-hidden bg-gray-100">
+                                        <img
+                                          src={URL.createObjectURL(
+                                            variationData.imagens[i]
+                                          )}
+                                          alt={`Imagem ${i + 1}`}
+                                          className="w-full h-full object-cover"
+                                        />
+                                        <button
+                                          onClick={() =>
+                                            removeVariationImage(i)
+                                          }
+                                          className="absolute top-1 right-1 w-5 h-5 text-[#483D9E] flex items-center justify-center text-lg hover:text-[#211C49] transition-colors"
+                                          title="Remover imagem"
+                                        >
+                                          ✕
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <label className="aspect-square bg-gray-200 rounded border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-300">
+                                        <Camera className="w-6 h-6 text-gray-400" />
+                                        <input
+                                          type="file"
+                                          accept="image/*,video/*"
+                                          className="hidden"
+                                          onChange={(e) =>
+                                            handleVariationFileChange(e, i)
+                                          }
+                                        />
+                                      </label>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-4 border-t">
+                          <button
+                            onClick={handleCancelEdit}
+                            className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                          <ConfirmButton onClick={handleSaveVariation}>
+                            Salvar Alterações
+                          </ConfirmButton>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // =================== MODO DE VISUALIZAÇÃO NORMAL ===================
+                  return (
+                    <div
+                      key={variation.id}
+                      className="border border-gray-200 rounded-lg overflow-hidden animate-fadeIn"
+                    >
+                      <div
+                        className="bg-[#EDECF7] px-4 py-3 cursor-pointer transition-colors"
+                        onClick={() => toggleVariation(variation.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
+                              {variation.imagens && variation.imagens[0] ? (
+                                <img
+                                  src={URL.createObjectURL(
+                                    variation.imagens[0]
+                                  )}
+                                  alt={`Imagem da variação`}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gray-300"></div>
+                              )}
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-800">
+                                Variação {index + 1}
+                              </span>
+                              <p className="text-sm text-gray-600 truncate max-w-xs md:max-w-md">
+                                {getCartridgeTypeName(variation.tipoCartucho)} -{" "}
+                                {getPreservationStateName(
+                                  variation.estadoPreservacao
+                                )}{" "}
+                                - {getRegionName(variation.regiao)}
+                              </p>
+                            </div>
+                          </div>
+                          <ChevronDown
+                            className={`w-5 h-5 text-gray-600 transition-transform duration-300 ${
+                              expandedVariations[variation.id]
+                                ? "rotate-180"
+                                : ""
+                            }`}
+                          />
+                        </div>
                       </div>
 
-                      <div className="space-y-3 bg-white p-4 rounded-lg">
-                        {/* COLE O CONTEÚDO DO FORMULÁRIO AQUI */}
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Título do Anúncio:</label>
-                          <input type="text" name="titulo" value={variationData.titulo} onChange={handleVariationInputChange} className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Ex: Cartucho Super Mario Bros - Repro"/>
+                      {expandedVariations[variation.id] && (
+                        <div className="bg-white p-4 border-x-8 border-[#EDECF7] border-b-8">
+                          <div className="flex items-start space-x-4">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-800 leading-relaxed">
+                                <strong>Título:</strong> {variation.titulo}
+                              </p>
+                              <p className="text-sm text-gray-600 mt-1">
+                                <strong>Descrição:</strong>{" "}
+                                {variation.descricao || "Nenhuma descrição."}
+                              </p>
+                              <p className="text-sm text-gray-600 mt-1">
+                                <strong>Estoque:</strong> {variation.estoque}
+                              </p>
+                              <p className="text-sm text-gray-600 mt-1">
+                                <strong>Preço:</strong> R${" "}
+                                {variation.preco || "0,00"}
+                              </p>
+                            </div>
+                            <div className="flex items-center space-x-2 flex-shrink-0">
+                              <button
+                                onClick={() => handleEditVariation(variation)}
+                                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full"
+                                title="Editar"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleDeleteVariation(variation.id)
+                                }
+                                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-full"
+                                title="Excluir"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Tipo do Cartucho:</label>
-                          <div className="flex-1"><CustomSelect options={tiposCartucho} value={tiposCartucho.find((o) => o.value === variationData.tipoCartucho)} onChange={(opt) => handleVariationSelectChange("tipoCartucho", opt.value)} required={true} showValidation={showValidation.step5}/></div>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Estado de Preservação:</label>
-                          <div className="flex-1"><CustomSelect options={estados} value={estados.find((o) => o.value === variationData.estadoPreservacao)} onChange={(opt) => handleVariationSelectChange("estadoPreservacao", opt.value)} required={true} showValidation={showValidation.step5}/></div>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Região do Cartucho:</label>
-                          <div className="flex-1"><CustomSelect options={regioes} value={regioes.find((o) => o.value === variationData.regiao)} onChange={(opt) => handleVariationSelectChange("regiao", opt.value)} required={true} showValidation={showValidation.step5}/></div>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Idioma do Audio:</label>
-                          <div className="flex-1"><CustomSelect options={idiomas} value={idiomas.find((o) => o.value === variationData.idiomaAudio)} onChange={(opt) => handleVariationSelectChange("idiomaAudio", opt.value)} required={true} showValidation={showValidation.step5}/></div>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Idioma da Legenda:</label>
-                          <div className="flex-1"><CustomSelect options={idiomas} value={idiomas.find((o) => o.value === variationData.idiomaLegenda)} onChange={(opt) => handleVariationSelectchange("idiomaLegenda", opt.value)} required={true} showValidation={showValidation.step5}/></div>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Idioma da Interface:</label>
-                          <div className="flex-1"><CustomSelect options={idiomas} value={idiomas.find((o) => o.value === variationData.idiomaInterface)} onChange={(opt) => handleVariationSelectChange("idiomaInterface", opt.value)} required={true} showValidation={showValidation.step5}/></div>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                           <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Estoque Disponível:</label>
-                           <input type="number" name="estoque" value={variationData.estoque} placeholder="1" onChange={handleVariationInputChange} className={`flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none ${showValidation.step5 && !variationData.estoque ? "border-red-500" : "border-gray-300"}`} min="1"/>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Preço de Venda:</label>
-                          <div className="flex-1 flex items-center space-x-2"><span className="text-gray-600">R$</span><input type="text" name="preco" value={variationData.preco} placeholder="0,00" onChange={handleVariationInputChange} className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"/></div>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Descrição:</label>
-                          <input type="text" name="descricao" value={variationData.descricao} placeholder="Descrição" onChange={handleVariationInputChange} className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"/>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Imagens e Vídeos:</label>
-                          <div className="flex-1"><div className="grid grid-cols-4 gap-2">{[...Array(4)].map((_, i) => (<div key={i} className="relative">{variationData.imagens[i] ? (<div className="aspect-square border-2 border-solid border-purple-400 rounded overflow-hidden bg-gray-100"><img src={URL.createObjectURL(variationData.imagens[i])} alt={`Imagem ${i+1}`} className="w-full h-full object-cover"/><button onClick={() => removeVariationImage(i)} className="absolute top-1 right-1 w-5 h-5 text-[#483D9E] flex items-center justify-center text-lg hover:text-[#211C49] transition-colors" title="Remover imagem">✕</button></div>) : (<label className="aspect-square bg-gray-200 rounded border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-300"><Camera className="w-6 h-6 text-gray-400"/><input type="file" accept="image/*,video/*" className="hidden" onChange={(e) => handleVariationFileChange(e, i)}/></label>)}</div>))}</div></div>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end gap-2 pt-4 border-t">
-                        <button onClick={handleCancelEdit} className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors">Cancelar</button>
-                        <ConfirmButton onClick={handleSaveVariation}>Salvar Alterações</ConfirmButton>
-                      </div>
+                      )}
                     </div>
                   );
-                }
+                })}
+              </div>
 
-                // =================== MODO DE VISUALIZAÇÃO NORMAL ===================
-                return (
-                  <div key={variation.id} className="border border-gray-200 rounded-lg overflow-hidden animate-fadeIn">
-                    <div className="bg-[#EDECF7] px-4 py-3 cursor-pointer transition-colors" onClick={() => toggleVariation(variation.id)}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
-                            {variation.imagens && variation.imagens[0] ? (<img src={URL.createObjectURL(variation.imagens[0])} alt={`Imagem da variação`} className="w-full h-full object-cover"/>) : (<div className="w-full h-full bg-gray-300"></div>)}
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-800">Variação {index + 1}</span>
-                            <p className="text-sm text-gray-600 truncate max-w-xs md:max-w-md">{getCartridgeTypeName(variation.tipoCartucho)} - {getPreservationStateName(variation.estadoPreservacao)} - {getRegionName(variation.regiao)}</p>
-                          </div>
-                        </div>
-                        <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform duration-300 ${expandedVariations[variation.id] ? "rotate-180" : ""}`}/>
+              {/* Botão para ADICIONAR ou o Formulário de NOVA variação */}
+              {editingVariationId === "new" ? (
+                // =================== FORMULÁRIO DE NOVA VARIAÇÃO ===================
+                <div
+                  className={`bg-[#EDECF7] border border-gray-300 rounded-lg ${
+                    isMobile ? "p-4" : "p-6"
+                  } space-y-4 animate-fadeIn`}
+                >
+                  <div className="flex items-center justify-between border-b pb-3">
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Nova Variação ({variations.length + 1})
+                    </h3>
+                    <button onClick={handleCancelEdit} title="Cancelar">
+                      <ChevronDown className="w-8 h-8 text-gray-600" />
+                    </button>
+                  </div>
+                  <div className="space-y-3 bg-white p-4 rounded-lg">
+                    {/* COLE O CONTEÚDO DO FORMULÁRIO AQUI */}
+                    <div
+                      className={`flex ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
+                        Título do Anúncio:
+                      </label>
+                      <input
+                        type="text"
+                        name="titulo"
+                        value={variationData.titulo}
+                        onChange={handleVariationInputChange}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        placeholder="Ex: Cartucho Super Mario Bros - Repro"
+                      />
+                    </div>
+                    <div
+                      className={`flex ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
+                        Tipo do Cartucho:
+                      </label>
+                      <div className="flex-1">
+                        <CustomSelect
+                          options={tiposCartucho}
+                          value={tiposCartucho.find(
+                            (o) => o.value === variationData.tipoCartucho
+                          )}
+                          onChange={(opt) =>
+                            handleVariationSelectChange(
+                              "tipoCartucho",
+                              opt.value
+                            )
+                          }
+                          required={true}
+                          showValidation={showValidation.step5}
+                        />
                       </div>
                     </div>
-
-                    {expandedVariations[variation.id] && (
-                      <div className="bg-white p-4 border-x-8 border-[#EDECF7] border-b-8">
-                        <div className="flex items-start space-x-4">
-                           <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-800 leading-relaxed"><strong>Título:</strong> {variation.titulo}</p>
-                              <p className="text-sm text-gray-600 mt-1"><strong>Descrição:</strong> {variation.descricao || "Nenhuma descrição."}</p>
-                              <p className="text-sm text-gray-600 mt-1"><strong>Estoque:</strong> {variation.estoque}</p>
-                              <p className="text-sm text-gray-600 mt-1"><strong>Preço:</strong> R$ {variation.preco || "0,00"}</p>
-                           </div>
-                           <div className="flex items-center space-x-2 flex-shrink-0">
-                            <button onClick={() => handleEditVariation(variation)} className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full" title="Editar"><Edit className="w-4 h-4"/></button>
-                            <button onClick={() => handleDeleteVariation(variation.id)} className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-full" title="Excluir"><Trash2 className="w-4 h-4"/></button>
-                          </div>
+                    <div
+                      className={`flex ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
+                        Estado de Preservação:
+                      </label>
+                      <div className="flex-1">
+                        <CustomSelect
+                          options={estados}
+                          value={estados.find(
+                            (o) => o.value === variationData.estadoPreservacao
+                          )}
+                          onChange={(opt) =>
+                            handleVariationSelectChange(
+                              "estadoPreservacao",
+                              opt.value
+                            )
+                          }
+                          required={true}
+                          showValidation={showValidation.step5}
+                        />
+                      </div>
+                    </div>
+                    {/* Mostrar campo de região apenas se um jogo está selecionado E há regiões disponíveis */}
+                    {formData.jogo && getAvailableRegions().length > 0 ? (
+                      <div
+                        className={`flex ${
+                          isMobile ? "flex-col gap-2" : "items-center"
+                        }`}
+                      >
+                        <label
+                          className={`font-medium text-gray-700 flex-shrink-0 ${
+                            isMobile
+                              ? "text-start text-md"
+                              : "text-end text-sm w-40"
+                          } pr-2`}
+                        >
+                          Região do Cartucho:
+                        </label>
+                        <div className="flex-1">
+                          <CustomSelect
+                            options={getAvailableRegions().map((r) => ({
+                              value: r.id.toString(),
+                              label: r.name,
+                            }))}
+                            value={
+                              getAvailableRegions().find(
+                                (r) => r.id.toString() === variationData.regiao
+                              )
+                                ? {
+                                    value: variationData.regiao,
+                                    label:
+                                      getAvailableRegions().find(
+                                        (r) =>
+                                          r.id.toString() ===
+                                          variationData.regiao
+                                      )?.name || "",
+                                  }
+                                : null
+                            }
+                            onChange={(opt) =>
+                              handleVariationSelectChange("regiao", opt.value)
+                            }
+                            required={false}
+                            showValidation={showValidation.step5}
+                          />
                         </div>
                       </div>
-                    )}
+                    ) : null}
+                    {/* Mostrar campo de idioma do áudio apenas se um jogo está selecionado E há idiomas disponíveis */}
+                    {formData.jogo &&
+                    getAvailableAudioLanguages().length > 0 ? (
+                      <div
+                        className={`flex ${
+                          isMobile ? "flex-col gap-2" : "items-center"
+                        }`}
+                      >
+                        <label
+                          className={`font-medium text-gray-700 flex-shrink-0 ${
+                            isMobile
+                              ? "text-start text-md"
+                              : "text-end text-sm w-40"
+                          } pr-2`}
+                        >
+                          Idioma do Audio:
+                        </label>
+                        <div className="flex-1">
+                          <CustomSelect
+                            options={getAvailableAudioLanguages().map((l) => ({
+                              value: l.id.toString(),
+                              label: l.name,
+                            }))}
+                            value={
+                              getAvailableAudioLanguages().find(
+                                (l) =>
+                                  l.id.toString() === variationData.idiomaAudio
+                              )
+                                ? {
+                                    value: variationData.idiomaAudio,
+                                    label:
+                                      getAvailableAudioLanguages().find(
+                                        (l) =>
+                                          l.id.toString() ===
+                                          variationData.idiomaAudio
+                                      )?.name || "",
+                                  }
+                                : null
+                            }
+                            onChange={(opt) =>
+                              handleVariationSelectChange(
+                                "idiomaAudio",
+                                opt.value
+                              )
+                            }
+                            required={false}
+                            showValidation={showValidation.step5}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                    {/* Mostrar campo de idioma da legenda apenas se um jogo está selecionado E há idiomas disponíveis */}
+                    {formData.jogo &&
+                    getAvailableSubtitleLanguages().length > 0 ? (
+                      <div
+                        className={`flex ${
+                          isMobile ? "flex-col gap-2" : "items-center"
+                        }`}
+                      >
+                        <label
+                          className={`font-medium text-gray-700 flex-shrink-0 ${
+                            isMobile
+                              ? "text-start text-md"
+                              : "text-end text-sm w-40"
+                          } pr-2`}
+                        >
+                          Idioma da Legenda:
+                        </label>
+                        <div className="flex-1">
+                          <CustomSelect
+                            options={getAvailableSubtitleLanguages().map(
+                              (l) => ({
+                                value: l.id.toString(),
+                                label: l.name,
+                              })
+                            )}
+                            value={
+                              getAvailableSubtitleLanguages().find(
+                                (l) =>
+                                  l.id.toString() ===
+                                  variationData.idiomaLegenda
+                              )
+                                ? {
+                                    value: variationData.idiomaLegenda,
+                                    label:
+                                      getAvailableSubtitleLanguages().find(
+                                        (l) =>
+                                          l.id.toString() ===
+                                          variationData.idiomaLegenda
+                                      )?.name || "",
+                                  }
+                                : null
+                            }
+                            onChange={(opt) =>
+                              handleVariationSelectChange(
+                                "idiomaLegenda",
+                                opt.value
+                              )
+                            }
+                            required={false}
+                            showValidation={showValidation.step5}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                    {/* Mostrar campo de idioma da interface apenas se um jogo está selecionado E há idiomas disponíveis */}
+                    {formData.jogo &&
+                    getAvailableInterfaceLanguages().length > 0 ? (
+                      <div
+                        className={`flex ${
+                          isMobile ? "flex-col gap-2" : "items-center"
+                        }`}
+                      >
+                        <label
+                          className={`font-medium text-gray-700 flex-shrink-0 ${
+                            isMobile
+                              ? "text-start text-md"
+                              : "text-end text-sm w-40"
+                          } pr-2`}
+                        >
+                          Idioma da Interface:
+                        </label>
+                        <div className="flex-1">
+                          <CustomSelect
+                            options={getAvailableInterfaceLanguages().map(
+                              (l) => ({
+                                value: l.id.toString(),
+                                label: l.name,
+                              })
+                            )}
+                            value={
+                              getAvailableInterfaceLanguages().find(
+                                (l) =>
+                                  l.id.toString() ===
+                                  variationData.idiomaInterface
+                              )
+                                ? {
+                                    value: variationData.idiomaInterface,
+                                    label:
+                                      getAvailableInterfaceLanguages().find(
+                                        (l) =>
+                                          l.id.toString() ===
+                                          variationData.idiomaInterface
+                                      )?.name || "",
+                                  }
+                                : null
+                            }
+                            onChange={(opt) =>
+                              handleVariationSelectChange(
+                                "idiomaInterface",
+                                opt.value
+                              )
+                            }
+                            required={false}
+                            showValidation={showValidation.step5}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                    <div
+                      className={`flex ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
+                        Estoque Disponível:
+                      </label>
+                      <input
+                        type="number"
+                        name="estoque"
+                        value={variationData.estoque}
+                        placeholder="1"
+                        onChange={handleVariationInputChange}
+                        className={`flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none ${
+                          showValidation.step5 && !variationData.estoque
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        }`}
+                        min="1"
+                      />
+                    </div>
+                    <div
+                      className={`flex ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
+                        Preço de Venda:
+                      </label>
+                      <div className="flex-1 flex items-center space-x-2">
+                        <span className="text-gray-600">R$</span>
+                        <input
+                          type="text"
+                          name="preco"
+                          value={variationData.preco}
+                          placeholder="0,00"
+                          onChange={handleVariationInputChange}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div
+                      className={`flex ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
+                        Descrição:
+                      </label>
+                      <input
+                        type="text"
+                        name="descricao"
+                        value={variationData.descricao}
+                        placeholder="Descrição"
+                        onChange={handleVariationInputChange}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      />
+                    </div>
+                    <div
+                      className={`flex ${
+                        isMobile ? "flex-col gap-2" : "items-center"
+                      }`}
+                    >
+                      <label
+                        className={`font-medium text-gray-700 flex-shrink-0 ${
+                          isMobile
+                            ? "text-start text-md"
+                            : "text-end text-sm w-40"
+                        } pr-2`}
+                      >
+                        Imagens e Vídeos:
+                      </label>
+                      <div className="flex-1">
+                        <div className="grid grid-cols-4 gap-2">
+                          {[...Array(4)].map((_, i) => (
+                            <div key={i} className="relative">
+                              {variationData.imagens[i] ? (
+                                <div className="aspect-square border-2 border-solid border-purple-400 rounded overflow-hidden bg-gray-100">
+                                  <img
+                                    src={URL.createObjectURL(
+                                      variationData.imagens[i]
+                                    )}
+                                    alt={`Imagem ${i + 1}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <button
+                                    onClick={() => removeVariationImage(i)}
+                                    className="absolute top-1 right-1 w-5 h-5 text-[#483D9E] flex items-center justify-center text-lg hover:text-[#211C49] transition-colors"
+                                    title="Remover imagem"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ) : (
+                                <label className="aspect-square bg-gray-200 rounded border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-300">
+                                  <Camera className="w-6 h-6 text-gray-400" />
+                                  <input
+                                    type="file"
+                                    accept="image/*,video/*"
+                                    className="hidden"
+                                    onChange={(e) =>
+                                      handleVariationFileChange(e, i)
+                                    }
+                                  />
+                                </label>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                );
-              })}
+                  <div className="flex justify-end gap-2 pt-4 border-t">
+                    <button
+                      onClick={handleCancelEdit}
+                      className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <ConfirmButton onClick={handleSaveVariation}>
+                      Adicionar Variação
+                    </ConfirmButton>
+                  </div>
+                </div>
+              ) : (
+                // =================== BOTÃO DE ADICIONAR ===================
+                <button
+                  onClick={() => {
+                    setVariationData({
+                      titulo: formData.titulo || "",
+                      tipoCartucho: formData.tipoCartucho || "",
+                      estadoPreservacao: formData.estadoPreservacao || "",
+                      regiao: formData.regiao || "",
+                      idiomaAudio: formData.idiomaAudio || "",
+                      idiomaLegenda: formData.idiomaLegenda || "",
+                      idiomaInterface: formData.idiomaInterface || "",
+                      preco: formData.preco || "",
+                      estoque: formData.estoque || "",
+                      descricao: formData.descricao || "",
+                      imagens: Array(4).fill(null),
+                    });
+                    setEditingVariationId("new");
+                  }}
+                  className={`w-full border-2 border-dashed border-purple-400 ${
+                    isMobile ? "p-4" : "p-6"
+                  } rounded-lg text-purple-600 hover:bg-purple-50 hover:border-purple-600 transition-colors font-semibold`}
+                >
+                  + Adicionar nova variação
+                </button>
+              )}
             </div>
-
-            {/* Botão para ADICIONAR ou o Formulário de NOVA variação */}
-            {editingVariationId === "new" ? (
-              // =================== FORMULÁRIO DE NOVA VARIAÇÃO ===================
-              <div className={`bg-[#EDECF7] border border-gray-300 rounded-lg ${isMobile ? "p-4" : "p-6"} space-y-4 animate-fadeIn`}>
-                 <div className="flex items-center justify-between border-b pb-3">
-                    <h3 className="text-lg font-semibold text-gray-800">Nova Variação ({variations.length + 1})</h3>
-                    <button onClick={handleCancelEdit} title="Cancelar"><ChevronDown className="w-8 h-8 text-gray-600"/></button>
-                 </div>
-                 <div className="space-y-3 bg-white p-4 rounded-lg">
-                    {/* COLE O CONTEÚDO DO FORMULÁRIO AQUI */}
-                    <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Título do Anúncio:</label>
-                          <input type="text" name="titulo" value={variationData.titulo} onChange={handleVariationInputChange} className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Ex: Cartucho Super Mario Bros - Repro"/>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Tipo do Cartucho:</label>
-                          <div className="flex-1"><CustomSelect options={tiposCartucho} value={tiposCartucho.find((o) => o.value === variationData.tipoCartucho)} onChange={(opt) => handleVariationSelectChange("tipoCartucho", opt.value)} required={true} showValidation={showValidation.step5}/></div>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Estado de Preservação:</label>
-                          <div className="flex-1"><CustomSelect options={estados} value={estados.find((o) => o.value === variationData.estadoPreservacao)} onChange={(opt) => handleVariationSelectChange("estadoPreservacao", opt.value)} required={true} showValidation={showValidation.step5}/></div>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Região do Cartucho:</label>
-                          <div className="flex-1"><CustomSelect options={regioes} value={regioes.find((o) => o.value === variationData.regiao)} onChange={(opt) => handleVariationSelectChange("regiao", opt.value)} required={true} showValidation={showValidation.step5}/></div>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Idioma do Audio:</label>
-                          <div className="flex-1"><CustomSelect options={idiomas} value={idiomas.find((o) => o.value === variationData.idiomaAudio)} onChange={(opt) => handleVariationSelectChange("idiomaAudio", opt.value)} required={true} showValidation={showValidation.step5}/></div>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Idioma da Legenda:</label>
-                          <div className="flex-1"><CustomSelect options={idiomas} value={idiomas.find((o) => o.value === variationData.idiomaLegenda)} onChange={(opt) => handleVariationSelectchange("idiomaLegenda", opt.value)} required={true} showValidation={showValidation.step5}/></div>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Idioma da Interface:</label>
-                          <div className="flex-1"><CustomSelect options={idiomas} value={idiomas.find((o) => o.value === variationData.idiomaInterface)} onChange={(opt) => handleVariationSelectChange("idiomaInterface", opt.value)} required={true} showValidation={showValidation.step5}/></div>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                           <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Estoque Disponível:</label>
-                           <input type="number" name="estoque" value={variationData.estoque} placeholder="1" onChange={handleVariationInputChange} className={`flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none ${showValidation.step5 && !variationData.estoque ? "border-red-500" : "border-gray-300"}`} min="1"/>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Preço de Venda:</label>
-                          <div className="flex-1 flex items-center space-x-2"><span className="text-gray-600">R$</span><input type="text" name="preco" value={variationData.preco} placeholder="0,00" onChange={handleVariationInputChange} className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"/></div>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Descrição:</label>
-                          <input type="text" name="descricao" value={variationData.descricao} placeholder="Descrição" onChange={handleVariationInputChange} className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"/>
-                        </div>
-                        <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center"}`}>
-                          <label className={`font-medium text-gray-700 flex-shrink-0 ${isMobile ? "text-start text-md" : "text-end text-sm w-40"} pr-2`}>Imagens e Vídeos:</label>
-                          <div className="flex-1"><div className="grid grid-cols-4 gap-2">{[...Array(4)].map((_, i) => (<div key={i} className="relative">{variationData.imagens[i] ? (<div className="aspect-square border-2 border-solid border-purple-400 rounded overflow-hidden bg-gray-100"><img src={URL.createObjectURL(variationData.imagens[i])} alt={`Imagem ${i+1}`} className="w-full h-full object-cover"/><button onClick={() => removeVariationImage(i)} className="absolute top-1 right-1 w-5 h-5 text-[#483D9E] flex items-center justify-center text-lg hover:text-[#211C49] transition-colors" title="Remover imagem">✕</button></div>) : (<label className="aspect-square bg-gray-200 rounded border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-300"><Camera className="w-6 h-6 text-gray-400"/><input type="file" accept="image/*,video/*" className="hidden" onChange={(e) => handleVariationFileChange(e, i)}/></label>)}</div>))}</div></div>
-                        </div>
-                 </div>
-                 <div className="flex justify-end gap-2 pt-4 border-t">
-                    <button onClick={handleCancelEdit} className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors">Cancelar</button>
-                    <ConfirmButton onClick={handleSaveVariation}>Adicionar Variação</ConfirmButton>
-                 </div>
-              </div>
-            ) : (
-              // =================== BOTÃO DE ADICIONAR ===================
-              <button
-                onClick={() => {
-                  setVariationData({
-                    titulo: formData.titulo || "",
-                    tipoCartucho: formData.tipoCartucho || "",
-                    estadoPreservacao: formData.estadoPreservacao || "",
-                    regiao: formData.regiao || "",
-                    idiomaAudio: formData.idiomaAudio || "",
-                    idiomaLegenda: formData.idiomaLegenda || "",
-                    idiomaInterface: formData.idiomaInterface || "",
-                    preco: formData.preco || "",
-                    estoque: formData.estoque || "",
-                    descricao: formData.descricao || "",
-                    imagens: Array(4).fill(null),
-                  });
-                  setEditingVariationId("new");
-                }}
-                className={`w-full border-2 border-dashed border-purple-400 ${
-                  isMobile ? "p-4" : "p-6"
-                } rounded-lg text-purple-600 hover:bg-purple-50 hover:border-purple-600 transition-colors font-semibold`}
-              >
-                + Adicionar nova variação
-              </button>
-            )}
-          </div>
-        </>
-      )}
+          </>
+        )}
         {/* STEP 5 - Publicar Anúncio */}
         {step === 5 && (
           <>

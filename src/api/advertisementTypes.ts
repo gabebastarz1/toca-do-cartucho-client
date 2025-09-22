@@ -1,4 +1,4 @@
-// Tipos para criação de anúncios baseados no backend
+
 export interface AdvertisementForCreationDTO {
   title: string;
   description?: string;
@@ -16,6 +16,7 @@ export interface AdvertisementForCreationDTO {
   acceptedTradeLanguageSupportIds?: number[];
   acceptedTradeRegionIds?: number[];
   variations: AdvertisementVariationForCreationDTO[];
+  parentAdvertisementId?: number;
 }
 
 export interface AdvertisementVariationForCreationDTO {
@@ -35,13 +36,12 @@ export interface AdvertisementVariationForCreationDTO {
   acceptedTradeRegionIds?: number[];
 }
 
-// Tipos para criação com formulário (multipart)
+
 export interface AdvertisementForCreationFormDTO {
   advertisement: string; // JSON string do AdvertisementForCreationDTO
   images: File[];
 }
 
-// Tipos para resposta da criação
 export interface AdvertisementCreationResponse {
   id: number;
   title: string;
@@ -65,7 +65,7 @@ export interface AdvertisementCreationResponse {
   createdAt: string;
 }
 
-// Tipo para listagem de anúncios (baseado no AdvertisementDTO do backend)
+
 export interface AdvertisementDTO {
   Id: number;
   Title: string;
@@ -89,12 +89,19 @@ export interface AdvertisementDTO {
   CreatedAt: string;
 }
 
-// Tipos auxiliares
+
 export interface AdvertisementImageDTO {
   id: number;
-  imageUrl: string;
-  isMain: boolean;
+  url: string;
+  preSignedUrl?: string;
+  urlExpiresIn?: number;
+  originalFileName: string;
+  width: number;
+  height: number;
+  animated: boolean;
   advertisementId: number;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface UserDTO {

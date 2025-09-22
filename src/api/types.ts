@@ -28,8 +28,16 @@ export interface AdvertisementDTO {
 
 export interface AdvertisementImageDTO {
   id: number;
-  imageUrl: string;
+  url: string;
+  preSignedUrl?: string;
+  urlExpiresIn?: number;
+  originalFileName: string;
+  width: number;
+  height: number;
+  animated: boolean;
   advertisementId: number;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface SaleDTO {

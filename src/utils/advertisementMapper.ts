@@ -132,9 +132,11 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
     
     if (advertisement.images && advertisement.images.length > 0) {
       const firstImage = advertisement.images[0];
-      if (firstImage?.imageUrl) {
-        console.log(`Using image for ad ${advertisement.id}:`, firstImage.imageUrl); // Debug log
-        return firstImage.imageUrl;
+      // Usar preSignedUrl se disponível, senão usar url
+      const imageUrl = firstImage?.preSignedUrl || firstImage?.url;
+      if (imageUrl) {
+        console.log(`Using image for ad ${advertisement.id}:`, imageUrl); // Debug log
+        return imageUrl;
       }
     }
     console.log(`No image found for ad ${advertisement.id}, using fallback`); // Debug log

@@ -1,7 +1,10 @@
 import React from "react";
 import { Heart, Star } from "lucide-react";
+import { AdvertisementDTO } from "../api/types";
 
 interface ProductInfoProps {
+  advertisement?: AdvertisementDTO;
+
   data?: {
     title: string;
     price: number;
@@ -21,25 +24,114 @@ interface ProductInfoProps {
   };
 }
 
-const ProductInfo: React.FC<ProductInfoProps> = ({
-  data = {
-    title: "Cartucho Super Mario World - Usado - Vendo ou Troco",
-    price: 89.99,
-    originalPrice: 120.0,
-    discount: 25,
-    rating: 4.2,
-    reviewCount: 13,
-    productInfo: {
-      genres: ["Ação", "Aventura", "Plataforma"],
-      themes: ["Fantasia", "Reinos"],
-      gameModes: ["Um jogador"],
-      preservationState: "Bom",
-      preservationDescription: "Pequenas marcas de uso",
-      cartridgeType: "Repro",
-      region: "Europa",
-    },
-  },
-}) => {
+const ProductInfo: React.FC<ProductInfoProps> = ({ advertisement }) => {
+  // Função para converter dados do advertisement para o formato esperado
+  const getProductData = () => {
+    if (advertisement) {
+      // Calcular preço com base em sale
+      const salePrice = advertisement.sale?.price || 0;
+      const originalPrice = advertisement.sale?.previousPrice || 0;
+      const discount = Math.round(
+        ((originalPrice - salePrice) / originalPrice) * 100
+      );
+
+      // Tentar diferentes estruturas para modos de jogo
+      let gameModes = [];
+
+      if (advertisement.game?.gameGameModes) {
+        // Verificar se é array de GameGameModesDTO (com wrapper) ou GameModeDTO (direto)
+        const firstItem = advertisement.game.gameGameModes[0];
+
+        if (firstItem && typeof firstItem === "object") {
+          if ("gameModes" in firstItem) {
+            // Estrutura real: gameGameModes[].gameModes.name
+            gameModes = advertisement.game.gameGameModes
+              .map((gm: any) => gm.gameModes?.name)
+              .filter(Boolean);
+          } else if ("gameMode" in firstItem) {
+            // Estrutura alternativa: GameGameModesDTO[]
+            gameModes = advertisement.game.gameGameModes
+              .map((gm: any) => gm.gameMode?.name)
+              .filter(Boolean);
+          } else if ("name" in firstItem) {
+            // Estrutura direta: GameModeDTO[]
+            gameModes = advertisement.game.gameGameModes
+              .map((gm: any) => gm.name)
+              .filter(Boolean);
+          } else {
+            // Tentar todas as estruturas possíveis
+            gameModes = advertisement.game.gameGameModes
+              .map(
+                (gm: any) => gm.gameModes?.name || gm.gameMode?.name || gm.name
+              )
+              .filter(Boolean);
+          }
+        }
+      } else if (advertisement.game?.gameModes) {
+        gameModes = advertisement.game.gameModes
+          .map((gm: any) => gm.name)
+          .filter(Boolean);
+      }
+
+      // Processar gêneros com debug
+      const genres =
+        advertisement.game?.genres
+          ?.map((g: any) => {
+            return g.genre?.name || g.name;
+          })
+          .filter(Boolean) || [];
+
+      // Processar temas com debug
+      const themes =
+        advertisement.game?.themes
+          ?.map((t: any) => {
+            // Na estrutura real é "theme" (singular)
+            return t.theme?.name || t.name;
+          })
+          .filter(Boolean) || [];
+
+      const productInfo = {
+        genres: genres,
+        themes: themes,
+        gameModes: gameModes,
+        preservationState: advertisement.preservationState?.name || "",
+        preservationDescription:
+          advertisement.preservationState?.description || "",
+        cartridgeType: advertisement.cartridgeType?.name || "",
+        region: advertisement.gameLocalization?.region?.name || "",
+      };
+
+      return {
+        title: advertisement.title,
+        price: salePrice,
+        originalPrice: originalPrice,
+        discount: discount,
+        rating: 4.5, // Mockado por enquanto - implementar sistema de avaliações
+        reviewCount: 0, // Mockado por enquanto - implementar sistema de avaliações
+        productInfo: productInfo,
+      };
+    }
+    // Fallback para dados mockados se não houver advertisement
+    return {
+      title: "Cartucho Super Mario World - Usado - Vendo ou Troco",
+      price: 89.99,
+      originalPrice: 120.0,
+      discount: 25,
+      rating: 4.2,
+      reviewCount: 13,
+      productInfo: {
+        genres: ["Ação", "Aventura", "Plataforma"],
+        themes: ["Fantasia", "Reinos"],
+        gameModes: ["Um jogador"],
+        preservationState: "Bom",
+        preservationDescription: "Pequenas marcas de uso",
+        cartridgeType: "Repro",
+        region: "Europa",
+      },
+    };
+  };
+
+  const productData = getProductData();
   const renderStars = (rating: number) => {
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 !== 0;
@@ -66,12 +158,16 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
   return (
     <div className="p-4">
       <div className="flex justify-between items-start mb-2">
-        <h1 className="text-2xl font-semibold text-gray-800">{data.title}</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">
+          {productData.title}
+        </h1>
         <Heart className="h-6 w-6 text-gray-500 cursor-pointer hover:text-red-500 transition-colors" />
       </div>
       <div className="flex items-center text-sm text-gray-600 mb-4">
-        <div className="flex items-center mr-2">{renderStars(data.rating)}</div>
-        <span className="mr-1">({data.reviewCount})</span>
+        <div className="flex items-center mr-2">
+          {renderStars(productData.rating)}
+        </div>
+        <span className="mr-1">({productData.reviewCount})</span>
         <span>·</span>
         <span className="ml-1 text-blue-600 cursor-pointer">
           Avaliações do Vendedor
@@ -79,47 +175,65 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
       </div>
 
       <div className="mb-6">
-        <p className="text-sm text-gray-500 line-through">
-          R$ {data.originalPrice.toFixed(2).replace(".", ",")}
-        </p>
+        {productData.originalPrice > productData.price && (
+          <p className="text-sm text-gray-500 line-through">
+            R$ {productData.originalPrice.toFixed(2).replace(".", ",")}
+          </p>
+        )}
         <p className="text-3xl font-bold text-gray-900">
-          R$ {data.price.toFixed(2).replace(".", ",")}
-          <span className="text-green-600 text-base font-normal">
-            {" "}
-            {data.discount}% OFF
-          </span>
+          R$ {productData.price.toFixed(2).replace(".", ",")}
+          {productData.discount > 0 && (
+            <span className="text-green-600 text-base font-normal">
+              {" "}
+              {productData.discount}% OFF
+            </span>
+          )}
         </p>
       </div>
 
       <div className="text-sm text-gray-700">
         <h2 className="font-semibold mb-2">Informações:</h2>
         <ul className="list-disc list-inside space-y-1">
-          <li>
-            <span className="font-medium">Gêneros:</span>{" "}
-            {data.productInfo.genres.join(", ")}
-          </li>
-          <li>
-            <span className="font-medium">Temáticas:</span>{" "}
-            {data.productInfo.themes.join(", ")}
-          </li>
-          <li>
-            <span className="font-medium">Modos de Jogo:</span>{" "}
-            {data.productInfo.gameModes.join(", ")}
-          </li>
-          <li>
-            <span className="font-medium">
-              Estado de Preservação ({data.productInfo.preservationState}):
-            </span>{" "}
-            {data.productInfo.preservationDescription}
-          </li>
-          <li>
-            <span className="font-medium">Tipo de Cartucho:</span>{" "}
-            {data.productInfo.cartridgeType}
-          </li>
-          <li>
-            <span className="font-medium">Região:</span>{" "}
-            {data.productInfo.region}
-          </li>
+          {productData.productInfo.genres.length > 0 && (
+            <li>
+              <span className="font-medium">Gêneros:</span>{" "}
+              {productData.productInfo.genres.join(", ")}
+            </li>
+          )}
+          {productData.productInfo.themes.length > 0 && (
+            <li>
+              <span className="font-medium">Temáticas:</span>{" "}
+              {productData.productInfo.themes.join(", ")}
+            </li>
+          )}
+          {productData.productInfo.gameModes.length > 0 && (
+            <li>
+              <span className="font-medium">Modos de Jogo:</span>{" "}
+              {productData.productInfo.gameModes.join(", ")}
+            </li>
+          )}
+          {productData.productInfo.preservationState && (
+            <li>
+              <span className="font-medium">
+                Estado de Preservação (
+                {productData.productInfo.preservationState}):
+              </span>{" "}
+              {productData.productInfo.preservationDescription ||
+                "Não informado"}
+            </li>
+          )}
+          {productData.productInfo.cartridgeType && (
+            <li>
+              <span className="font-medium">Tipo de Cartucho:</span>{" "}
+              {productData.productInfo.cartridgeType}
+            </li>
+          )}
+          {productData.productInfo.region && (
+            <li>
+              <span className="font-medium">Região:</span>{" "}
+              {productData.productInfo.region}
+            </li>
+          )}
         </ul>
         <p className="text-blue-600 mt-2 cursor-pointer">
           Ver mais características

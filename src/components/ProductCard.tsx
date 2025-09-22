@@ -31,8 +31,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
   type,
   location,
   discount,
-  genre,
-  theme,
   saleType,
   onClick,
 }) => {
@@ -140,7 +138,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <img
             src={image}
             alt={title}
-            className="w-full h-full border-8 border-white rounded-lg"
+            className="w-full h-full object-contain bg-white"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gray-200">
