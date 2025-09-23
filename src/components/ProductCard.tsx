@@ -138,7 +138,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <img
             src={image}
             alt={title}
-            className="w-full h-full object-contain bg-white"
+            className="absolute inset-0 w-full h-full object-contain bg-white"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -162,6 +162,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         {/* Preços */}
+        
         {currentPrice > 0 && (
           <div className="mb-3">
             {originalPrice && (
@@ -181,10 +182,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
         )}
 
         {/* Etiquetas de estado e tipo */}
+       
         <div className="flex flex-wrap gap-2 mb-3">
-          <Tooltip content={getConditionDescription(condition)} position="top">
+        <Tooltip content={getConditionDescription(condition)} position="top">
             <span
-              className={`px-2 py-1 text-xs rounded-full border cursor-help ${getConditionColor(
+              className={`inline-block px-2 py-1 text-xs rounded-full border cursor-help ${getConditionColor(
                 condition
               )}`}
             >
@@ -193,7 +195,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </Tooltip>
           <Tooltip content={getTypeDescription(type)} position="top">
             <span
-              className={`px-2 py-1 text-xs rounded-full border cursor-help ${getTypeColor(
+              className={`inline-block px-2 py-1 text-xs rounded-full border cursor-help ${getTypeColor(
                 type
               )}`}
             >
@@ -202,7 +204,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </Tooltip>
           {saleType && (
             <span
-              className={`px-2 py-1 text-xs rounded-full border ${getSaleTypeColor(
+              className={`px-2 py-1 inline-block text-xs rounded-full border ${getSaleTypeColor(
                 saleType
               )}`}
             >
@@ -214,7 +216,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         {/* Localização */}
         <div className="flex items-center text-xs text-gray-500">
           <MapPin className="w-3 h-3 mr-1" />
-          <span>{location}</span>
+          <span className="truncate">{location}</span>
         </div>
       </div>
     </div>

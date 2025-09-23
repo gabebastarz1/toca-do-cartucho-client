@@ -126,9 +126,9 @@ const AdDetails: React.FC<AdDetailsProps> = ({ advertisement }) => {
 
   return (
     <>
-      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <NavigationHistoryBar data={navigationData} />
-        <div className="max-w-8xl mx-auto bg-white font-sans rounded-lg p-4">
+        <div className="max-w-7xl mx-auto bg-white font-sans rounded-lg p-4">
           {/* Container Principal: Coluna em mobile, linha em telas grandes */}
           <div className="flex flex-col lg:flex-row lg:gap-2">
             {/* Coluna Principal de Conteúdo (Esquerda) */}

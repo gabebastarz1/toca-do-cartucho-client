@@ -128,18 +128,18 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
 
   // Usar a primeira imagem disponível ou placeholder
   const getImageUrl = () => {
-    console.log(`Advertisement ${advertisement.id} images:`, advertisement.images); // Debug log
+    //console.log(`Advertisement ${advertisement.id} images:`, advertisement.images); // Debug log
     
     if (advertisement.images && advertisement.images.length > 0) {
       const firstImage = advertisement.images[0];
       // Usar preSignedUrl se disponível, senão usar url
       const imageUrl = firstImage?.preSignedUrl || firstImage?.url;
       if (imageUrl) {
-        console.log(`Using image for ad ${advertisement.id}:`, imageUrl); // Debug log
+        //(`Using image for ad ${advertisement.id}:`, imageUrl); // Debug log
         return imageUrl;
       }
     }
-    console.log(`No image found for ad ${advertisement.id}, using fallback`); // Debug log
+    //console.log(`No image found for ad ${advertisement.id}, using fallback`); // Debug log
     return "/logo.svg"; // Fallback para logo
   };
 

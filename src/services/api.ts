@@ -30,7 +30,11 @@ api.interceptors.response.use(
       // Token expirado ou inválido
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
-      window.location.href = '/auth';
+      
+      // Só redirecionar se não estiver já na página de auth
+      if (window.location.pathname !== '/auth') {
+        window.location.href = '/auth';
+      }
     }
     return Promise.reject(error);
   }

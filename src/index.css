@@ -120,11 +120,14 @@
 @layer base {
   * {
     @apply border-border;
+
+    scrollbar-gutter: hidden; 
   }
   body {
     @apply bg-background text-foreground;
     font-family:  'Lexend Deca', 'sans-serif';
     font-weight: 400;
+    
   }
   
 }
@@ -136,4 +139,16 @@
 /* Para Firefox */
 .scrollbar-hide {
   scrollbar-width: none;
+}
+
+/* Prevenção de overflow horizontal em cards */
+.product-card {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Garantir que elementos flex não excedam o container */
+.flex-wrap {
+  min-width: 0;
 }

@@ -102,25 +102,25 @@ const CategoryDataContext = createContext<CategoryDataContextType | undefined>(
 
 // Função para converter GenreDTO para Genre
 const convertGenreDTO = (genreDTO: GenreDTO): Genre => ({
-  id: genreDTO.id.toString(),
+  id: `genre_${genreDTO.id}`,
   name: genreDTO.name,
 });
 
 // Função para converter ThemeDTO para Theme
 const convertThemeDTO = (themeDTO: ThemeDTO): Theme => ({
-  id: themeDTO.id.toString(),
+  id: `theme_${themeDTO.id}`,
   name: themeDTO.name,
 });
 
 // Função para converter GameModeDTO para GameMode
 const convertGameModeDTO = (gameModeDTO: GameModeDTO): GameMode => ({
-  id: gameModeDTO.id.toString(),
+  id: `gamemode_${gameModeDTO.id}`,
   name: gameModeDTO.name,
 });
 
 // Função para converter LanguageDTO para Language
 const convertLanguageDTO = (languageDTO: LanguageDTO): Language => ({
-  id: languageDTO.id.toString(),
+  id: `language_${languageDTO.id}`,
   name: languageDTO.name,
   nativeName: languageDTO.nativeName,
   locale: languageDTO.locale,
@@ -128,7 +128,7 @@ const convertLanguageDTO = (languageDTO: LanguageDTO): Language => ({
 
 // Função para converter RegionDTO para Region
 const convertRegionDTO = (regionDTO: RegionDTO): Region => ({
-  id: regionDTO.id.toString(),
+  id: `region_${regionDTO.id}`,
   name: regionDTO.name || regionDTO.identifier || `Região ${regionDTO.id}`,
   identifier: regionDTO.identifier || "",
 });

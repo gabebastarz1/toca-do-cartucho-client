@@ -81,7 +81,7 @@ const Advertisement: React.FC = () => {
       />
       <FilterTopBar />
       <div className="min-h-screen bg-[#F4F3F5] py-8">
-        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
           <AdDetails advertisement={advertisement || undefined} />
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

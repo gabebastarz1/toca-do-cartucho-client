@@ -24,20 +24,87 @@ interface Product {
 
 // Dados de exemplo com mais de 4 produtos para ativar o carrossel
 const recommendedProductsData: Product[] = [
-    { id: "snes-smw-1", image: "https://i.imgur.com/39p46v6.png", title: "Cartucho SNES - Super Mario World", rating: 4.0, reviewCount: 1, originalPrice: 100.0, currentPrice: 80.0, condition: "semi-new", type: "repro", location: "Cidade - Estado" },
-    { id: "snes-mmx-1", image: "https://i.imgur.com/s6n5sCK.png", title: "Cartucho SNES - Mega Man X", rating: 4.0, reviewCount: 1, originalPrice: 100.0, currentPrice: 80.0, condition: "normal", type: "repro", location: "Cidade - Estado" },
-    { id: "snes-smw-2", image: "https://i.imgur.com/2v3b1zT.png", title: "Cartucho SNES - Super Mario World", rating: 4.0, reviewCount: 1, originalPrice: 100.0, currentPrice: 80.0, condition: "good", type: "retro", location: "Cidade - Estado" },
-    { id: "snes-dkc-1", image: "https://i.imgur.com/uN0m4Lq.png", title: "Cartucho SNES - Donkey Kong Country", rating: 5.0, reviewCount: 12, originalPrice: 120.0, currentPrice: 95.0, condition: "good", type: "retro", location: "Cidade - Estado" },
-    { id: "snes-zelda-1", image: "https://i.imgur.com/s6n5sCK.png", title: "Cartucho SNES - The Legend of Zelda", rating: 5.0, reviewCount: 25, originalPrice: 150.0, currentPrice: 130.0, condition: "semi-new", type: "retro", location: "Cidade - Estado" },
-    { id: "snes-smw-3", image: "https://i.imgur.com/39p46v6.png", title: "Cartucho SNES - Super Mario World", rating: 4.0, reviewCount: 1, originalPrice: 100.0, currentPrice: 80.0, condition: "good", type: "repro", location: "Cidade - Estado" },
+  {
+    id: "snes-smw-1",
+    image: "https://i.imgur.com/39p46v6.png",
+    title: "Cartucho SNES - Super Mario World",
+    rating: 4.0,
+    reviewCount: 1,
+    originalPrice: 100.0,
+    currentPrice: 80.0,
+    condition: "semi-new",
+    type: "repro",
+    location: "Cidade - Estado",
+  },
+  {
+    id: "snes-mmx-1",
+    image: "https://i.imgur.com/s6n5sCK.png",
+    title: "Cartucho SNES - Mega Man X",
+    rating: 4.0,
+    reviewCount: 1,
+    originalPrice: 100.0,
+    currentPrice: 80.0,
+    condition: "normal",
+    type: "repro",
+    location: "Cidade - Estado",
+  },
+  {
+    id: "snes-smw-2",
+    image: "https://i.imgur.com/2v3b1zT.png",
+    title: "Cartucho SNES - Super Mario World",
+    rating: 4.0,
+    reviewCount: 1,
+    originalPrice: 100.0,
+    currentPrice: 80.0,
+    condition: "good",
+    type: "retro",
+    location: "Cidade - Estado",
+  },
+  {
+    id: "snes-dkc-1",
+    image: "https://i.imgur.com/uN0m4Lq.png",
+    title: "Cartucho SNES - Donkey Kong Country",
+    rating: 5.0,
+    reviewCount: 12,
+    originalPrice: 120.0,
+    currentPrice: 95.0,
+    condition: "good",
+    type: "retro",
+    location: "Cidade - Estado",
+  },
+  {
+    id: "snes-zelda-1",
+    image: "https://i.imgur.com/s6n5sCK.png",
+    title: "Cartucho SNES - The Legend of Zelda",
+    rating: 5.0,
+    reviewCount: 25,
+    originalPrice: 150.0,
+    currentPrice: 130.0,
+    condition: "semi-new",
+    type: "retro",
+    location: "Cidade - Estado",
+  },
+  {
+    id: "snes-smw-3",
+    image: "https://i.imgur.com/39p46v6.png",
+    title: "Cartucho SNES - Super Mario World",
+    rating: 4.0,
+    reviewCount: 1,
+    originalPrice: 100.0,
+    currentPrice: 80.0,
+    condition: "good",
+    type: "repro",
+    location: "Cidade - Estado",
+  },
 ];
-
 
 interface RecommendedProductsProps {
   onProductClick?: (productId: string) => void;
 }
 
-const RecommendedProducts: React.FC<RecommendedProductsProps> = ({ onProductClick }) => {
+const RecommendedProducts: React.FC<RecommendedProductsProps> = ({
+  onProductClick,
+}) => {
   const showCarousel = recommendedProductsData.length > 4;
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -61,31 +128,29 @@ const RecommendedProducts: React.FC<RecommendedProductsProps> = ({ onProductClic
     const container = scrollContainerRef.current;
     if (container) {
       checkScroll(); // Verifica o estado inicial
-      container.addEventListener('scroll', checkScroll);
-      window.addEventListener('resize', checkScroll);
+      container.addEventListener("scroll", checkScroll);
+      window.addEventListener("resize", checkScroll);
 
       // Limpa os event listeners quando o componente é desmontado
       return () => {
-        container.removeEventListener('scroll', checkScroll);
-        window.removeEventListener('resize', checkScroll);
+        container.removeEventListener("scroll", checkScroll);
+        window.removeEventListener("resize", checkScroll);
       };
     }
   }, [recommendedProductsData]);
 
-
   // Função para rolar o carrossel
-  const scroll = (direction: 'left' | 'right') => {
+  const scroll = (direction: "left" | "right") => {
     const container = scrollContainerRef.current;
     if (container) {
       // Rola em 80% da largura visível do container para uma navegação fluida
       const scrollAmount = container.clientWidth * 0.8;
       container.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth',
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
       });
     }
   };
-
 
   return (
     <section className="bg-white rounded-lg py-12">
@@ -99,7 +164,7 @@ const RecommendedProducts: React.FC<RecommendedProductsProps> = ({ onProductClic
           <div className="relative group">
             {/* Botão Esquerdo */}
             <button
-              onClick={() => scroll('left')}
+              onClick={() => scroll("left")}
               className={`absolute top-1/2 -translate-y-1/2 -left-5 z-10 p-2 bg-white rounded-full shadow-md transition-opacity duration-300 opacity-0 group-hover:opacity-100 disabled:opacity-0 disabled:cursor-not-allowed`}
               disabled={!canScrollLeft}
             >
@@ -112,7 +177,10 @@ const RecommendedProducts: React.FC<RecommendedProductsProps> = ({ onProductClic
               className="flex space-x-6 overflow-x-auto pb-4 scrollbar-hide"
             >
               {recommendedProductsData.map((product) => (
-                <div key={product.id} className="flex-none w-[280px]">
+                <div
+                  key={product.id}
+                  className="flex-none w-64 sm:w-72 md:w-80"
+                >
                   <ProductCard
                     {...product}
                     onClick={() => onProductClick?.(product.id)}
@@ -123,7 +191,7 @@ const RecommendedProducts: React.FC<RecommendedProductsProps> = ({ onProductClic
 
             {/* Botão Direito */}
             <button
-              onClick={() => scroll('right')}
+              onClick={() => scroll("right")}
               className={`absolute top-1/2 -translate-y-1/2 -right-5 z-10 p-2 bg-white rounded-full shadow-md transition-opacity duration-300 opacity-0 group-hover:opacity-100 disabled:opacity-0 disabled:cursor-not-allowed`}
               disabled={!canScrollRight}
             >
