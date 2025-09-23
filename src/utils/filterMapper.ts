@@ -31,23 +31,6 @@ const cartridgeTypeMapping: Record<string, number> = {
   "repro": 2   // Assumindo que "Repro" tem ID 2
 };
 
-// Mapeamento de regiões do frontend para IDs do backend
-const regionMapping: Record<string, number> = {
-  "north-america": 1,
-  "europe": 2,
-  "japan": 3,
-  "brazil": 4,
-  "australia": 5,
-  "korea": 6
-};
-
-// Mapeamento de idiomas do frontend para IDs do backend
-const languageMapping: Record<string, number> = {
-  "english": 1,
-  "portuguese": 2,
-  "japanese": 3
-};
-
 /**
  * Converte os filtros do frontend para o formato AdvertisementFilteringDTO do backend
  */
@@ -128,53 +111,100 @@ export const mapFrontendFiltersToBackend = (
     }
   }
 
-  // Processar gêneros (IDs serão mapeados quando tivermos os dados reais)
+  // Processar gêneros - extrair IDs numéricos dos IDs prefixados
   if (frontendFilters.genre?.length) {
     backendFilters.genreIds = frontendFilters.genre
-      .map(genreId => parseInt(genreId))
+      .map(genreId => {
+        // Se tem prefixo "genre_", extrair o ID numérico
+        if (genreId.startsWith('genre_')) {
+          return parseInt(genreId.replace('genre_', ''));
+        }
+        // Se não tem prefixo, tentar parse direto
+        return parseInt(genreId);
+      })
       .filter(id => !isNaN(id));
   }
 
-  // Processar temas (IDs serão mapeados quando tivermos os dados reais)
+  // Processar temas - extrair IDs numéricos dos IDs prefixados
   if (frontendFilters.theme?.length) {
     backendFilters.themeIds = frontendFilters.theme
-      .map(themeId => parseInt(themeId))
+      .map(themeId => {
+        // Se tem prefixo "theme_", extrair o ID numérico
+        if (themeId.startsWith('theme_')) {
+          return parseInt(themeId.replace('theme_', ''));
+        }
+        // Se não tem prefixo, tentar parse direto
+        return parseInt(themeId);
+      })
       .filter(id => !isNaN(id));
   }
 
-  // Processar modos de jogo (IDs serão mapeados quando tivermos os dados reais)
+  // Processar modos de jogo - extrair IDs numéricos dos IDs prefixados
   if (frontendFilters.gameMode?.length) {
     backendFilters.gameModeIds = frontendFilters.gameMode
-      .map(mode => mode === "singleplayer" ? 1 : 2) // Mapeamento simples
+      .map(modeId => {
+        // Se tem prefixo "gamemode_", extrair o ID numérico
+        if (modeId.startsWith('gamemode_')) {
+          return parseInt(modeId.replace('gamemode_', ''));
+        }
+        // Se não tem prefixo, tentar parse direto
+        return parseInt(modeId);
+      })
       .filter(id => !isNaN(id));
   }
 
-  // Processar idiomas
+  // Processar idiomas - extrair IDs numéricos dos IDs prefixados
   if (frontendFilters.audioLanguage?.length) {
     backendFilters.languageAudioIds = frontendFilters.audioLanguage
-      .map(lang => languageMapping[lang])
-      .filter(id => id !== undefined);
+      .map(langId => {
+        // Se tem prefixo "language_", extrair o ID numérico
+        if (langId.startsWith('language_')) {
+          return parseInt(langId.replace('language_', ''));
+        }
+        // Se não tem prefixo, tentar parse direto
+        return parseInt(langId);
+      })
+      .filter(id => !isNaN(id));
   }
 
   if (frontendFilters.subtitleLanguage?.length) {
     backendFilters.languageSubtitleIds = frontendFilters.subtitleLanguage
-      .map(lang => languageMapping[lang])
-      .filter(id => id !== undefined);
+      .map(langId => {
+        // Se tem prefixo "language_", extrair o ID numérico
+        if (langId.startsWith('language_')) {
+          return parseInt(langId.replace('language_', ''));
+        }
+        // Se não tem prefixo, tentar parse direto
+        return parseInt(langId);
+      })
+      .filter(id => !isNaN(id));
   }
 
   if (frontendFilters.interfaceLanguage?.length) {
     backendFilters.languageInterfaceIds = frontendFilters.interfaceLanguage
-      .map(lang => languageMapping[lang])
-      .filter(id => id !== undefined);
+      .map(langId => {
+        // Se tem prefixo "language_", extrair o ID numérico
+        if (langId.startsWith('language_')) {
+          return parseInt(langId.replace('language_', ''));
+        }
+        // Se não tem prefixo, tentar parse direto
+        return parseInt(langId);
+      })
+      .filter(id => !isNaN(id));
   }
 
-  // Processar regiões
+  // Processar regiões - extrair IDs numéricos dos IDs prefixados
   if (frontendFilters.region?.length) {
-    // Assumindo que região está relacionada ao gameLocalization
-    // Este mapeamento pode precisar ser ajustado baseado na estrutura real do backend
     backendFilters.gameIds = frontendFilters.region
-      .map(region => regionMapping[region])
-      .filter(id => id !== undefined);
+      .map(regionId => {
+        // Se tem prefixo "region_", extrair o ID numérico
+        if (regionId.startsWith('region_')) {
+          return parseInt(regionId.replace('region_', ''));
+        }
+        // Se não tem prefixo, tentar parse direto
+        return parseInt(regionId);
+      })
+      .filter(id => !isNaN(id));
   }
 
   return backendFilters;

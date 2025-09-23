@@ -56,30 +56,26 @@ const TopBar: React.FC<TopBarProps> = ({
       // Se rolar para baixo e passar de 100px, esconde a barra
       if (window.scrollY > lastScrollY && window.scrollY > 50) {
         setShowSecondaryHeader(false);
-      } else if (window.scrollY < lastScrollY && window.scrollY < 50) { // Se rolar para cima, mostra a barra
+      } else if (window.scrollY < lastScrollY && window.scrollY < 50) {
+        // Se rolar para cima, mostra a barra
         setShowSecondaryHeader(true);
       }
       // Atualiza a última posição de scroll
       setLastScrollY(window.scrollY);
     };
 
-    window.addEventListener('scroll', controlNavbar);
+    window.addEventListener("scroll", controlNavbar);
 
     // Limpa o evento ao desmontar o componente para evitar vazamento de memória
     return () => {
-      window.removeEventListener('scroll', controlNavbar);
+      window.removeEventListener("scroll", controlNavbar);
     };
   }, [lastScrollY]);
 
-
   return (
-    
     <header className="sticky top-0 z-50 w-full">
-      
       <div className="w-full bg-[#211C49] flex items-center justify-between px-2 sm:px-14 py-3 relative z-10">
-       
         <div className="hidden md:flex w-full items-center justify-between">
-          
           <div className={`flex items-center gap-2 ${justifyLogo}`}>
             <button
               type="button"
@@ -87,34 +83,39 @@ const TopBar: React.FC<TopBarProps> = ({
               className="focus:outline-none"
               aria-label="Ir para Home"
             >
-              <img src="../public/logo.svg" alt="Logo" className="h-8 min-w-32" />
+              <img
+                src="../public/logo.svg"
+                alt="Logo"
+                className="h-8 w-auto max-w-32"
+              />
             </button>
           </div>
-          
+
           {/* Barra de pesquisa - Desktop*/}
           {showSearchBar && (
-            <div className={`flex-1 mx-4 ease-in-out overflow-hidden max-w-2xl opacity-100}`}>
-                <form onSubmit={handleSearchSubmit} className="w-full">
-                  <div className="flex rounded-full overflow-hidden w-full">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder={searchPlaceholder}
-                      className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 placeholder-gray-400 focus:outline-none"
-                    />
-                    <button
-                      type="submit"
-                      className="bg-purple-300 flex items-center justify-center px-6"
-                    >
-                      <Search className="h-4 w-4 text-gray-600" />
-                    </button>
-                  </div>
-                </form>
+            <div
+              className={`flex-1 mx-4 ease-in-out overflow-hidden max-w-2xl opacity-100}`}
+            >
+              <form onSubmit={handleSearchSubmit} className="w-full">
+                <div className="flex rounded-full overflow-hidden w-full">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={searchPlaceholder}
+                    className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 placeholder-gray-400 focus:outline-none"
+                  />
+                  <button
+                    type="submit"
+                    className="bg-purple-300 flex items-center justify-center px-6"
+                  >
+                    <Search className="h-4 w-4 text-gray-600" />
+                  </button>
+                </div>
+              </form>
             </div>
           )}
 
-         
           <div className="flex-none flex items-center space-x-4">
             {rightButtonText && (
               <button
@@ -142,40 +143,42 @@ const TopBar: React.FC<TopBarProps> = ({
 
         {/* Layout Mobile*/}
         <div className="md:hidden w-full flex items-center justify-between ">
+          <button
+            type="button"
+            className="p-2 text-gray-300 hover:text-white transition-colors pl-0"
+            aria-label="Menu"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+          <div className="flex items-start justify-start flex-1">
             <button
               type="button"
-              className="p-2 text-gray-300 hover:text-white transition-colors pl-0"
-              aria-label="Menu"
+              onClick={() => navigate("/")}
+              className="focus:outline-none flex items-start gap-2"
+              aria-label="Ir para Home"
             >
-              <Menu className="h-6 w-6" />
+              <img src="../public/logo.svg" alt="Logo" className="h-6" />
             </button>
-            <div className="flex items-start justify-start flex-1">
-              <button
-                type="button"
-                onClick={() => navigate("/")}
-                className="focus:outline-none flex items-start gap-2"
-                aria-label="Ir para Home"
-              >
-                <img src="../public/logo.svg" alt="Logo" className="h-6" />
-              </button>
-            </div>
-            <div className="flex items-center gap-2 ">
-              <span className="text-gray-300 text-sm">Perfil</span>
-              <img
-                src={
-                  userAvatar || "https://placehold.co/32x32/4F46E5/FFFFFF?text=U"
-                }
-                alt={userName}
-                className="w-8 h-8 rounded-full object-cover"
-              />
-            </div>
+          </div>
+          <div className="flex items-center gap-2 ">
+            <span className="text-gray-300 text-sm">Perfil</span>
+            <img
+              src={
+                userAvatar || "https://placehold.co/32x32/4F46E5/FFFFFF?text=U"
+              }
+              alt={userName}
+              className="w-8 h-8 rounded-full object-cover"
+            />
+          </div>
         </div>
       </div>
 
       {/* Barra de Pesquisa - MOBILE */}
       {showSearchBar && (
-        <div 
-          className={`md:hidden w-full bg-[#211C49] transition-all duration-500 ease-in-out overflow-hidden ${showSecondaryHeader ? 'max-h-40 pb-3' : 'max-h-0'}`}
+        <div
+          className={`md:hidden w-full bg-[#211C49] transition-all duration-500 ease-in-out overflow-hidden ${
+            showSecondaryHeader ? "max-h-40 pb-3" : "max-h-0"
+          }`}
         >
           <div className="px-2">
             <form onSubmit={handleSearchSubmit}>
@@ -203,4 +206,3 @@ const TopBar: React.FC<TopBarProps> = ({
 };
 
 export default TopBar;
-

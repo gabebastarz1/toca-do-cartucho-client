@@ -1,31 +1,34 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useCategories } from "./CategoryDataProvider";
 
 interface FilterTopBarProps {
   currentFilters?: Record<string, string[]>; // Para manter filtros da sidebar
+  onFiltersChange?: (filters: Record<string, string[]>) => void; // Usar o mesmo callback do FilterSidebar
 }
 
-const FilterTopBar: React.FC<FilterTopBarProps> = ({ currentFilters = {} }) => {
+const FilterTopBar: React.FC<FilterTopBarProps> = ({
+  currentFilters = {},
+  onFiltersChange,
+}) => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const navigate = useNavigate();
-  const location = useLocation();
 
-  // Função para determinar categoria ativa baseada na URL
-  const getActiveCategoryFromURL = () => {
-    const searchParams = new URLSearchParams(location.search);
-    const genre = searchParams.get("genre");
-    const theme = searchParams.get("theme");
+  // Função para determinar categoria ativa baseada na URL (removida - usando filtros atuais)
 
-    if (genre) return genre;
-    if (theme) return theme;
+  // Determinar categoria ativa baseada nos filtros atuais
+  const getCurrentActiveCategory = () => {
+    if (currentFilters.genre && currentFilters.genre.length > 0) {
+      return currentFilters.genre[0];
+    }
+    if (currentFilters.theme && currentFilters.theme.length > 0) {
+      return currentFilters.theme[0];
+    }
     return "all";
   };
 
-  const [currentActiveCategory, setCurrentActiveCategory] = useState(
-    getActiveCategoryFromURL()
-  );
+  const currentActiveCategory = getCurrentActiveCategory();
 
   // Usar dados do CategoryDataProvider
   const { genres, themes, loading, error } = useCategories();
@@ -37,29 +40,63 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({ currentFilters = {} }) => {
     { id: "sobre", label: "Sobre" },
   ];
 
-  // Ler parâmetros da URL para determinar categoria ativa
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const genre = searchParams.get("genre");
-    const theme = searchParams.get("theme");
-
-    console.log("FilterTopBar - URL params:", location.search);
-    console.log("FilterTopBar - Genre from URL:", genre);
-    console.log("FilterTopBar - Theme from URL:", theme);
-
-    if (genre) {
-      setCurrentActiveCategory(genre);
-    } else if (theme) {
-      setCurrentActiveCategory(theme);
-    } else {
-      setCurrentActiveCategory("all");
-    }
-  }, [location.search]);
+  // Ler parâmetros da URL para determinar categoria ativa (removido - usando comunicação direta)
 
   const handleCategoryClick = (categoryId: string) => {
     setOpenDropdown(null);
 
-    // Construir URL com filtros aplicados
+    console.log("=== FILTER TOPBAR CLICK ===");
+    console.log("Category clicked:", categoryId);
+    console.log("Current filters:", currentFilters);
+    console.log("onFiltersChange available:", !!onFiltersChange);
+
+    // Se há callback de filtros, usar o mesmo método do FilterSidebar
+    if (onFiltersChange) {
+      console.log(
+        "FilterTopBar - Aplicando filtro usando método do FilterSidebar:",
+        categoryId
+      );
+
+      // Criar novos filtros baseados nos filtros atuais
+      const newFilters = { ...currentFilters };
+
+      if (categoryId === "all") {
+        // Limpar filtros de gênero e tema
+        delete newFilters.genre;
+        delete newFilters.theme;
+      } else {
+        // Verificar se é um gênero ou tema válido
+        const genre = genres.find((g) => g.id === categoryId);
+        const theme = themes.find((t) => t.id === categoryId);
+
+        if (genre) {
+          // Limpar tema e aplicar gênero
+          delete newFilters.theme;
+          newFilters.genre = [categoryId];
+        } else if (theme) {
+          // Limpar gênero e aplicar tema
+          delete newFilters.genre;
+          newFilters.theme = [categoryId];
+        } else {
+          // Se não é nem gênero nem tema, limpar ambos
+          delete newFilters.genre;
+          delete newFilters.theme;
+        }
+      }
+
+      // Verificar se os filtros realmente mudaram antes de chamar o callback
+      if (JSON.stringify(currentFilters) !== JSON.stringify(newFilters)) {
+        console.log("FilterTopBar - Novos filtros:", newFilters);
+        console.log("FilterTopBar - Chamando onFiltersChange");
+        onFiltersChange(newFilters);
+      } else {
+        console.log("FilterTopBar - Filtros iguais, evitando atualização");
+      }
+      console.log("=== FILTER TOPBAR CLICK COMPLETED ===");
+      return;
+    }
+
+    // Fallback para navegação (comportamento antigo)
     const buildProductsUrl = (filters: Record<string, string[]>) => {
       const params = new URLSearchParams();
 
