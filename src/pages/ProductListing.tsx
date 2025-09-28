@@ -6,7 +6,6 @@ import FilterSidebar from "../components/FilterSidebar";
 import ProductGrid from "../components/ProductGrid";
 import Pagination from "../components/Pagination";
 import OrderingSelector from "../components/OrderingSelector";
-import { Menu } from "lucide-react";
 import { useAdvertisements } from "../hooks/useAdvertisements";
 import { mapAdvertisementsToProducts } from "../utils/advertisementMapper";
 import {
@@ -15,6 +14,7 @@ import {
   FrontendFilters,
 } from "../utils/filterMapper";
 import Footer from "../components/Footer";
+import BottomBar from "@/components/BottomBar";
 import Head from "@/components/Head";
 
 // Removido mockProducts - agora usando dados do backend
@@ -33,6 +33,7 @@ const ProductListing: React.FC = () => {
   const [priceRange, setPriceRange] = useState({ min: "", max: "" });
   const [searchQuery, setSearchQuery] = useState(""); // Estado interno para digitação
   const [confirmedSearchQuery, setConfirmedSearchQuery] = useState(""); // Estado confirmado para filtros
+  const [isInitialized, setIsInitialized] = useState(false); // Estado para controlar inicialização
 
   // ✅ NOVO: Estado para ordenação
   const [currentOrdering, setCurrentOrdering] = useState({
@@ -57,7 +58,7 @@ const ProductListing: React.FC = () => {
     fetchAdvertisements,
   } = useAdvertisements({
     initialFilters: { status: "Active" }, // Apenas status inicial, filtros serão aplicados via useEffect
-    initialPagination: { page: 1, pageSize: 12 },
+    initialPagination: { page: 1, pageSize: 15 },
     initialOrdering: { ordering: "Newest" },
   });
 
@@ -66,15 +67,70 @@ const ProductListing: React.FC = () => {
     return mapAdvertisementsToProducts(advertisements);
   }, [advertisements]);
 
-  // Inicializar searchQuery a partir dos parâmetros da URL
+  // Inicializar searchQuery e filtros a partir dos parâmetros da URL
   useEffect(() => {
+    console.log("=== URL EFFECT TRIGGERED ===");
+    console.log("location.search:", location.search);
+
     const urlParams = new URLSearchParams(location.search);
+
+    // Processar pesquisa
     const searchParam = urlParams.get("search");
     if (searchParam) {
       const decodedSearch = decodeURIComponent(searchParam);
+      console.log("Setting search from URL:", decodedSearch);
       setSearchQuery(decodedSearch);
-      setConfirmedSearchQuery(decodedSearch); // Também inicializar o estado confirmado
+      setConfirmedSearchQuery(decodedSearch);
+    } else {
+      console.log("No search param, clearing search");
+      setSearchQuery("");
+      setConfirmedSearchQuery("");
     }
+
+    // Processar filtros da URL
+    const urlFilters: Record<string, string[]> = {};
+
+    // Processar gênero
+    const genreParam = urlParams.get("genre");
+    if (genreParam) {
+      urlFilters.genre = genreParam.split(",");
+      console.log("Setting genre from URL:", urlFilters.genre);
+    }
+
+    // Processar tema
+    const themeParam = urlParams.get("theme");
+    if (themeParam) {
+      urlFilters.theme = themeParam.split(",");
+      console.log("Setting theme from URL:", urlFilters.theme);
+    }
+
+    // Processar condições
+    const conditionsParam = urlParams.get("conditions");
+    if (conditionsParam) {
+      urlFilters.conditions = conditionsParam.split(",");
+      console.log("Setting conditions from URL:", urlFilters.conditions);
+    }
+
+    // Processar preço
+    const minPriceParam = urlParams.get("minPrice");
+    const maxPriceParam = urlParams.get("maxPrice");
+    if (minPriceParam || maxPriceParam) {
+      urlFilters.price = [minPriceParam || "", maxPriceParam || ""];
+      console.log("Setting price from URL:", {
+        min: minPriceParam,
+        max: maxPriceParam,
+      });
+      setPriceRange({ min: minPriceParam || "", max: maxPriceParam || "" });
+    } else {
+      console.log("No price params, clearing price range");
+      setPriceRange({ min: "", max: "" });
+    }
+
+    console.log("ProductListing - Final URL filters:", urlFilters);
+    console.log("Setting activeFilters to:", urlFilters);
+    setActiveFilters(urlFilters);
+    setIsInitialized(true); // Marcar como inicializado após processar URL
+    console.log("=== URL EFFECT COMPLETED ===");
   }, [location.search]);
 
   // Refs para evitar loop (removido - não mais necessário)
@@ -176,6 +232,12 @@ const ProductListing: React.FC = () => {
   );
 
   useEffect(() => {
+    // Só aplicar filtros se já foi inicializado pela URL
+    if (!isInitialized) {
+      console.log("=== FILTER EFFECT SKIPPED - NOT INITIALIZED ===");
+      return;
+    }
+
     console.log("=== FILTER EFFECT TRIGGERED ===");
     console.log("activeFilters:", activeFilters);
     console.log("confirmedSearchQuery:", confirmedSearchQuery);
@@ -202,10 +264,10 @@ const ProductListing: React.FC = () => {
     console.log("Setting backend filters:", finalFilters);
     console.log("Aguardando resposta da API...");
 
-    // Evitar atualizações desnecessárias
+    // Evitar atualizações desnecessárias - só aplicar se realmente mudou
     setBackendFilters(finalFilters);
     console.log("=== FILTER EFFECT COMPLETED ===");
-  }, [activeFilters, confirmedSearchQuery, setBackendFilters]);
+  }, [activeFilters, confirmedSearchQuery, setBackendFilters, isInitialized]);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -228,7 +290,6 @@ const ProductListing: React.FC = () => {
             showSearchBar
             searchPlaceholder="Pesquisa na Toca do Cartucho"
             showUserMenu
-            userName="Nome Sobrenome"
             onProfileClick={handleProfileClick}
             searchValue={searchQuery}
             onSearchChange={handleSearchChange}
@@ -293,11 +354,11 @@ const ProductListing: React.FC = () => {
                     {/* DESKTOP*/}
                     <div className="hidden md:block">
                       <div className="flex items-center">
-                      <p className="text-sm text-gray-600">Ordenar por:</p>
-                      <OrderingSelector
-                        currentOrdering={currentOrdering}
-                        onOrderingChange={handleOrderingChange}
-                      />
+                        <p className="text-sm text-gray-600">Ordenar por:</p>
+                        <OrderingSelector
+                          currentOrdering={currentOrdering}
+                          onOrderingChange={handleOrderingChange}
+                        />
                       </div>
                     </div>
                   </div>
@@ -370,7 +431,7 @@ const ProductListing: React.FC = () => {
                         setActiveFilters({});
                         setPriceRange({ min: "", max: "" });
                       }}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                      className="px-4 py-2 bg-[#483D9E] text-white rounded-lg hover:bg-purple-700 transition-colors"
                     >
                       Limpar filtros
                     </button>
@@ -414,7 +475,7 @@ const ProductListing: React.FC = () => {
                 />
                 <div className="mt-6">
                   <button
-                    className="w-full bg-[#4F378B] text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-800 transition-colors duration-200"
+                    className="w-full bg-[#4F378B] mb-32 text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-800 transition-colors duration-200"
                     onClick={toggleSidebar}
                   >
                     Aplicar
@@ -430,6 +491,7 @@ const ProductListing: React.FC = () => {
           onBackToTop={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         />
       </div>
+      <BottomBar />
     </>
   );
 };

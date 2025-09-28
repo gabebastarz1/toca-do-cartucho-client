@@ -38,19 +38,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
+        // Debug dos cookies para diagnóstico
+        authService.debugCookies();
+
         if (authService.isAuthenticated()) {
           const currentUser = authService.getUser();
           if (currentUser) {
+            console.log("Usuário encontrado no localStorage:", currentUser);
             setUser(currentUser);
           } else {
-            // Tentar obter usuário do servidor
+            // Tentar obter usuário do servidor (pode haver cookie de sessão válido)
+            console.log("Tentando obter usuário do servidor...");
             const serverUser = await authService.getCurrentUser();
             if (serverUser) {
+              console.log("Usuário obtido do servidor:", serverUser);
               setUser(serverUser);
+              // Salvar dados do usuário no localStorage para próximas verificações
+              authService.setAuthData("cookie-based-auth", serverUser);
             } else {
+              console.log(
+                "Nenhum usuário encontrado no servidor, fazendo logout"
+              );
               authService.logout();
             }
           }
+        } else {
+          console.log("Usuário não autenticado");
         }
       } catch (error) {
         console.error("Erro ao inicializar autenticação:", error);
@@ -96,5 +109,3 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-
-

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Menu } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
+import SideBar from "./SideBar";
+import UserDropdown from "./UserDropdown";
 
 interface TopBarProps {
   rightButtonText?: string;
@@ -9,7 +12,7 @@ interface TopBarProps {
   showSearchBar?: boolean;
   searchPlaceholder?: string;
   showUserMenu?: boolean;
-  userName?: string;
+  userName?: string; // Opcional - se não fornecido, será obtido do contexto de autenticação
   userAvatar?: string;
   onFavoritesClick?: () => void;
   onProfileClick?: () => void;
@@ -25,14 +28,26 @@ const TopBar: React.FC<TopBarProps> = ({
   showSearchBar = false,
   searchPlaceholder = "Buscar...",
   showUserMenu = false,
-  userName = "Usuário",
+  userName,
   userAvatar = "",
   searchValue = "",
   onSearchChange,
   onSearchConfirm,
 }) => {
+  const { user } = useAuth();
   const [showSecondaryHeader, setShowSecondaryHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [isSideBarOpen, setIsSideBarOpen] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+
+  // Usar o nome do usuário do contexto de autenticação se disponível
+  const displayUserName =
+    userName ||
+    (user
+      ? user.firstName && user.lastName
+        ? `${user.firstName} ${user.lastName}`.trim()
+        : user.nickName || "Usuário"
+      : "Usuário");
 
   let justifyLogo: string;
   switch (logoPosition) {
@@ -101,6 +116,21 @@ const TopBar: React.FC<TopBarProps> = ({
     };
   }, [lastScrollY]);
 
+  // Fechar dropdown quando clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isUserDropdownOpen) {
+        const target = event.target as Element;
+        if (!target.closest(".user-dropdown-container")) {
+          setIsUserDropdownOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isUserDropdownOpen]);
+
   return (
     <header className="sticky top-0 z-50 w-full">
       <div className="w-full bg-[#211C49] flex items-center justify-between px-2 sm:px-14 py-3 relative z-10">
@@ -156,21 +186,30 @@ const TopBar: React.FC<TopBarProps> = ({
               </button>
             )}
             {showUserMenu && (
-              <div className="flex items-center space-x-3 pr-6">
+              <div className="flex items-center space-x-3 pr-6 relative user-dropdown-container">
                 <span className="text-white text-base font-normal text-sm">
-                  {userName}
+                  {displayUserName}
                 </span>
-                {userAvatar && userAvatar.trim() !== "" ? (
-                  <img
-                    src={userAvatar}
-                    alt={userName}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-                    <span className="text-gray-600 text-lg">👤</span>
-                  </div>
-                )}
+                <button
+                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                  className="focus:outline-none"
+                >
+                  {userAvatar && userAvatar.trim() !== "" ? (
+                    <img
+                      src={userAvatar}
+                      alt={displayUserName}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                      <span className="text-gray-600 text-lg">👤</span>
+                    </div>
+                  )}
+                </button>
+                <UserDropdown
+                  isOpen={isUserDropdownOpen}
+                  onClose={() => setIsUserDropdownOpen(false)}
+                />
               </div>
             )}
           </div>
@@ -180,6 +219,7 @@ const TopBar: React.FC<TopBarProps> = ({
         <div className="md:hidden w-full flex items-center justify-between ">
           <button
             type="button"
+            onClick={() => setIsSideBarOpen(true)}
             className="p-2 text-gray-300 hover:text-white transition-colors pl-0"
             aria-label="Menu"
           >
@@ -195,19 +235,30 @@ const TopBar: React.FC<TopBarProps> = ({
               <img src="../public/logo.svg" alt="Logo" className="h-6" />
             </button>
           </div>
-          <div className="flex items-center gap-2 ">
-            <span className="text-gray-300 text-sm">Perfil</span>
-            {userAvatar && userAvatar.trim() !== "" ? (
-              <img
-                src={userAvatar}
-                alt={userName}
-                className="w-8 h-8 rounded-full object-cover"
+          <div className="flex items-center gap-2 relative">
+            <span className="text-gray-300 text-sm">{displayUserName}</span>
+            <div className="relative user-dropdown-container">
+              <button
+                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                className="focus:outline-none"
+              >
+                {userAvatar && userAvatar.trim() !== "" ? (
+                  <img
+                    src={userAvatar}
+                    alt={displayUserName}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+                    <span className="text-gray-600 text-sm">👤</span>
+                  </div>
+                )}
+              </button>
+              <UserDropdown
+                isOpen={isUserDropdownOpen}
+                onClose={() => setIsUserDropdownOpen(false)}
               />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                <span className="text-gray-600 text-sm">👤</span>
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
@@ -240,6 +291,9 @@ const TopBar: React.FC<TopBarProps> = ({
           </div>
         </div>
       )}
+
+      {/* SideBar Mobile */}
+      <SideBar isOpen={isSideBarOpen} onClose={() => setIsSideBarOpen(false)} />
     </header>
   );
 };

@@ -126,7 +126,7 @@ const ProductCharacteristics: React.FC<ProductCharacteristicsProps> = ({
   const characteristics = getCharacteristics();
 
   return (
-    <div className="bg-white rounded-lg p-6 ">
+    <div id="product-characteristics" className="bg-white rounded-lg p-6 ">
       <h2 className="text-xl font-semibold mb-6">Características do produto</h2>
       <div>
         <h3 className="text-lg mb-4">Detalhes técnicos</h3>

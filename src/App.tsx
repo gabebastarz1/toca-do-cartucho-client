@@ -12,8 +12,11 @@ import {
   CreateAdvertisementSaleOnly,
   ProductListing,
 } from "./pages";
+import About from "./pages/About";
+import Favorites from "./pages/Favorites";
 import { CategoryDataProvider } from "./components/CategoryDataProvider";
 import { AuthProvider } from "./hooks/useAuth";
+import PWAInstallBanner from "./components/PWAInstallBanner";
 
 import "./App.css";
 
@@ -25,6 +28,8 @@ function App() {
           <div className="App">
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/sobre" element={<About />} />
+              <Route path="/favoritos" element={<Favorites />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/anuncio/:id" element={<Advertisement />} />
               <Route path="/criar-anuncio" element={<CreateAdvertisement />} />
@@ -45,6 +50,8 @@ function App() {
               <Route path="/produtos" element={<ProductListing />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+
+            <PWAInstallBanner />
           </div>
         </Router>
       </CategoryDataProvider>

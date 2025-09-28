@@ -143,13 +143,13 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
   const sellerLocation = getSellerLocation();
 
   // ✅ Debug: Log da localização do seller
-  console.log(`=== SELLER LOCATION DEBUG ===`);
+  {/*console.log(`=== SELLER LOCATION DEBUG ===`);
   console.log(`Advertisement ${advertisement.id}:`);
   console.log(`Seller:`, advertisement.seller?.nickName || "N/A");
   console.log(`Addresses count:`, advertisement.seller?.addresses?.length || 0);
   console.log(`Primary address:`, advertisement.seller?.addresses?.find(addr => addr.isPrimary)?.address);
   console.log(`Final location:`, sellerLocation);
-  console.log(`=============================`);
+  console.log(`=============================`);*/}
 
   // Usar a primeira imagem disponível ou placeholder
   const getImageUrl = () => {

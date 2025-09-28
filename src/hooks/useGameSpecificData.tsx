@@ -71,14 +71,16 @@ export const useGameSpecificData = () => {
         params: { GameId: gameId },
       });
 
-      console.log(
+      console
+        .log
         //"📍 Game Localizations encontradas:",
-       // gameLocalizationsResponse.data
-      );
-      console.log(
-       // "🌐 Language Supports encontrados:",
-       // languageSupportsResponse.data
-      );
+        // gameLocalizationsResponse.data
+        ();
+      console
+        .log
+        // "🌐 Language Supports encontrados:",
+        // languageSupportsResponse.data
+        ();
 
       setData({
         gameLocalizations: gameLocalizationsResponse.data || [],
@@ -117,8 +119,8 @@ export const useGameSpecificData = () => {
       return [];
     }
 
-   // console.log("🔍 Analisando gameLocalizations:", data.gameLocalizations);
-   // console.log("🔍 Primeiro item:", data.gameLocalizations[0]);
+    // console.log("🔍 Analisando gameLocalizations:", data.gameLocalizations);
+    // console.log("🔍 Primeiro item:", data.gameLocalizations[0]);
 
     return data.gameLocalizations
       .map((gl) => {
@@ -126,13 +128,13 @@ export const useGameSpecificData = () => {
           // Verificar diferentes estruturas possíveis
           const region = gl.region || gl;
 
-         // console.log("🔍 GameLocalization item:", gl);
-         // console.log("🔍 Region:", region);
+          // console.log("🔍 GameLocalization item:", gl);
+          // console.log("🔍 Region:", region);
 
           return {
             id: region.id,
-            name: region.name,
-            identifier: region.identifier || region.name,
+            name: (region as any).region?.name || (region as any).name,
+            identifier: (region as any).region?.name || (region as any).name,
           };
         } catch (error) {
           console.error("❌ Erro ao processar gameLocalization:", error, gl);
@@ -152,31 +154,27 @@ export const useGameSpecificData = () => {
 
       // Verificar se há dados
       if (!data.languageSupports || data.languageSupports.length === 0) {
-       // console.log("🔍 Nenhum languageSupport disponível");
+        // console.log("🔍 Nenhum languageSupport disponível");
         return [];
       }
 
       //console.log("🔍 Analisando languageSupports:", data.languageSupports);
-     // console.log("🔍 Primeiro item:", data.languageSupports[0]);
+      // console.log("🔍 Primeiro item:", data.languageSupports[0]);
 
       return data.languageSupports
         .filter((ls) => {
           try {
             // Verificar diferentes estruturas possíveis
             const languageSupport = ls.languageSupport || ls;
-            const languageSupportType =
-              languageSupport.languageSupportType ||
-              languageSupport.languageSupportTypeId;
+            const languageSupportType = (languageSupport as any)
+              .languageSupportType;
 
             //console.log("🔍 Item sendo analisado:", ls);
-           // console.log("🔍 languageSupport:", languageSupport);
+            // console.log("🔍 languageSupport:", languageSupport);
             //console.log("🔍 languageSupportType:", languageSupportType);
 
             // Tentar diferentes formas de acessar o tipo
-            const typeId =
-              languageSupportType?.id ||
-              languageSupportType ||
-              languageSupport.languageSupportTypeId;
+            const typeId = languageSupportType?.id || languageSupportType;
 
             return typeId === typeMap[supportType];
           } catch (error) {
@@ -187,11 +185,11 @@ export const useGameSpecificData = () => {
         .map((ls) => {
           try {
             const languageSupport = ls.languageSupport || ls;
-            const language = languageSupport.language || languageSupport;
+            const language = (languageSupport as any).language;
 
             return {
-              id: language.id,
-              name: language.name,
+              id: languageSupport.id,
+              name: language,
             };
           } catch (error) {
             console.error("❌ Erro ao mapear languageSupport:", error, ls);

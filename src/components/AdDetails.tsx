@@ -100,17 +100,17 @@ const AdDetails: React.FC<AdDetailsProps> = ({ advertisement }) => {
       });
     }
 
-    console.log("=== ALL IMAGES COLLECTED ===");
-    console.log("Main ad images:", adData.images?.length || 0);
-    console.log(
+    //console.log("=== ALL IMAGES COLLECTED ===");
+    // console.log("Main ad images:", adData.images?.length || 0);
+    /*console.log(
       "Variation images:",
       adData.variations?.reduce(
         (total, v) => total + (v.images?.length || 0),
         0
       ) || 0
-    );
-    console.log("Total images:", images.length);
-    console.log("===========================");
+    );*/
+    //console.log("Total images:", images.length);
+    //console.log("===========================");
 
     return images;
   }, [adData]);
@@ -119,38 +119,103 @@ const AdDetails: React.FC<AdDetailsProps> = ({ advertisement }) => {
   const createBreadcrumb = () => {
     if (adData) {
       const breadcrumbs = ["Voltar"];
+      const breadcrumbData: Array<{
+        text: string;
+        type:
+          | "genre"
+          | "theme"
+          | "preservation"
+          | "cartridgeType"
+          | "game"
+          | "back"
+          | "platform";
+        id?: string | number;
+      }> = [{ text: "Voltar", type: "back" }];
+
+      // console.log("=== CREATING BREADCRUMB ===");
+      // console.log("adData:", adData);
+      // console.log("adData.game:", adData.game);
+      // console.log("adData.game?.genres:", adData.game?.genres);
+      // console.log("adData.preservationState:", adData.preservationState);
+      // console.log("adData.cartridgeType:", adData.cartridgeType);
 
       // Adicionar plataforma do jogo se disponível
       if (adData.game?.name) {
-        breadcrumbs.push("Plataforma"); // Usar texto genérico já que platform não existe
+        breadcrumbs.push("Plataforma");
+        breadcrumbData.push({ text: "Plataforma", type: "platform" });
+        // console.log("Added Plataforma");
       }
 
       // Adicionar gêneros se disponível
       if (adData.game?.genres && adData.game.genres.length > 0) {
-        breadcrumbs.push(adData.game.genres[0].name);
+        const genreData = adData.game.genres[0];
+        // Baseado no log, o gênero está em genreData.genre
+        const genre = (
+          genreData as unknown as { genre: { id: number; name: string } }
+        ).genre;
+        breadcrumbs.push(genre.name);
+        breadcrumbData.push({
+          text: genre.name,
+          type: "genre",
+          id: genre.id,
+        });
+        // console.log("Added genre:", genre.name);
+      } else {
+        // console.log("No genres found for game");
       }
 
       // Adicionar estado de preservação
       if (adData.preservationState?.name) {
         breadcrumbs.push(adData.preservationState.name);
+        breadcrumbData.push({
+          text: adData.preservationState.name,
+          type: "preservation",
+          id: adData.preservationState.id,
+        });
+        // console.log("Added preservation:", adData.preservationState.name);
+      } else {
+        // console.log("No preservation state found");
       }
 
       // Adicionar tipo de cartucho
       if (adData.cartridgeType?.name) {
         breadcrumbs.push(adData.cartridgeType.name);
+        breadcrumbData.push({
+          text: adData.cartridgeType.name,
+          type: "cartridgeType",
+          id: adData.cartridgeType.id,
+        });
+        // console.log("Added cartridge type:", adData.cartridgeType.name);
+      } else {
+        // console.log("No cartridge type found");
       }
 
       // Adicionar nome do jogo
       if (adData.game?.name) {
         breadcrumbs.push(adData.game.name);
+        breadcrumbData.push({
+          text: adData.game.name,
+          type: "game",
+          id: adData.game.id,
+        });
+        // console.log("Added game:", adData.game.name);
       } else {
         // Extrair nome do jogo do título se não estiver disponível
         const title = adData.title || "";
         const gameName = title.split(" - ")[0] || title;
         breadcrumbs.push(gameName);
+        breadcrumbData.push({
+          text: gameName,
+          type: "game",
+        });
+        // console.log("Added game from title:", gameName);
       }
 
-      return { breadcrumbs };
+      // console.log("Final breadcrumbs:", breadcrumbs);
+      // console.log("Final breadcrumbData:", breadcrumbData);
+      // console.log("=== BREADCRUMB CREATION COMPLETED ===");
+
+      return { breadcrumbs, breadcrumbData };
     }
     return mockAdData.navigation;
   };
@@ -160,7 +225,11 @@ const AdDetails: React.FC<AdDetailsProps> = ({ advertisement }) => {
   return (
     <>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <NavigationHistoryBar data={navigationData} />
+        <div className="hidden md:block">
+
+          <NavigationHistoryBar data={navigationData} />
+        </div>
+
         <div className="max-w-7xl mx-auto bg-white font-sans rounded-lg p-4">
           {/* Container Principal: Coluna em mobile, linha em telas grandes */}
           <div className="flex flex-col lg:flex-row lg:gap-2">

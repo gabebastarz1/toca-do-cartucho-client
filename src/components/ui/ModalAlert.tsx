@@ -1,4 +1,5 @@
 import React from "react";
+import { useIsMobile } from "../../hooks/useIsMobile";
 
 interface ModalAlertProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ const ModalAlert: React.FC<ModalAlertProps> = ({
   onButtonClick,
 }) => {
   const [isVisible, setIsVisible] = React.useState(false);
+  const isMobile = useIsMobile();
 
   React.useEffect(() => {
     if (isOpen) {
@@ -64,7 +66,7 @@ const ModalAlert: React.FC<ModalAlertProps> = ({
             <h2 className="text-base font-semibold text-black mb-2">
               {subtitle}
             </h2>
-            <div className="flex justify-between ">
+            <div className={`${isMobile ? "justify-between" : "flex justify-between"}`}>
               <p className="text-xs text-black leading-relaxed">
                 {description}
               </p>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useReferenceData } from "../hooks/useReferenceData";
 import { AdvertisementDTO } from "../api/types";
 import { useLocation } from "react-router-dom";
+import WhatsAppLink from "./WhatsAppLink";
 
 // --- Componente de Botão de Opção Estilizado (Sem alterações) ---
 interface OptionButtonProps {
@@ -503,6 +504,32 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
     setQuantity(Number(event.target.value));
   };
 
+  // Função para encontrar a variação atual baseada na seleção
+  const findCurrentVariation = () => {
+    if (!variations.length) return mainAdvertisement;
+
+    // Procurar por uma variação que corresponda exatamente à seleção atual
+    const matchingVariation = variations.find((variation) => {
+      const variationOptions = getVariationOptions(variation);
+
+      // Verificar se todas as opções selecionadas correspondem às opções da variação
+      return Object.keys(selection).every((key) => {
+        const selectedValue = selection[key];
+        const variationValue = variationOptions[key];
+
+        if (Array.isArray(variationValue)) {
+          return variationValue.includes(selectedValue);
+        } else {
+          return variationValue === selectedValue;
+        }
+      });
+    });
+
+    return matchingVariation || mainAdvertisement;
+  };
+
+  const selectedVariation = findCurrentVariation();
+
   if (loading) {
     return (
       <div className="p-6 bg-white rounded-xl border border-gray-200 max-w-sm mx-auto">
@@ -688,10 +715,31 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
       </div>
 
       <div className="space-y-2">
-        <button className="w-full border border-[#2B2560] bg-[#483d9e] text-white font-semibold py-3 px-4 rounded-lg hover:bg-[#2B2560] transition duration-200">
-          Comprar pelo Whatsapp
-        </button>
-        <button className="w-full bg-[#DDDDF3] text-black font-semibold py-3 px-4 rounded-lg hover:bg-indigo-200 transition duration-200">
+        <WhatsAppLink
+          mainAdvertisement={mainAdvertisement}
+          selectedVariation={selectedVariation}
+          selection={selection}
+          quantity={quantity}
+        />
+        <button
+          onClick={() => {
+            if (mainAdvertisement?.game?.igdbUrl) {
+              window.open(
+                mainAdvertisement.game.igdbUrl,
+                "_blank",
+                "noopener,noreferrer"
+              );
+            } else {
+              console.warn("IGDB URL não disponível para este jogo");
+            }
+          }}
+          disabled={!mainAdvertisement?.game?.igdbUrl}
+          className={`w-full font-semibold py-3 px-4 rounded-lg transition duration-200 ${
+            mainAdvertisement?.game?.igdbUrl
+              ? "bg-[#DDDDF3] text-black hover:bg-indigo-200 cursor-pointer"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          }`}
+        >
           Ver no IGDB
         </button>
       </div>

@@ -1,7 +1,7 @@
 // src/components/RecommendedProducts.tsx
 
 import React, { useRef, useState, useEffect } from "react";
-import ProductCard from "./ProductCard";
+import RecommendedProductCard from "./RecommendedProductCard";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AdvertisementDTO } from "../api/types";
 import { useAdvertisements } from "../hooks/useAdvertisements";
@@ -65,7 +65,7 @@ const RecommendedProducts: React.FC<RecommendedProductsProps> = ({
   const { advertisements, loading, error } = useAdvertisements({
     initialFilters: getRelatedFilters(),
     initialPagination: { page: 1, pageSize: maxProducts },
-    initialOrdering: { orderBy: "createdAt", orderDirection: "desc" },
+    initialOrdering: { ordering: "createdAt" },
     autoFetch: true,
   });
 
@@ -190,7 +190,7 @@ const RecommendedProducts: React.FC<RecommendedProductsProps> = ({
                       key={product.id}
                       className="flex-none w-64 sm:w-72 md:w-80"
                     >
-                      <ProductCard
+                      <RecommendedProductCard
                         {...product}
                         onClick={() =>
                           onProductClick?.(
@@ -216,7 +216,7 @@ const RecommendedProducts: React.FC<RecommendedProductsProps> = ({
               // Renderiza o Grid Padrão
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {recommendedProducts.map((product) => (
-                  <ProductCard
+                  <RecommendedProductCard
                     key={product.id}
                     {...product}
                     onClick={() =>

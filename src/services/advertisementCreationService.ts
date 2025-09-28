@@ -81,7 +81,7 @@ class AdvertisementCreationService {
         formData.idiomaLegenda,
         formData.idiomaInterface
       );
-      const backendData = convertFormDataToBackend(formData, variations, referenceData, gameLocalizationId, languageSupportsIds);
+      const backendData = await convertFormDataToBackend(formData, variations, referenceData, gameLocalizationId, languageSupportsIds);
       
       const validationErrors = this.validateAdvertisementData(backendData);
       if (validationErrors.length > 0) {

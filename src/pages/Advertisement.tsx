@@ -78,7 +78,6 @@ const Advertisement: React.FC = () => {
         showSearchBar
         searchPlaceholder="Pesquisa na Toca do Cartucho"
         showUserMenu
-        userName="Nome Sobrenome"
       />
       <FilterTopBar />
       <div className="min-h-screen bg-[#F4F3F5] py-8">
