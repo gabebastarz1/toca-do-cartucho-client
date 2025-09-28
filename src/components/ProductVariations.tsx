@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useReferenceData } from "../hooks/useReferenceData";
 import { AdvertisementDTO } from "../api/types";
+import { useLocation } from "react-router-dom";
 
 // --- Componente de Botão de Opção Estilizado (Sem alterações) ---
 interface OptionButtonProps {
@@ -79,9 +80,21 @@ const OptionsSection: React.FC<OptionsSectionProps> = ({
   onToggleExpansion,
   gridCols = "grid-cols-3",
 }) => {
+  // Filtrar apenas as opções disponíveis (não desabilitadas)
+  const availableOptions = options.filter(
+    (option) => !disabledOptions.includes(option)
+  );
+
   const isExpanded = expandedSections[sectionKey];
-  const limitedOptions = isExpanded ? options : options.slice(0, 6);
-  const hasMore = options.length > 6;
+  const limitedOptions = isExpanded
+    ? availableOptions
+    : availableOptions.slice(0, 6);
+  const hasMore = availableOptions.length > 6;
+
+  // Se não há opções disponíveis, não renderizar a seção
+  if (availableOptions.length === 0) {
+    return null;
+  }
 
   return (
     <div className="mb-4">
@@ -94,7 +107,7 @@ const OptionsSection: React.FC<OptionsSectionProps> = ({
             value={option}
             selectedValue={selectedValue}
             onClick={onSelect}
-            disabled={disabledOptions.includes(option)}
+            disabled={false} // Todas as opções renderizadas são disponíveis
           />
         ))}
       </div>
@@ -103,7 +116,9 @@ const OptionsSection: React.FC<OptionsSectionProps> = ({
           onClick={() => onToggleExpansion(sectionKey)}
           className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
         >
-          {isExpanded ? "Ver menos" : `Ver mais (${options.length - 6} opções)`}
+          {isExpanded
+            ? "Ver menos"
+            : `Ver mais (${availableOptions.length - 6} opções)`}
         </button>
       )}
     </div>
@@ -131,6 +146,7 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
   variations = [],
   mainAdvertisement,
 }) => {
+  const location = useLocation();
   const {
     preservationStates,
     cartridgeTypes,
@@ -153,7 +169,8 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
         return v.advertisementLanguageSupports
           .filter((als: any) => {
             const typeName =
-              als.languageSupport?.languageSupportType?.name?.toLowerCase() || "";
+              als.languageSupport?.languageSupportType?.name?.toLowerCase() ||
+              "";
             const typeId = als.languageSupport?.languageSupportType?.id;
             return typeId === 1 || typeName.includes("audio");
           })
@@ -165,10 +182,13 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
         return v.advertisementLanguageSupports
           .filter((als: any) => {
             const typeName =
-              als.languageSupport?.languageSupportType?.name?.toLowerCase() || "";
+              als.languageSupport?.languageSupportType?.name?.toLowerCase() ||
+              "";
             const typeId = als.languageSupport?.languageSupportType?.id;
             return (
-              typeId === 2 || typeName.includes("subtitle") || typeName.includes("legenda")
+              typeId === 2 ||
+              typeName.includes("subtitle") ||
+              typeName.includes("legenda")
             );
           })
           .map((als: any) => als.languageSupport?.language?.name) // <-- Extrai o .name aqui
@@ -179,7 +199,8 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
         return v.advertisementLanguageSupports
           .filter((als: any) => {
             const typeName =
-              als.languageSupport?.languageSupportType?.name?.toLowerCase() || "";
+              als.languageSupport?.languageSupportType?.name?.toLowerCase() ||
+              "";
             const typeId = als.languageSupport?.languageSupportType?.id;
             return typeId === 3 || typeName.includes("interface");
           })
@@ -192,7 +213,9 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
 
   // Estado centralizado para guardar as seleções do usuário
   const [selection, setSelection] = useState<{ [key: string]: string }>(() => {
+    // ✅ CORREÇÃO: Pré-selecionar características do anúncio principal
     if (!mainAdvertisement) return {};
+
     const initialSelection: { [key: string]: string } = {};
 
     Object.keys(variationKeyMap).forEach((key) => {
@@ -202,48 +225,100 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
         if (value) {
           if (Array.isArray(value)) {
             if (value.length > 0) {
-              // Agora 'value' é um array de strings, então podemos pegar o primeiro diretamente
+              // Para arrays, pegar o primeiro valor
               initialSelection[key] = value[0];
             }
           } else {
+            // Para valores únicos
             initialSelection[key] = value;
           }
         }
       }
     });
 
+    console.log("=== INITIAL SELECTION FROM MAIN AD ===");
+    console.log("mainAdvertisement:", mainAdvertisement);
+    console.log("initialSelection:", initialSelection);
+    console.log("=====================================");
+
     return initialSelection;
   });
+
+  // ✅ NOVO: Ler query parameter 'variation' para pré-seleção
+  const urlParams = new URLSearchParams(location.search);
+  const variationId = urlParams.get("variation");
 
   // Estado para guardar as opções que estão dinamicamente disponíveis
   const [dynamicOptions, setDynamicOptions] = useState<{
     [key: string]: string[];
   }>({});
 
-  // Atualizar seleções quando mainAdvertisement mudar
+  // ✅ CORREÇÃO: Reativado para atualizar seleção quando mainAdvertisement mudar
   useEffect(() => {
     if (mainAdvertisement) {
       const newSelection: { [key: string]: string } = {};
 
-      Object.keys(variationKeyMap).forEach((key) => {
-        const getValue = variationKeyMap[key as keyof typeof variationKeyMap];
-        if (getValue) {
-          const value = getValue(mainAdvertisement);
-          if (value) {
-            if (Array.isArray(value)) {
-              if (value.length > 0) {
-                newSelection[key] = value[0];
+      // ✅ NOVO: Se há variationId na URL, usar essa variação para pré-seleção
+      if (variationId) {
+        const targetVariation = variations.find(
+          (v) => v.id.toString() === variationId
+        );
+        if (targetVariation) {
+          console.log("=== PRESELECTING VARIATION FROM URL ===");
+          console.log("variationId:", variationId);
+          console.log("targetVariation:", targetVariation);
+
+          // Usar as características da variação selecionada
+          Object.keys(variationKeyMap).forEach((key) => {
+            const getValue =
+              variationKeyMap[key as keyof typeof variationKeyMap];
+            if (getValue) {
+              const value = getValue(targetVariation);
+              if (value) {
+                if (Array.isArray(value)) {
+                  if (value.length > 0) {
+                    newSelection[key] = value[0];
+                  }
+                } else {
+                  newSelection[key] = value;
+                }
               }
-            } else {
-              newSelection[key] = value;
+            }
+          });
+          console.log("newSelection from variation:", newSelection);
+        }
+      } else {
+        // ✅ Usar características do anúncio principal se não há variação específica
+        console.log("=== USING MAIN ADVERTISEMENT CHARACTERISTICS ===");
+        console.log("mainAdvertisement:", mainAdvertisement);
+
+        // Usar as características do anúncio principal
+        Object.keys(variationKeyMap).forEach((key) => {
+          const getValue = variationKeyMap[key as keyof typeof variationKeyMap];
+          if (getValue) {
+            const value = getValue(mainAdvertisement);
+            if (value) {
+              if (Array.isArray(value)) {
+                if (value.length > 0) {
+                  newSelection[key] = value[0];
+                }
+              } else {
+                newSelection[key] = value;
+              }
             }
           }
-        }
-      });
+        });
+        console.log("newSelection from main ad:", newSelection);
+      }
+
+      console.log("=== UPDATING SELECTION FROM MAIN AD ===");
+      console.log("mainAdvertisement:", mainAdvertisement);
+      console.log("newSelection:", newSelection);
+      console.log("=====================================");
 
       setSelection(newSelection);
     }
-  }, [mainAdvertisement, variationKeyMap]);
+  }, [mainAdvertisement, variationId, variations, variationKeyMap]);
 
   // Armazena todas as opções possíveis vindas da API (calculado apenas uma vez)
   const allPossibleOptions = useMemo(
@@ -260,6 +335,34 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
 
   // EFEITO PRINCIPAL: Recalcula as opções disponíveis sempre que uma seleção é feita
   useEffect(() => {
+    console.log("=== PRODUCT VARIATIONS DEBUG ===");
+    console.log("variations:", variations);
+    console.log("mainAdvertisement:", mainAdvertisement);
+    console.log("current selection:", selection);
+    console.log("selection keys:", Object.keys(selection));
+    console.log("selection values:", Object.values(selection));
+
+    // ✅ Log detalhado para comparar estruturas
+    console.log("=== VARIATIONS STRUCTURE ANALYSIS ===");
+    variations.forEach((variation, index) => {
+      console.log(`--- VARIATION ${index} (ID: ${variation.id}) ---`);
+      console.log("preservationState:", variation.preservationState);
+      console.log("cartridgeType:", variation.cartridgeType);
+      console.log("gameLocalization:", variation.gameLocalization);
+      console.log(
+        "advertisementLanguageSupports:",
+        variation.advertisementLanguageSupports
+      );
+
+      // ✅ Testar cada mapeamento
+      Object.keys(variationKeyMap).forEach((key) => {
+        const getValue = variationKeyMap[key as keyof typeof variationKeyMap];
+        const value = getValue?.(variation);
+        console.log(`${key}:`, value);
+      });
+      console.log("--------------------------------");
+    });
+
     const available: { [key: string]: Set<string> } = {};
     const variationKeys = Object.keys(variationKeyMap);
     const allAdvertisements = [
@@ -267,23 +370,21 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
       ...variations,
     ];
 
+    console.log("allAdvertisements:", allAdvertisements);
+
     variationKeys.forEach((key) => {
       available[key] = new Set<string>();
 
-      const relevantAdvertisements = allAdvertisements.filter((ad) =>
-        Object.entries(selection).every(([selKey, selValue]) => {
-          if (!selValue || selKey === key) return true;
-          const mappedValue = variationKeyMap[selKey as keyof typeof variationKeyMap]?.(ad);
-          
-          if (Array.isArray(mappedValue)) {
-            return mappedValue.includes(selValue);
-          }
-          return mappedValue === selValue;
-        })
-      );
+      // ✅ SIMPLIFICAÇÃO: Sempre mostrar todas as opções disponíveis
+      const relevantAdvertisements = allAdvertisements;
+      console.log(`Showing all options for ${key}`);
+
+      console.log(`relevantAdvertisements for ${key}:`, relevantAdvertisements);
 
       relevantAdvertisements.forEach((ad) => {
-        const value = variationKeyMap[key as keyof typeof variationKeyMap]?.(ad);
+        const value =
+          variationKeyMap[key as keyof typeof variationKeyMap]?.(ad);
+        console.log(`value for ${key} from ad ${ad.id}:`, value);
         if (value) {
           if (Array.isArray(value)) {
             value.forEach((item) => available[key].add(item));
@@ -298,6 +399,9 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
     Object.keys(available).forEach((key) => {
       finalOptions[key] = Array.from(available[key]);
     });
+
+    console.log("finalOptions:", finalOptions);
+    console.log("================================");
 
     setDynamicOptions(finalOptions);
   }, [selection, variations, mainAdvertisement, variationKeyMap]);
@@ -365,7 +469,10 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
         if (targetVariation) {
           const variationOptions = getVariationOptions(targetVariation);
           Object.assign(newSelection, variationOptions);
-        } else if (isMainAdvertisementOption(group, value) && mainAdvertisement) {
+        } else if (
+          isMainAdvertisementOption(group, value) &&
+          mainAdvertisement
+        ) {
           const mainAdOptions = getVariationOptions(mainAdvertisement);
           Object.assign(newSelection, mainAdOptions);
         } else {
@@ -376,10 +483,6 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
     });
   };
 
-  const totalStock = [
-    ...(mainAdvertisement ? [mainAdvertisement] : []),
-    ...variations,
-  ].reduce((sum, ad) => sum + (ad.availableStock || 0), 0);
   const [quantity, setQuantity] = useState<number>(1);
   const [expandedSections, setExpandedSections] = useState<ExpandedSections>({
     preservation: false,
@@ -394,7 +497,9 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const handleQuantityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleQuantityChange = (
+    event: React.ChangeEvent<HTMLSelectElement>
+  ) => {
     setQuantity(Number(event.target.value));
   };
 
@@ -434,7 +539,7 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
       (opt) => !availableOptions.includes(opt)
     );
   };
-  
+
   // Função para determinar qual anúncio está atualmente selecionado
   const getCurrentSelectedAdvertisement = () => {
     if (Object.keys(selection).length === 0 && mainAdvertisement) {

@@ -13,6 +13,9 @@ interface TopBarProps {
   userAvatar?: string;
   onFavoritesClick?: () => void;
   onProfileClick?: () => void;
+  searchValue?: string; // Valor atual da pesquisa
+  onSearchChange?: (value: string) => void; // Callback para mudanças na pesquisa
+  onSearchConfirm?: () => void; // Callback para confirmar a pesquisa
 }
 
 const TopBar: React.FC<TopBarProps> = ({
@@ -24,6 +27,9 @@ const TopBar: React.FC<TopBarProps> = ({
   showUserMenu = false,
   userName = "Usuário",
   userAvatar = "",
+  searchValue = "",
+  onSearchChange,
+  onSearchConfirm,
 }) => {
   const [showSecondaryHeader, setShowSecondaryHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -41,12 +47,35 @@ const TopBar: React.FC<TopBarProps> = ({
   }
 
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(searchValue);
+
+  // Sincronizar com o valor externo quando mudar
+  useEffect(() => {
+    setSearchQuery(searchValue);
+  }, [searchValue]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/produtos?search=${encodeURIComponent(searchQuery.trim())}`);
+    if (onSearchConfirm) {
+      // Se há callback de confirmação, usar ele
+      onSearchConfirm();
+    } else {
+      // Fallback para comportamento antigo
+      if (searchQuery.trim()) {
+        navigate(`/produtos?search=${encodeURIComponent(searchQuery.trim())}`);
+      } else {
+        // Se a pesquisa estiver vazia, redirecionar para a página inicial
+        navigate("/");
+      }
+    }
+  };
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    // Notificar o componente pai sobre a mudança
+    if (onSearchChange) {
+      onSearchChange(value);
     }
   };
 
@@ -101,7 +130,7 @@ const TopBar: React.FC<TopBarProps> = ({
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={handleSearchInputChange}
                     placeholder={searchPlaceholder}
                     className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 placeholder-gray-400 focus:outline-none"
                   />
@@ -131,11 +160,17 @@ const TopBar: React.FC<TopBarProps> = ({
                 <span className="text-white text-base font-normal text-sm">
                   {userName}
                 </span>
-                <img
-                  src={userAvatar}
-                  alt={userName}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
+                {userAvatar && userAvatar.trim() !== "" ? (
+                  <img
+                    src={userAvatar}
+                    alt={userName}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                    <span className="text-gray-600 text-lg">👤</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -162,13 +197,17 @@ const TopBar: React.FC<TopBarProps> = ({
           </div>
           <div className="flex items-center gap-2 ">
             <span className="text-gray-300 text-sm">Perfil</span>
-            <img
-              src={
-                userAvatar || "https://placehold.co/32x32/4F46E5/FFFFFF?text=U"
-              }
-              alt={userName}
-              className="w-8 h-8 rounded-full object-cover"
-            />
+            {userAvatar && userAvatar.trim() !== "" ? (
+              <img
+                src={userAvatar}
+                alt={userName}
+                className="w-8 h-8 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+                <span className="text-gray-600 text-sm">👤</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -186,7 +225,7 @@ const TopBar: React.FC<TopBarProps> = ({
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={handleSearchInputChange}
                   placeholder="Pesquisa na Toca do Cartucho"
                   className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 placeholder-gray-400 focus:outline-none"
                 />

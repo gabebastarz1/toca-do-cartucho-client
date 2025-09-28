@@ -195,7 +195,7 @@ export const mapFrontendFiltersToBackend = (
 
   // Processar regiões - extrair IDs numéricos dos IDs prefixados
   if (frontendFilters.region?.length) {
-    backendFilters.gameIds = frontendFilters.region
+    backendFilters.regionIds = frontendFilters.region
       .map(regionId => {
         // Se tem prefixo "region_", extrair o ID numérico
         if (regionId.startsWith('region_')) {
@@ -270,6 +270,9 @@ export const cleanBackendFilters = (filters: AdvertisementFilteringDTO): Adverti
   }
   if (filters.languageInterfaceIds && filters.languageInterfaceIds.length > 0) {
     cleaned.languageInterfaceIds = filters.languageInterfaceIds;
+  }
+  if (filters.regionIds && filters.regionIds.length > 0) {
+    cleaned.regionIds = filters.regionIds;
   }
 
   return cleaned;

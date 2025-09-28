@@ -21,6 +21,8 @@ export interface Product {
   subtitleLanguage: string;
   interfaceLanguage: string;
   region: string;
+  sellerId?: string; // ✅ NOVO: ID do vendedor para buscar ratings
+  parentAdvertisementId?: number; // ✅ NOVO: ID do anúncio pai para variações
 }
 
 // Mapeamentos removidos - agora extraímos essas informações diretamente do título
@@ -116,15 +118,38 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
   // Converter desconto de string para número (remover % e converter)
   const discount = discountPercentage && originalPrice ? parseInt(discountPercentage.replace('%', '')) : undefined;
 
-  // Calcular rating baseado nos dados reais do jogo
-  const gameRating = advertisement.game?.totalRating;
-  const gameRatingCount = advertisement.game?.totalRatingCount;
-  
-  // Converter rating do formato IGDB (0-100) para formato de 0-5 estrelas
-  const rating = gameRating && gameRatingCount ? 
-    Math.round((gameRating / gameRatingCount )) / 100000000000000 : 0.0;
-  
-  const reviewCount = gameRatingCount || 0;
+  // ✅ Usar ratings do vendedor em vez do jogo
+  // Por enquanto, usar valores padrão até que os ratings sejam carregados
+  const rating = 0; // Será atualizado pelo componente ProductCard usando useSellerRatings
+  const reviewCount = 0; // Será atualizado pelo componente ProductCard usando useSellerRatings
+
+  // ✅ NOVO: Extrair cidade e estado do endereço primário do seller
+  const getSellerLocation = () => {
+    if (advertisement.seller?.addresses && advertisement.seller.addresses.length > 0) {
+      // Encontrar o endereço primário
+      const primaryAddress = advertisement.seller.addresses.find(addr => addr.isPrimary) || 
+                             advertisement.seller.addresses[0];
+      
+      if (primaryAddress?.address) {
+        const { city, state } = primaryAddress.address;
+        return `${city}, ${state}`;
+      }
+    }
+    
+    // Fallback para localização genérica
+    return "Brasil";
+  };
+
+  const sellerLocation = getSellerLocation();
+
+  // ✅ Debug: Log da localização do seller
+  console.log(`=== SELLER LOCATION DEBUG ===`);
+  console.log(`Advertisement ${advertisement.id}:`);
+  console.log(`Seller:`, advertisement.seller?.nickName || "N/A");
+  console.log(`Addresses count:`, advertisement.seller?.addresses?.length || 0);
+  console.log(`Primary address:`, advertisement.seller?.addresses?.find(addr => addr.isPrimary)?.address);
+  console.log(`Final location:`, sellerLocation);
+  console.log(`=============================`);
 
   // Usar a primeira imagem disponível ou placeholder
   const getImageUrl = () => {
@@ -154,7 +179,7 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
     discount: discount,
     condition: condition,
     type: type,
-    location: "Brasil", // Localização genérica sem informações do anunciante
+    location: sellerLocation, // ✅ NOVO: Cidade e estado do seller
     genre: genre,
     theme: theme,
     saleType: saleType,
@@ -162,7 +187,9 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
     audioLanguage: mappedAudioLanguage,
     subtitleLanguage: mappedSubtitleLanguage,
     interfaceLanguage: mappedInterfaceLanguage,
-    region: region
+    region: region,
+    sellerId: advertisement.seller?.id, // ✅ NOVO: ID do vendedor
+    parentAdvertisementId: advertisement.parentAdvertisementId, // ✅ NOVO: ID do anúncio pai
   };
 };
 

@@ -1,6 +1,7 @@
 import React from "react";
 import { Heart, Star } from "lucide-react";
 import { AdvertisementDTO } from "../api/types";
+import { useSellerRatings } from "../hooks/useSellerRatings";
 
 interface ProductInfoProps {
   advertisement?: AdvertisementDTO;
@@ -25,6 +26,10 @@ interface ProductInfoProps {
 }
 
 const ProductInfo: React.FC<ProductInfoProps> = ({ advertisement }) => {
+  // Buscar ratings do vendedor
+  const sellerId = advertisement?.seller?.id;
+  const { averageRating, totalRatings } = useSellerRatings(sellerId);
+
   // Função para converter dados do advertisement para o formato esperado
   const getProductData = () => {
     if (advertisement) {
@@ -106,8 +111,8 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ advertisement }) => {
         price: salePrice,
         originalPrice: originalPrice,
         discount: discount,
-        rating: 4.5, // Mockado por enquanto - implementar sistema de avaliações
-        reviewCount: 0, // Mockado por enquanto - implementar sistema de avaliações
+        rating: averageRating || 0, // ✅ Usar rating real do vendedor
+        reviewCount: totalRatings || 0, // ✅ Usar contagem real de avaliações
         productInfo: productInfo,
       };
     }
@@ -133,9 +138,11 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ advertisement }) => {
 
   const productData = getProductData();
   const renderStars = (rating: number) => {
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    // ✅ Validar e normalizar o rating
+    const validRating = Math.max(0, Math.min(5, rating || 0));
+    const fullStars = Math.floor(validRating);
+    const hasHalfStar = validRating % 1 !== 0;
+    const emptyStars = Math.max(0, 5 - fullStars - (hasHalfStar ? 1 : 0));
 
     return (
       <>

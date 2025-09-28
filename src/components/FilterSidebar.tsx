@@ -5,9 +5,10 @@ import { useIsMobile } from "../hooks/useIsMobile";
 
 import FilterAccordion from "./FilterSidebar/FilterAccordion";
 import CheckboxFilterGroup from "./FilterSidebar/CheckboxFilterGroup";
+import RadioFilterGroup from "./FilterSidebar/RadioFilterGroup";
 
 // --- Tipos ---
-type SelectedFilters = Record<string, Set<string>>;
+type SelectedFilters = Record<string, Set<string> | string>;
 
 interface FilterSidebarProps {
   onFiltersChange?: (filters: Record<string, string[]>) => void;
@@ -35,17 +36,23 @@ const initializeSelectedFilters = (
 
   for (const key in initialFilters) {
     if (initialFilters[key] && initialFilters[key].length > 0) {
-      const prefix = sectionPrefixes[key] || "";
-      // Converter IDs para IDs prefixados (lidando com IDs que já têm prefixo)
-      const prefixedIds = initialFilters[key].map((id) => {
-        // Se o ID já tem o prefixo correto, usar como está
-        if (prefix && id.startsWith(prefix)) {
-          return id;
-        }
-        // Se não tem prefixo, adicionar
-        return prefix ? `${prefix}${id}` : id;
-      });
-      selected[key] = new Set(prefixedIds);
+      // Seção de condições usa radio button (seleção única)
+      if (key === "conditions") {
+        selected[key] = initialFilters[key][0]; // Pega apenas o primeiro valor
+      } else {
+        // Outras seções usam checkbox (seleção múltipla)
+        const prefix = sectionPrefixes[key] || "";
+        // Converter IDs para IDs prefixados (lidando com IDs que já têm prefixo)
+        const prefixedIds = initialFilters[key].map((id) => {
+          // Se o ID já tem o prefixo correto, usar como está
+          if (prefix && id.startsWith(prefix)) {
+            return id;
+          }
+          // Se não tem prefixo, adicionar
+          return prefix ? `${prefix}${id}` : id;
+        });
+        selected[key] = new Set(prefixedIds);
+      }
     }
   }
   return selected;
@@ -63,11 +70,20 @@ const convertFiltersForBackend = (
 ): Record<string, string[]> => {
   const backendFilters: Record<string, string[]> = {};
 
-  for (const [sectionId, selectedIds] of Object.entries(selectedFilters)) {
-    if (selectedIds.size > 0) {
-      // Converter IDs prefixados para IDs numéricos para o backend
-      const numericIds = Array.from(selectedIds).map(extractNumericId);
-      backendFilters[sectionId] = numericIds;
+  for (const [sectionId, selectedValue] of Object.entries(selectedFilters)) {
+    if (selectedValue) {
+      if (sectionId === "conditions") {
+        // Para condições (radio button), enviar como array com um elemento
+        backendFilters[sectionId] = [selectedValue as string];
+      } else {
+        // Para outras seções (checkbox), converter Set para array
+        const selectedIds = selectedValue as Set<string>;
+        if (selectedIds.size > 0) {
+          // Converter IDs prefixados para IDs numéricos para o backend
+          const numericIds = Array.from(selectedIds).map(extractNumericId);
+          backendFilters[sectionId] = numericIds;
+        }
+      }
     }
   }
 
@@ -199,11 +215,24 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
     (sectionId: string, optionId: string) => {
       setSelectedFilters((prev) => {
         const newSelected = { ...prev };
-        const sectionSet = new Set(newSelected[sectionId] || []);
+        const sectionSet = new Set(
+          (newSelected[sectionId] as Set<string>) || []
+        );
         if (sectionSet.has(optionId)) sectionSet.delete(optionId);
         else sectionSet.add(optionId);
         if (sectionSet.size === 0) delete newSelected[sectionId];
         else newSelected[sectionId] = sectionSet;
+        return newSelected;
+      });
+    },
+    []
+  );
+
+  const handleRadioChange = useCallback(
+    (sectionId: string, optionId: string) => {
+      setSelectedFilters((prev) => {
+        const newSelected = { ...prev };
+        newSelected[sectionId] = optionId;
         return newSelected;
       });
     },
@@ -242,10 +271,13 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
   }, [selectedFilters, onFiltersChange]);
 
   const activeFiltersCount = useMemo(() => {
-    return Object.values(selectedFilters).reduce(
-      (acc, currentSet) => acc + currentSet.size,
-      0
-    );
+    return Object.values(selectedFilters).reduce((acc, currentValue) => {
+      if (typeof currentValue === "string") {
+        return acc + 1; // Radio button selecionado conta como 1
+      } else {
+        return acc + currentValue.size; // Set de checkboxes
+      }
+    }, 0);
   }, [selectedFilters]);
 
   return (
@@ -263,7 +295,12 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
       </div>
 
       {filterConfig.map((section) => {
-        const selectedCount = selectedFilters[section.id]?.size || 0;
+        const selectedCount =
+          section.id === "conditions"
+            ? selectedFilters[section.id]
+              ? 1
+              : 0
+            : (selectedFilters[section.id] as Set<string>)?.size || 0;
 
         if (isMobile) {
           return (
@@ -272,14 +309,27 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
               title={section.title}
               badgeCount={selectedCount}
             >
-              <CheckboxFilterGroup
-                options={section.options}
-                selectedIds={selectedFilters[section.id] || new Set()}
-                onCheckboxChange={(optionId) =>
-                  handleCheckboxChange(section.id, optionId)
-                }
-                sectionId={section.id}
-              />
+              {section.id === "conditions" ? (
+                <RadioFilterGroup
+                  options={section.options}
+                  selectedId={(selectedFilters[section.id] as string) || null}
+                  onRadioChange={(optionId) =>
+                    handleRadioChange(section.id, optionId)
+                  }
+                  sectionId={section.id}
+                />
+              ) : (
+                <CheckboxFilterGroup
+                  options={section.options}
+                  selectedIds={
+                    (selectedFilters[section.id] as Set<string>) || new Set()
+                  }
+                  onCheckboxChange={(optionId) =>
+                    handleCheckboxChange(section.id, optionId)
+                  }
+                  sectionId={section.id}
+                />
+              )}
             </FilterAccordion>
           );
         }
@@ -314,14 +364,27 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
               )}
             </div>
             <div className="space-y-2">
-              <CheckboxFilterGroup
-                options={displayOptions}
-                selectedIds={selectedFilters[section.id] || new Set()}
-                onCheckboxChange={(optionId) =>
-                  handleCheckboxChange(section.id, optionId)
-                }
-                sectionId={section.id}
-              />
+              {section.id === "conditions" ? (
+                <RadioFilterGroup
+                  options={displayOptions}
+                  selectedId={(selectedFilters[section.id] as string) || null}
+                  onRadioChange={(optionId) =>
+                    handleRadioChange(section.id, optionId)
+                  }
+                  sectionId={section.id}
+                />
+              ) : (
+                <CheckboxFilterGroup
+                  options={displayOptions}
+                  selectedIds={
+                    (selectedFilters[section.id] as Set<string>) || new Set()
+                  }
+                  onCheckboxChange={(optionId) =>
+                    handleCheckboxChange(section.id, optionId)
+                  }
+                  sectionId={section.id}
+                />
+              )}
             </div>
             {canExpand && (
               <button

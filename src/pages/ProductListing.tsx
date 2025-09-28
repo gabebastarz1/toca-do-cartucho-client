@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import FilterTopBar from "../components/FilterTopBar";
 import FilterSidebar from "../components/FilterSidebar";
 import ProductGrid from "../components/ProductGrid";
 import Pagination from "../components/Pagination";
+import OrderingSelector from "../components/OrderingSelector";
 import { Menu } from "lucide-react";
 import { useAdvertisements } from "../hooks/useAdvertisements";
 import { mapAdvertisementsToProducts } from "../utils/advertisementMapper";
@@ -20,6 +21,7 @@ import Head from "@/components/Head";
 
 const ProductListing: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Obter dados de categorias para validação (removido - não mais necessário)
@@ -29,7 +31,14 @@ const ProductListing: React.FC = () => {
     {}
   );
   const [priceRange, setPriceRange] = useState({ min: "", max: "" });
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(""); // Estado interno para digitação
+  const [confirmedSearchQuery, setConfirmedSearchQuery] = useState(""); // Estado confirmado para filtros
+
+  // ✅ NOVO: Estado para ordenação
+  const [currentOrdering, setCurrentOrdering] = useState({
+    value: "Newest",
+    label: "Mais Novo",
+  });
 
   // Função para criar filtros iniciais baseados na URL (removida - não mais necessária)
 
@@ -44,11 +53,12 @@ const ProductListing: React.FC = () => {
     totalPages,
     setFilters: setBackendFilters,
     setPagination,
+    setOrdering,
     fetchAdvertisements,
   } = useAdvertisements({
     initialFilters: { status: "Active" }, // Apenas status inicial, filtros serão aplicados via useEffect
     initialPagination: { page: 1, pageSize: 12 },
-    initialOrdering: { orderBy: "createdAt", orderDirection: "desc" },
+    initialOrdering: { ordering: "Newest" },
   });
 
   // Converter anúncios para produtos
@@ -56,13 +66,76 @@ const ProductListing: React.FC = () => {
     return mapAdvertisementsToProducts(advertisements);
   }, [advertisements]);
 
+  // Inicializar searchQuery a partir dos parâmetros da URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const searchParam = urlParams.get("search");
+    if (searchParam) {
+      const decodedSearch = decodeURIComponent(searchParam);
+      setSearchQuery(decodedSearch);
+      setConfirmedSearchQuery(decodedSearch); // Também inicializar o estado confirmado
+    }
+  }, [location.search]);
+
   // Refs para evitar loop (removido - não mais necessário)
 
   // Atualizar estado quando a URL mudar (removido - usando comunicação direta)
 
-  const handleProductClick = (productId: string) =>
-    navigate(`/anuncio/${productId}`);
+  const handleProductClick = (
+    productId: string,
+    parentAdvertisementId?: number
+  ) => {
+    if (parentAdvertisementId) {
+      // ✅ Se é uma variação, redirecionar para o anúncio principal com a variação pré-selecionada
+      navigate(`/anuncio/${parentAdvertisementId}?variation=${productId}`);
+    } else {
+      // ✅ Se é um anúncio principal, redirecionar normalmente
+      navigate(`/anuncio/${productId}`);
+    }
+  };
   const handleProfileClick = () => navigate("/perfil");
+
+  // Callback para limpar a pesquisa
+  const handleClearSearch = useCallback(() => {
+    console.log("ProductListing - Limpando pesquisa");
+    setSearchQuery("");
+    setConfirmedSearchQuery(""); // Também limpar o estado confirmado
+    // Também limpar a URL
+    navigate("/produtos", { replace: true });
+  }, [navigate]);
+
+  // Callback para mudanças na pesquisa (apenas atualiza o estado interno)
+  const handleSearchChange = useCallback((value: string) => {
+    console.log("ProductListing - Mudança na pesquisa:", value);
+    setSearchQuery(value);
+    // NÃO atualiza confirmedSearchQuery aqui - só na confirmação
+  }, []);
+
+  // ✅ NOVO: Callback para mudança de ordenação
+  const handleOrderingChange = useCallback(
+    (ordering: { value: string; label: string }) => {
+      console.log("ProductListing - Mudando ordenação:", ordering);
+      setCurrentOrdering(ordering);
+
+      // Aplicar nova ordenação no hook
+      setOrdering({
+        ordering: ordering.value,
+      });
+    },
+    [setOrdering]
+  );
+
+  // Callback para confirmar a pesquisa (quando usuário pressiona Enter)
+  const handleSearchConfirm = useCallback(() => {
+    console.log("ProductListing - Confirmando pesquisa:", searchQuery);
+    setConfirmedSearchQuery(searchQuery);
+    // Atualizar a URL com a pesquisa confirmada
+    if (searchQuery.trim()) {
+      navigate(`/produtos?search=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      navigate("/produtos");
+    }
+  }, [searchQuery, navigate]);
 
   // Atualizar filtros e aplicar ao backend
   const handleFiltersChange = useCallback(
@@ -105,15 +178,18 @@ const ProductListing: React.FC = () => {
   useEffect(() => {
     console.log("=== FILTER EFFECT TRIGGERED ===");
     console.log("activeFilters:", activeFilters);
-    console.log("searchQuery:", searchQuery);
+    console.log("confirmedSearchQuery:", confirmedSearchQuery);
 
     const frontendFilters: FrontendFilters = activeFilters as FrontendFilters;
-    const mapped = mapFrontendFiltersToBackend(frontendFilters, searchQuery);
+    const mapped = mapFrontendFiltersToBackend(
+      frontendFilters,
+      confirmedSearchQuery
+    );
     const cleaned = cleanBackendFilters(mapped);
 
     console.log("=== FILTER DEBUG ===");
     console.log("Frontend filters:", frontendFilters);
-    console.log("Search query in backend filters:", searchQuery);
+    console.log("Search query in backend filters:", confirmedSearchQuery);
     console.log("Mapped backend filters:", mapped);
     console.log("Cleaned backend filters:", cleaned);
     console.log("Conditions filter:", frontendFilters.conditions);
@@ -124,11 +200,12 @@ const ProductListing: React.FC = () => {
     // Garantir que sempre filtre apenas produtos ativos
     const finalFilters = { ...cleaned, status: "Active" };
     console.log("Setting backend filters:", finalFilters);
+    console.log("Aguardando resposta da API...");
 
     // Evitar atualizações desnecessárias
     setBackendFilters(finalFilters);
     console.log("=== FILTER EFFECT COMPLETED ===");
-  }, [activeFilters, searchQuery, setBackendFilters]);
+  }, [activeFilters, confirmedSearchQuery, setBackendFilters]);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -153,10 +230,14 @@ const ProductListing: React.FC = () => {
             showUserMenu
             userName="Nome Sobrenome"
             onProfileClick={handleProfileClick}
+            searchValue={searchQuery}
+            onSearchChange={handleSearchChange}
+            onSearchConfirm={handleSearchConfirm}
           />
           <FilterTopBar
             currentFilters={activeFilters}
             onFiltersChange={handleFiltersChange}
+            onClearSearch={handleClearSearch}
           />
         </div>
 
@@ -175,28 +256,49 @@ const ProductListing: React.FC = () => {
               </div>
 
               <div className="flex-1 min-w-0">
-                <div className="lg:hidden mb-4">
-                  <button
-                    onClick={toggleSidebar}
-                    className="flex items-center space-x-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200"
-                  >
-                    <Menu className="w-5 h-5" />
-                    <span>Filtros</span>
-                  </button>
+                <div className="md:hidden ">
+                  <div className="flex items-center justify-between text-sm text-gray-900">
+                    <button
+                      onClick={toggleSidebar}
+                      className="flex items-center space-x-2 px-4 py-2"
+                    >
+                      <span>Filtros</span>
+                      <img src="../public/filter.svg" />
+                    </button>
+
+                    {/* OrderingSelector no mobile */}
+                    <OrderingSelector
+                      currentOrdering={currentOrdering}
+                      onOrderingChange={handleOrderingChange}
+                    />
+                  </div>
                 </div>
 
                 <div className="mb-4">
                   <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
+                    {/* ✅ NOVO: Ocultar quantidade de produtos no mobile */}
+                    <div className="text-sm text-gray-600 hidden md:block">
                       {loading ? (
                         <span>Carregando produtos...</span>
-                      ) : searchQuery ? (
+                      ) : confirmedSearchQuery ? (
                         <span>
-                          {totalCount} resultado(s) para "{searchQuery}"
+                          {totalCount} resultado(s) para "{confirmedSearchQuery}
+                          "
                         </span>
                       ) : (
                         <span>{totalCount} produto(s) encontrado(s)</span>
                       )}
+                    </div>
+
+                    {/* DESKTOP*/}
+                    <div className="hidden md:block">
+                      <div className="flex items-center">
+                      <p className="text-sm text-gray-600">Ordenar por:</p>
+                      <OrderingSelector
+                        currentOrdering={currentOrdering}
+                        onOrderingChange={handleOrderingChange}
+                      />
+                      </div>
                     </div>
                   </div>
                 </div>

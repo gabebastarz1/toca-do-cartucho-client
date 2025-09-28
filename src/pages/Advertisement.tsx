@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import FilterTopBar from "../components/FilterTopBar";
 import Footer from "../components/Footer";
@@ -10,6 +10,7 @@ import { advertisementService } from "../services/advertisementService";
 
 const Advertisement: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [advertisement, setAdvertisement] = useState<AdvertisementDTO | null>(
     null
   );
@@ -85,7 +86,21 @@ const Advertisement: React.FC = () => {
           <AdDetails advertisement={advertisement || undefined} />
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <RecommendedProducts />
+          <RecommendedProducts
+            currentAdvertisement={advertisement || undefined}
+            onProductClick={(
+              productId: string,
+              parentAdvertisementId?: number
+            ) => {
+              if (parentAdvertisementId) {
+                navigate(
+                  `/anuncio/${parentAdvertisementId}?variation=${productId}`
+                );
+              } else {
+                navigate(`/anuncio/${productId}`);
+              }
+            }}
+          />
         </div>
       </div>
 

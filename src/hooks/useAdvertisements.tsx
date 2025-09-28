@@ -39,7 +39,7 @@ export const useAdvertisements = (
   const {
     initialFilters = {},
     initialPagination = { page: 1, pageSize: 12 },
-    initialOrdering = { orderBy: "createdAt", orderDirection: "desc" },
+    initialOrdering = { ordering: "Newest" },
     autoFetch = true,
   } = options;
 
@@ -68,25 +68,28 @@ export const useAdvertisements = (
         ordering
       );
 
-      console.log("=== API RESPONSE DEBUG ===");
-      console.log("API Response:", response);
+      {
+        /*console.log("=== API RESPONSE DEBUG ===");
+      console.log("API Response completa:", response);
       console.log("Filters sent to API:", filters);
+      console.log("Pagination sent to API:", pagination);
+      console.log("Ordering sent to API:", ordering);
       console.log(
         "Number of advertisements:",
         response?.advertisements?.length || 0
       );
-      if (response?.advertisements?.length > 0) {
-        console.log("First advertisement sample:", response.advertisements[0]);
-        console.log(
-          "Advertisement isSale:",
-          response.advertisements[0]?.isSale
-        );
-        console.log(
-          "Advertisement isTrade:",
-          response.advertisements[0]?.isTrade
-        );
+      console.log("Total count from API:", response?.totalCount || 0);
+      console.log("Page from API:", response?.page || 0);
+      console.log("Page size from API:", response?.pageSize || 0);
+      console.log("Total pages from API:", response?.totalPages || 0);*/
       }
-      console.log("===========================");
+
+      if (response?.advertisements?.length > 0) {
+        //console.log("First advertisement sample:", response.advertisements[0]);
+        //console.log("Advertisement sale:", response.advertisements[0]?.sale);
+        //console.log("Advertisement trade:", response.advertisements[0]?.trade);
+      }
+      //console.log("===========================");
 
       // Verificar se a resposta tem a estrutura esperada
       if (response && Array.isArray(response.advertisements)) {
@@ -96,13 +99,13 @@ export const useAdvertisements = (
         setPageSize(response.pageSize || 12);
         setTotalPages(response.totalPages || 0);
       } else {
-        console.warn("Unexpected API response structure:", response);
+        //console.warn("Unexpected API response structure:", response);
         setAdvertisements([]);
         setTotalCount(0);
         setTotalPages(0);
       }
     } catch (err) {
-      console.error("Error fetching advertisements:", err);
+      //console.error("Error fetching advertisements:", err);
       setError(
         err instanceof Error ? err.message : "Erro ao carregar anúncios"
       );
@@ -144,7 +147,7 @@ export const useAdvertisements = (
     if (autoFetch) {
       fetchAdvertisements();
     }
-  }, [filters, pagination, ordering, autoFetch]); // Usar dependências diretas ao invés de fetchAdvertisements
+  }, [filters, pagination, ordering, autoFetch, fetchAdvertisements]);
 
   return {
     advertisements,
