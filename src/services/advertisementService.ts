@@ -19,6 +19,7 @@ export interface AdvertisementFilteringDTO {
   languageAudioIds?: number[];
   languageSubtitleIds?: number[];
   languageInterfaceIds?: number[];
+  regionIds?: number[];
   isTrade?: boolean;
   isSale?: boolean;
 }
@@ -29,8 +30,7 @@ export interface AdvertisementForPaginationDTO {
 }
 
 export interface AdvertisementOrdering {
-  orderBy?: string;
-  orderDirection?: 'asc' | 'desc';
+  ordering?: string;
 }
 
 export interface AdvertisementResponse {
@@ -76,16 +76,17 @@ class AdvertisementService {
       }
 
       // Adicionar ordenação
-      if (ordering) {
-        if (ordering.orderBy) {
-          params.append('orderBy', ordering.orderBy);
-        }
-        if (ordering.orderDirection) {
-          params.append('orderDirection', ordering.orderDirection);
-        }
+      if (ordering && ordering.ordering) {
+        params.append('ordering', ordering.ordering);
       }
 
       const response = await api.get(`${this.baseUrl}?${params.toString()}`);
+      
+      {/*console.log("=== RAW API RESPONSE ===");
+      console.log("URL chamada:", `${this.baseUrl}?${params.toString()}`);
+      console.log("Response status:", response.status);
+      console.log("Response data completa:", response.data);
+      console.log("=========================");*/}
       
       // A API retorna um objeto com advertisements, page, pageSize, totalNumberOfPages
       const data = response.data;
@@ -96,21 +97,12 @@ class AdvertisementService {
         const currentPageSize = data.pageSize || pagination?.pageSize || 12;
         const totalPages = data.totalNumberOfPages || Math.ceil(data.advertisements.length / currentPageSize);
         
-        // Calcular total count baseado no total de páginas e página atual
-        // Se estamos na última página, usar o tamanho atual do array
-        // Caso contrário, estimar baseado no total de páginas
-        let estimatedTotalCount;
-        if (currentPage === totalPages) {
-          // Última página: total = (páginas anteriores * pageSize) + itens nesta página
-          estimatedTotalCount = ((totalPages - 1) * currentPageSize) + data.advertisements.length;
-        } else {
-          // Não é a última página: estimar baseado no total de páginas
-          estimatedTotalCount = totalPages * currentPageSize;
-        }
+        // Usar o totalNumberOfAdvertisements retornado pela API diretamente
+        const totalCount = data.totalNumberOfAdvertisements || 0;
         
         return {
           advertisements: data.advertisements,
-          totalCount: estimatedTotalCount,
+          totalCount: totalCount,
           page: currentPage,
           pageSize: currentPageSize,
           totalPages: totalPages
@@ -130,9 +122,8 @@ class AdvertisementService {
       
       // Se já tem a estrutura esperada, retornar como está
       return data;
-    } catch (error) {
-      console.error('Erro ao buscar anúncios:', error);
-      throw error;
+    } catch (error) { 
+      return error;
     }
   }
 

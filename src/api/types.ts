@@ -141,6 +141,26 @@ export interface LanguageSupportDTO {
   description?: string;
 }
 
+export interface UserAddressDTO {
+  id: number;
+  isPrimary: boolean;
+  userId: string;
+  address: AddressDTO;
+  createdAt: string;
+}
+
+export interface AddressDTO {
+  id: number;
+  zipCode: string;
+  street: string;
+  number: string;
+  complement?: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  createdAt: string;
+}
+
 export interface UserDTO {
   id: string;
   nickName: string;
@@ -148,6 +168,9 @@ export interface UserDTO {
   firstName?: string;
   lastName?: string;
   slug: string;
+  phoneNumber?: string;
+  createdAt?: string; // ✅ NOVO: Data de criação do usuário
+  addresses?: UserAddressDTO[]; // ✅ NOVO: Endereços do usuário
   roles?: RoleDTO[];
   favoriteAdvertisements?: AdvertisementDTO[];
 }

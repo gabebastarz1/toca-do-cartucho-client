@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import NavigationHistoryBar from "./NavigationHistoryBar";
 import ProductImageGallery from "./ProductImageGallery";
 import ProductInfo from "./ProductInfo";
@@ -6,7 +6,7 @@ import SellerInfo from "./SellerInfo";
 import ProductDescription from "./ProductDescription";
 import ProductVariations from "./ProductVariations";
 import ProductCharacteristics from "./ProductCharacteristics";
-import { AdvertisementDTO } from "../api/types";
+import { AdvertisementDTO, AdvertisementImageDTO } from "../api/types";
 
 interface AdDetailsProps {
   advertisement?: AdvertisementDTO;
@@ -77,10 +77,43 @@ Produto sem garantia.`,
 };
 
 const AdDetails: React.FC<AdDetailsProps> = ({ advertisement }) => {
-  // Criar mock data compatível com AdvertisementDTO se não houver dados reais
-
   // Usar dados reais se disponíveis, senão usar mock compatível
   const adData = advertisement;
+
+  // ✅ NOVO: Coletar todas as imagens do anúncio principal e suas variações
+  const allImages = useMemo(() => {
+    if (!adData) return [];
+
+    const images: AdvertisementImageDTO[] = [];
+
+    // Adicionar imagens do anúncio principal
+    if (adData.images && Array.isArray(adData.images)) {
+      images.push(...adData.images);
+    }
+
+    // Adicionar imagens das variações
+    if (adData.variations && Array.isArray(adData.variations)) {
+      adData.variations.forEach((variation) => {
+        if (variation.images && Array.isArray(variation.images)) {
+          images.push(...variation.images);
+        }
+      });
+    }
+
+    console.log("=== ALL IMAGES COLLECTED ===");
+    console.log("Main ad images:", adData.images?.length || 0);
+    console.log(
+      "Variation images:",
+      adData.variations?.reduce(
+        (total, v) => total + (v.images?.length || 0),
+        0
+      ) || 0
+    );
+    console.log("Total images:", images.length);
+    console.log("===========================");
+
+    return images;
+  }, [adData]);
 
   // Criar breadcrumb dinâmico baseado no anúncio
   const createBreadcrumb = () => {
@@ -88,8 +121,8 @@ const AdDetails: React.FC<AdDetailsProps> = ({ advertisement }) => {
       const breadcrumbs = ["Voltar"];
 
       // Adicionar plataforma do jogo se disponível
-      if (adData.game?.platform?.name) {
-        breadcrumbs.push(adData.game.platform.name);
+      if (adData.game?.name) {
+        breadcrumbs.push("Plataforma"); // Usar texto genérico já que platform não existe
       }
 
       // Adicionar gêneros se disponível
@@ -138,9 +171,7 @@ const AdDetails: React.FC<AdDetailsProps> = ({ advertisement }) => {
                 {/* Galeria de Imagens */}
                 <div className="w-full md:w-2/3">
                   <ProductImageGallery
-                    images={
-                      Array.isArray(adData.images) ? adData.images : undefined
-                    }
+                    images={allImages}
                     fallbackImage="/logo.svg"
                   />
                 </div>
@@ -171,7 +202,7 @@ const AdDetails: React.FC<AdDetailsProps> = ({ advertisement }) => {
         {/* Descrição do Produto */}
         <div className="w-full">
           <ProductDescription advertisement={adData} />
-          <ProductCharacteristics />
+          <ProductCharacteristics advertisement={adData} />
         </div>
       </div>
     </>

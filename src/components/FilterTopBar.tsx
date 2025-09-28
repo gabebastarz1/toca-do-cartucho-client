@@ -6,11 +6,13 @@ import { useCategories } from "./CategoryDataProvider";
 interface FilterTopBarProps {
   currentFilters?: Record<string, string[]>; // Para manter filtros da sidebar
   onFiltersChange?: (filters: Record<string, string[]>) => void; // Usar o mesmo callback do FilterSidebar
+  onClearSearch?: () => void; // Callback para limpar a pesquisa
 }
 
 const FilterTopBar: React.FC<FilterTopBarProps> = ({
   currentFilters = {},
   onFiltersChange,
+  onClearSearch,
 }) => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -57,31 +59,39 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
         categoryId
       );
 
-      // Criar novos filtros baseados nos filtros atuais
-      const newFilters = { ...currentFilters };
+      // LIMPAR TODOS OS FILTROS E APLICAR APENAS O NOVO FILTRO
+      const newFilters: Record<string, string[]> = {};
 
       if (categoryId === "all") {
-        // Limpar filtros de gênero e tema
-        delete newFilters.genre;
-        delete newFilters.theme;
+        // Para "All", manter apenas filtros vazios (status=Active será aplicado automaticamente)
+        console.log(
+          "FilterTopBar - Limpando todos os filtros (All selecionado)"
+        );
       } else {
         // Verificar se é um gênero ou tema válido
         const genre = genres.find((g) => g.id === categoryId);
         const theme = themes.find((t) => t.id === categoryId);
 
         if (genre) {
-          // Limpar tema e aplicar gênero
-          delete newFilters.theme;
+          // Aplicar apenas o gênero selecionado
           newFilters.genre = [categoryId];
+          console.log("FilterTopBar - Aplicando gênero:", categoryId);
         } else if (theme) {
-          // Limpar gênero e aplicar tema
-          delete newFilters.genre;
+          // Aplicar apenas o tema selecionado
           newFilters.theme = [categoryId];
+          console.log("FilterTopBar - Aplicando tema:", categoryId);
         } else {
-          // Se não é nem gênero nem tema, limpar ambos
-          delete newFilters.genre;
-          delete newFilters.theme;
+          // Se não é nem gênero nem tema, manter filtros vazios
+          console.log(
+            "FilterTopBar - Categoria não reconhecida, limpando filtros"
+          );
         }
+      }
+
+      // Limpar a pesquisa também
+      if (onClearSearch) {
+        console.log("FilterTopBar - Limpando pesquisa");
+        onClearSearch();
       }
 
       // Verificar se os filtros realmente mudaram antes de chamar o callback

@@ -16,11 +16,13 @@ interface Product {
   genre?: string;
   theme?: string;
   saleType?: "sale" | "trade" | "sale-trade";
+  sellerId?: string;
+  parentAdvertisementId?: number; // ✅ NOVO: ID do anúncio pai para variações
 }
 
 interface ProductGridProps {
   products: Product[];
-  onProductClick?: (productId: string) => void;
+  onProductClick?: (productId: string, parentAdvertisementId?: number) => void;
   loading?: boolean;
 }
 
@@ -89,7 +91,9 @@ const ProductGrid: React.FC<ProductGridProps> = ({
         <ProductCard
           key={product.id}
           {...product}
-          onClick={() => onProductClick?.(product.id)}
+          onClick={() =>
+            onProductClick?.(product.id, product.parentAdvertisementId)
+          }
         />
       ))}
     </div>
