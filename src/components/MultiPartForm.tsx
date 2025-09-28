@@ -1167,7 +1167,7 @@ const MultiPartForm = () => {
               onBack={prevStep}
             />
             <div
-              className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-6`}
+              className={`${isMobile ? "p-4" : "p-6"} space-y-6`}
             >
               {/* Lista de variações existentes */}
               <div className="space-y-4">
@@ -2885,6 +2885,7 @@ const MultiPartForm = () => {
                 </div>
               ) : (
                 // =================== BOTÃO DE ADICIONAR ===================
+                <div className="px-6">
                 <button
                   onClick={() => {
                     setVariationData({
@@ -2917,6 +2918,7 @@ const MultiPartForm = () => {
                 >
                   + Adicionar nova variação de troca
                 </button>
+                </div>
               )}
             </div>
           </>

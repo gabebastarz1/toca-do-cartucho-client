@@ -23,7 +23,7 @@ interface ProductCardProps {
   onClick?: () => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({
+const RecommendedProductCard: React.FC<ProductCardProps> = ({
   title,
   image,
   rating,
@@ -146,90 +146,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
     >
       {/* ✅ NOVO: Layout responsivo - Horizontal no mobile, Vertical no desktop */}
 
-      {/* Mobile: Layout horizontal */}
-      <div className="flex items-center md:hidden">
-        {/* Imagem à esquerda */}
-        <div className="w-24 h-24 bg-gray-100 overflow-hidden rounded-l-lg flex-shrink-0 flex items-center justify-center">
-          {image && image.trim() !== "" ? (
-            <img
-              src={image}
-              alt={title}
-              className="max-w-full max-h-full object-contain bg-white"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gray-200">
-              <span className="text-gray-400 text-xs">Sem imagem</span>
-            </div>
-          )}
-        </div>
-
-        {/* Conteúdo à direita */}
-        <div className="flex-1 p-3 min-w-0">
-          {/* Título */}
-          <h3 className="text-sm font-medium text-gray-900 mb-1 line-clamp-2">
-            {title}
-          </h3>
-
-          {/* Avaliação */}
-          <div className="flex items-center space-x-1 mb-1">
-            <div className="flex items-center">
-              {renderStars(displayRating)}
-            </div>
-            <span className="text-xs text-gray-600">
-              {displayRating.toFixed(1)}
-            </span>
-            <span className="text-xs text-gray-400">
-              ({displayReviewCount})
-            </span>
-          </div>
-
-          {/* Preços */}
-          {currentPrice > 0 && (
-            <div className="mb-2">
-              {originalPrice && (
-                <span className="text-xs text-gray-400 line-through mr-2">
-                  {formatPrice(originalPrice)}
-                </span>
-              )}
-              <span className="flex items-center text-sm font-semibold text-gray-900">
-                {formatPrice(currentPrice)}
-                {discount && (
-                  <span className="text-[#47884F] text-xs px-1 py-0.5 font-normal ml-1">
-                    {discount}% OFF
-                  </span>
-                )}
-              </span>
-            </div>
-          )}
-
-          {/* Etiquetas */}
-          <div className="flex flex-wrap gap-1 mb-2">
-            <span
-              className={`px-1.5 py-0.5 text-xs rounded-full border ${getConditionColor(
-                condition
-              )}`}
-            >
-              {getConditionLabel(condition)}
-            </span>
-            <span
-              className={`px-1.5 py-0.5 text-xs rounded-full border ${getTypeColor(
-                type
-              )}`}
-            >
-              {type === "retro" ? "RETRÔ" : "REPRÔ"}
-            </span>
-          </div>
-
-          {/* Localização */}
-          <div className="flex items-center text-xs text-gray-500">
-            <MapPin className="w-3 h-3 mr-1" />
-            <span className="truncate">{location}</span>
-          </div>
-        </div>
-      </div>
+     
 
       {/* Desktop: Layout vertical */}
-      <div className="hidden md:block">
+      <div className="block">
         {/* Imagem do produto */}
         <div className="relative h-48 bg-gray-100 overflow-hidden rounded-t-lg">
           {image && image.trim() !== "" ? (
@@ -329,4 +249,4 @@ const ProductCard: React.FC<ProductCardProps> = ({
   );
 };
 
-export default ProductCard;
+export default RecommendedProductCard;

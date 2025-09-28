@@ -999,7 +999,7 @@ const MultiPartFormSaleOnly = () => {
               onBack={prevStep}
             />
             <div
-              className={`${isMobile ? "p-4 pt-24 px-10" : "p-6"} space-y-6`}
+              className={`${isMobile ? "p-4" : "p-6"} space-y-6`}
             >
               {/* Lista de variações existentes */}
               <div className="space-y-4">
@@ -1029,7 +1029,7 @@ const MultiPartFormSaleOnly = () => {
                       <div
                         key={`editing-${variation.id}`}
                         className={`bg-[#EDECF7] border border-gray-300 rounded-lg ${
-                          isMobile ? "p-4" : "p-6"
+                          isMobile ? "p-4  w-full" : "p-6"
                         } space-y-4 animate-fadeIn`}
                       >
                         <div className="flex items-center justify-between border-b pb-3">
@@ -1591,7 +1591,7 @@ const MultiPartFormSaleOnly = () => {
                 // =================== FORMULÁRIO DE NOVA VARIAÇÃO ===================
                 <div
                   className={`bg-[#EDECF7] border border-gray-300 rounded-lg ${
-                    isMobile ? "p-4" : "p-6"
+                    isMobile ? "p-4 w-full" : "p-6"
                   } space-y-4 animate-fadeIn`}
                 >
                   <div className="flex items-center justify-between border-b pb-3">
@@ -2039,6 +2039,7 @@ const MultiPartFormSaleOnly = () => {
                 </div>
               ) : (
                 // =================== BOTÃO DE ADICIONAR ===================
+                <div className="px-6">
                 <button
                   onClick={() => {
                     setVariationData({
@@ -2062,6 +2063,7 @@ const MultiPartFormSaleOnly = () => {
                 >
                   + Adicionar nova variação
                 </button>
+                </div>
               )}
             </div>
           </>

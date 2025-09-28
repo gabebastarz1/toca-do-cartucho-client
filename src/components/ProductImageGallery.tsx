@@ -70,16 +70,11 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
     if (variationId) {
       // Se é imagem de uma variação, adicionar/atualizar parâmetro variation
       urlParams.set("variation", variationId);
-      console.log("=== IMAGE CLICKED - VARIATION ===");
-      console.log("imageIndex:", imageIndex);
-      console.log("variationId:", variationId);
-      console.log("Updating URL with variation:", variationId);
+
     } else {
       // Se é imagem do anúncio principal, remover parâmetro variation
       urlParams.delete("variation");
-      console.log("=== IMAGE CLICKED - MAIN AD ===");
-      console.log("imageIndex:", imageIndex);
-      console.log("Removing variation from URL");
+     
     }
 
     const newUrl = `${location.pathname}${

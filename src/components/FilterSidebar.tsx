@@ -6,9 +6,13 @@ import { useIsMobile } from "../hooks/useIsMobile";
 import FilterAccordion from "./FilterSidebar/FilterAccordion";
 import CheckboxFilterGroup from "./FilterSidebar/CheckboxFilterGroup";
 import RadioFilterGroup from "./FilterSidebar/RadioFilterGroup";
+import PriceFilterGroup from "./FilterSidebar/PriceFilterGroup";
 
 // --- Tipos ---
-type SelectedFilters = Record<string, Set<string> | string>;
+type SelectedFilters = Record<
+  string,
+  Set<string> | string | { min: string; max: string }
+>;
 
 interface FilterSidebarProps {
   onFiltersChange?: (filters: Record<string, string[]>) => void;
@@ -19,7 +23,8 @@ interface FilterSidebarProps {
 
 // --- Funções Helper ---
 const initializeSelectedFilters = (
-  initialFilters: Record<string, string[]> = {}
+  initialFilters: Record<string, string[]> = {},
+  initialPriceRange?: { min: string; max: string }
 ): SelectedFilters => {
   const selected: SelectedFilters = {};
 
@@ -55,6 +60,15 @@ const initializeSelectedFilters = (
       }
     }
   }
+
+  // Inicializar filtro de preço se fornecido
+  if (initialPriceRange && (initialPriceRange.min || initialPriceRange.max)) {
+    selected.price = {
+      min: initialPriceRange.min || "",
+      max: initialPriceRange.max || "",
+    };
+  }
+
   return selected;
 };
 
@@ -75,6 +89,12 @@ const convertFiltersForBackend = (
       if (sectionId === "conditions") {
         // Para condições (radio button), enviar como array com um elemento
         backendFilters[sectionId] = [selectedValue as string];
+      } else if (sectionId === "price") {
+        // Para preço, converter objeto para array [min, max]
+        const priceRange = selectedValue as { min: string; max: string };
+        if (priceRange.min || priceRange.max) {
+          backendFilters[sectionId] = [priceRange.min, priceRange.max];
+        }
       } else {
         // Para outras seções (checkbox), converter Set para array
         const selectedIds = selectedValue as Set<string>;
@@ -94,12 +114,13 @@ const convertFiltersForBackend = (
 const FilterSidebar: React.FC<FilterSidebarProps> = ({
   onFiltersChange,
   initialFilters,
+  initialPriceRange,
 }) => {
   const isMobile = useIsMobile(1023);
   const { genres, themes, gameModes, languages, regions } =
     useAllCategoryData();
   const [selectedFilters, setSelectedFilters] = useState<SelectedFilters>(() =>
-    initializeSelectedFilters(initialFilters)
+    initializeSelectedFilters(initialFilters, initialPriceRange)
   );
 
   // NOVO: Estado para controlar seções expandidas apenas no desktop
@@ -109,37 +130,28 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
 
   // Sincronizar com initialFilters quando eles mudam (evitando conflitos)
   useEffect(() => {
-    if (!initialFilters) return;
+    if (!initialFilters && !initialPriceRange) return;
 
     // Converter initialFilters para o formato interno do FilterSidebar
-    const newSelectedFilters = initializeSelectedFilters(initialFilters);
+    const newSelectedFilters = initializeSelectedFilters(
+      initialFilters,
+      initialPriceRange
+    );
 
     // Verificar se os filtros realmente mudaram para evitar loops
-    const currentFiltersString = JSON.stringify(
-      Object.fromEntries(
-        Object.entries(selectedFilters).map(([key, set]) => [
-          key,
-          Array.from(set).sort(),
-        ])
-      )
-    );
-    const newFiltersString = JSON.stringify(
-      Object.fromEntries(
-        Object.entries(newSelectedFilters).map(([key, set]) => [
-          key,
-          Array.from(set).sort(),
-        ])
-      )
-    );
+    const currentFiltersString = JSON.stringify(selectedFilters);
+    const newFiltersString = JSON.stringify(newSelectedFilters);
 
     if (currentFiltersString !== newFiltersString) {
       console.log(
         "FilterSidebar - Sincronizando com initialFilters:",
-        initialFilters
+        initialFilters,
+        "initialPriceRange:",
+        initialPriceRange
       );
       setSelectedFilters(newSelectedFilters);
     }
-  }, [initialFilters]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initialFilters, initialPriceRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filterConfig = useMemo(
     () => [
@@ -170,6 +182,11 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
           { id: "retro", label: "Retrô" },
           { id: "repro", label: "Reprô" },
         ],
+      },
+      {
+        id: "price",
+        title: "Preço",
+        type: "price",
       },
       {
         id: "theme",
@@ -239,6 +256,21 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
     []
   );
 
+  const handlePriceChange = useCallback(
+    (sectionId: string, min: string, max: string) => {
+      setSelectedFilters((prev) => {
+        const newSelected = { ...prev };
+        if (min || max) {
+          newSelected[sectionId] = { min, max };
+        } else {
+          delete newSelected[sectionId];
+        }
+        return newSelected;
+      });
+    },
+    []
+  );
+
   const clearSectionFilters = useCallback((sectionId: string) => {
     setSelectedFilters((prev) => {
       const newSelected = { ...prev };
@@ -274,9 +306,18 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
     return Object.values(selectedFilters).reduce((acc, currentValue) => {
       if (typeof currentValue === "string") {
         return acc + 1; // Radio button selecionado conta como 1
-      } else {
-        return acc + currentValue.size; // Set de checkboxes
+      } else if (typeof currentValue === "object" && currentValue !== null) {
+        if (Array.isArray(currentValue)) {
+          return acc + currentValue.length; // Array
+        } else if (currentValue instanceof Set) {
+          return acc + currentValue.size; // Set de checkboxes
+        } else if ("min" in currentValue || "max" in currentValue) {
+          // Objeto de preço - conta como 1 se tem valores
+          const priceRange = currentValue as { min: string; max: string };
+          return acc + (priceRange.min || priceRange.max ? 1 : 0);
+        }
       }
+      return acc;
     }, 0);
   }, [selectedFilters]);
 
@@ -295,12 +336,18 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
       </div>
 
       {filterConfig.map((section) => {
-        const selectedCount =
-          section.id === "conditions"
-            ? selectedFilters[section.id]
-              ? 1
-              : 0
-            : (selectedFilters[section.id] as Set<string>)?.size || 0;
+        const selectedCount = (() => {
+          if (section.id === "conditions") {
+            return selectedFilters[section.id] ? 1 : 0;
+          } else if (section.id === "price") {
+            const priceRange = selectedFilters[section.id] as
+              | { min: string; max: string }
+              | undefined;
+            return priceRange && (priceRange.min || priceRange.max) ? 1 : 0;
+          } else {
+            return (selectedFilters[section.id] as Set<string>)?.size || 0;
+          }
+        })();
 
         if (isMobile) {
           return (
@@ -315,6 +362,29 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   selectedId={(selectedFilters[section.id] as string) || null}
                   onRadioChange={(optionId) =>
                     handleRadioChange(section.id, optionId)
+                  }
+                  sectionId={section.id}
+                />
+              ) : section.id === "price" ? (
+                <PriceFilterGroup
+                  minPrice={
+                    (
+                      selectedFilters[section.id] as {
+                        min: string;
+                        max: string;
+                      }
+                    )?.min || ""
+                  }
+                  maxPrice={
+                    (
+                      selectedFilters[section.id] as {
+                        min: string;
+                        max: string;
+                      }
+                    )?.max || ""
+                  }
+                  onPriceChange={(min, max) =>
+                    handlePriceChange(section.id, min, max)
                   }
                   sectionId={section.id}
                 />
@@ -335,7 +405,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
         }
 
         // --- RENDERIZAÇÃO DESKTOP ---
-        const canExpand = section.options.length > 5;
+        const canExpand = section.options && section.options.length > 5;
         const isExpanded = desktopExpanded.has(section.id);
         const displayOptions =
           canExpand && !isExpanded
@@ -370,6 +440,29 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   selectedId={(selectedFilters[section.id] as string) || null}
                   onRadioChange={(optionId) =>
                     handleRadioChange(section.id, optionId)
+                  }
+                  sectionId={section.id}
+                />
+              ) : section.id === "price" ? (
+                <PriceFilterGroup
+                  minPrice={
+                    (
+                      selectedFilters[section.id] as {
+                        min: string;
+                        max: string;
+                      }
+                    )?.min || ""
+                  }
+                  maxPrice={
+                    (
+                      selectedFilters[section.id] as {
+                        min: string;
+                        max: string;
+                      }
+                    )?.max || ""
+                  }
+                  onPriceChange={(min, max) =>
+                    handlePriceChange(section.id, min, max)
                   }
                   sectionId={section.id}
                 />

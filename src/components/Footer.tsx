@@ -19,7 +19,7 @@ const Footer: React.FC<FooterProps> = ({
         <div className="mt-8">
           <button
             onClick={onBackToTop}
-            className="bg-[#2B2560] hover:bg-[#1a1640] w-full py-4 font-semibold transition-colors rounded-lg"
+            className="bg-[#2B2560] hover:bg-[#1a1640] w-full py-4 font-semibold transition-colors"
           >
             VOLTAR AO INICIO
           </button>
@@ -90,7 +90,7 @@ const Footer: React.FC<FooterProps> = ({
                       target="_blank"
                       rel="noopener noreferrer"
                       className="hover:text-white transition-colors"
-                      aria-label="LinkedIn de Gabriel Bestana"
+                      aria-label="LinkedIn de Gabriel Bastarz"
                     >
                       <Linkedin className="w-5 h-5" />
                     </a>

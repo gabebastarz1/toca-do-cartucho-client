@@ -54,14 +54,14 @@ const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1 || loading}
-        className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg border ${
+        className={`flex items-center p-3 text-sm font-medium rounded-lg ${
           currentPage === 1 || loading
-            ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:text-gray-900"
+            ? " text-gray-400  cursor-not-allowed"
+            : "text-gray-700 hover:bg-gray-200 hover:text-gray-900"
         }`}
       >
         <ChevronLeft className="w-4 h-4 mr-1" />
-        Anterior
+        
       </button>
 
       {/* Números das páginas */}
@@ -86,12 +86,12 @@ const Pagination: React.FC<PaginationProps> = ({
               key={pageNumber}
               onClick={() => onPageChange(pageNumber)}
               disabled={loading}
-              className={`px-3 py-2 text-sm font-medium rounded-lg border ${
+              className={`px-3 py-1 text-sm font-medium rounded-lg ${
                 isCurrentPage
-                  ? "bg-purple-600 text-white border-purple-600"
+                  ? "bg-[#4F43AE] text-white border-[#4F43AE]"
                   : loading
-                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:text-gray-900"
+                  ? " text-gray-400  cursor-not-allowed"
+                  : " text-gray-700  hover:bg-gray-200 hover:text-gray-900"
               }`}
             >
               {pageNumber}
@@ -104,13 +104,13 @@ const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages || loading}
-        className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg border ${
+        className={`flex items-center p-3 text-sm font-medium rounded-lg  ${
           currentPage === totalPages || loading
-            ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:text-gray-900"
+            ? " text-gray-400  cursor-not-allowed"
+            : " text-gray-700  hover:bg-gray-200 hover:text-gray-900"
         }`}
       >
-        Próximo
+        
         <ChevronRight className="w-4 h-4 ml-1" />
       </button>
     </div>
