@@ -65,7 +65,7 @@ const RecommendedProducts: React.FC<RecommendedProductsProps> = ({
   const { advertisements, loading, error } = useAdvertisements({
     initialFilters: getRelatedFilters(),
     initialPagination: { page: 1, pageSize: maxProducts },
-    initialOrdering: { orderBy: "createdAt", orderDirection: "desc" },
+    initialOrdering: { ordering: "createdAt" },
     autoFetch: true,
   });
 
@@ -225,7 +225,6 @@ const RecommendedProducts: React.FC<RecommendedProductsProps> = ({
                         product.parentAdvertisementId
                       )
                     }
-                    
                   />
                 ))}
               </div>

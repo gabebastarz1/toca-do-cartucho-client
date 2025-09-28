@@ -83,7 +83,7 @@ export async function convertFormDataToBackend(
   gameLocalizationId?: number,
   languageSupportsIds?: number[],
   getTradeLanguageSupportIds?: (gameId: number, audioLanguage?: string, subtitleLanguage?: string, interfaceLanguage?: string) => Promise<number[]>
-): AdvertisementForCreationDTO {
+): Promise<AdvertisementForCreationDTO> {
   console.log('=== INICIANDO CONVERSÃO DE DADOS ===');
   console.log('FormData recebido:', formData);
   console.log('ReferenceData recebido:', referenceData);

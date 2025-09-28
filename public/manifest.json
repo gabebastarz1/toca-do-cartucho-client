@@ -1,0 +1,69 @@
+{
+  "name": "Toca do Cartucho",
+  "short_name": "Toca do Cartucho",
+  "description": "Plataforma para compra, venda e troca de jogos retrô e colecionáveis",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2b2560",
+  "theme_color": "#2b2560",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "pt-BR",
+  "categories": ["games", "shopping", "entertainment"],
+  "icons": [
+    {
+      "src": "/logo-icon-pwa.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/logo final.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Produtos",
+      "short_name": "Produtos",
+      "description": "Ver todos os produtos disponíveis",
+      "url": "/produtos",
+      "icons": [
+        {
+          "src": "/logo-icon.svg",
+          "sizes": "any"
+        }
+      ]
+    },
+    {
+      "name": "Favoritos",
+      "short_name": "Favoritos",
+      "description": "Ver meus favoritos",
+      "url": "/favoritos",
+      "icons": [
+        {
+          "src": "/logo-icon.svg",
+          "sizes": "any"
+        }
+      ]
+    },
+    {
+      "name": "Vender",
+      "short_name": "Vender",
+      "description": "Criar novo anúncio",
+      "url": "/criar-anuncio",
+      "icons": [
+        {
+          "src": "/logo-icon.svg",
+          "sizes": "any"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

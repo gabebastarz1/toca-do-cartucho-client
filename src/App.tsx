@@ -16,7 +16,7 @@ import About from "./pages/About";
 import Favorites from "./pages/Favorites";
 import { CategoryDataProvider } from "./components/CategoryDataProvider";
 import { AuthProvider } from "./hooks/useAuth";
-import BottomBar from "./components/BottomBar";
+import PWAInstallBanner from "./components/PWAInstallBanner";
 
 import "./App.css";
 
@@ -50,7 +50,8 @@ function App() {
               <Route path="/produtos" element={<ProductListing />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-            <BottomBar />
+
+            <PWAInstallBanner />
           </div>
         </Router>
       </CategoryDataProvider>

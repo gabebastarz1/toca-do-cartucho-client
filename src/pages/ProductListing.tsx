@@ -14,6 +14,7 @@ import {
   FrontendFilters,
 } from "../utils/filterMapper";
 import Footer from "../components/Footer";
+import BottomBar from "@/components/BottomBar";
 import Head from "@/components/Head";
 
 // Removido mockProducts - agora usando dados do backend
@@ -474,7 +475,7 @@ const ProductListing: React.FC = () => {
                 />
                 <div className="mt-6">
                   <button
-                    className="w-full bg-[#4F378B] text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-800 transition-colors duration-200"
+                    className="w-full bg-[#4F378B] mb-32 text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-800 transition-colors duration-200"
                     onClick={toggleSidebar}
                   >
                     Aplicar
@@ -490,6 +491,7 @@ const ProductListing: React.FC = () => {
           onBackToTop={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         />
       </div>
+      <BottomBar />
     </>
   );
 };
