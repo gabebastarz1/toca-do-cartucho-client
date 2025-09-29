@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { useUserProfile } from "../hooks/useUserProfile";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { useCategories } from "./CategoryDataProvider";
@@ -13,6 +14,7 @@ type SideBarPage = "main" | "genres" | "themes";
 
 const SideBar: React.FC<SideBarProps> = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
+  const { userProfile } = useUserProfile();
   const navigate = useNavigate();
   const { genres, themes } = useCategories();
   const [currentPage, setCurrentPage] = useState<SideBarPage>("main");
@@ -28,10 +30,13 @@ const SideBar: React.FC<SideBarProps> = ({ isOpen, onClose }) => {
     onClose();
   };
 
-  const handleCategoryNavigation = (categoryId: string, categoryType: "genre" | "theme") => {
+  const handleCategoryNavigation = (
+    categoryId: string,
+    categoryType: "genre" | "theme"
+  ) => {
     // Aplicar filtro e navegar para produtos
     const filters: Record<string, string[]> = {};
-    
+
     if (categoryType === "genre") {
       filters.genre = [categoryId];
     } else if (categoryType === "theme") {
@@ -48,7 +53,7 @@ const SideBar: React.FC<SideBarProps> = ({ isOpen, onClose }) => {
 
     const queryString = params.toString();
     const productsUrl = queryString ? `/produtos?${queryString}` : "/produtos";
-    
+
     navigate(productsUrl);
     onClose();
   };
@@ -72,6 +77,11 @@ const SideBar: React.FC<SideBarProps> = ({ isOpen, onClose }) => {
     }
   }, [isOpen]);
 
+  // Usar dados do perfil se disponível, senão do contexto de autenticação
+  const displayUser = userProfile || user;
+  const displayName =
+    displayUser?.firstName || displayUser?.nickName || "Usuário";
+
   if (!isOpen) return null;
 
   return (
@@ -88,17 +98,16 @@ const SideBar: React.FC<SideBarProps> = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="bg-[#211c49] py-3 pt-4 px-[22px]">
           <div className="items-center gap-3 pt-2">
-            <ChevronLeft 
-              className="w-5 h-5 text-white cursor-pointer" 
-              onClick={currentPage === "main" ? onClose : handleBackToMain} 
+            <ChevronLeft
+              className="w-5 h-5 text-white cursor-pointer"
+              onClick={currentPage === "main" ? onClose : handleBackToMain}
             />
             <div className="text-white text-sm font-normal pt-4">
-              {currentPage === "main" 
-                ? `Olá, ${user?.firstName || user?.nickName || "Usuário"}`
-                : currentPage === "genres" 
-                  ? "Gêneros"
-                  : "Temáticas"
-              }
+              {currentPage === "main"
+                ? `Olá, ${displayName}`
+                : currentPage === "genres"
+                ? "Gêneros"
+                : "Temáticas"}
             </div>
           </div>
         </div>
@@ -220,7 +229,9 @@ const SideBar: React.FC<SideBarProps> = ({ isOpen, onClose }) => {
                 {genres.map((genre) => (
                   <button
                     key={genre.id}
-                    onClick={() => handleCategoryNavigation(genre.id.toString(), "genre")}
+                    onClick={() =>
+                      handleCategoryNavigation(genre.id.toString(), "genre")
+                    }
                     className="text-[#0e0b0e] text-sm text-left hover:text-purple-600 transition-colors py-2"
                   >
                     {genre.name}
@@ -236,7 +247,9 @@ const SideBar: React.FC<SideBarProps> = ({ isOpen, onClose }) => {
                 {themes.map((theme) => (
                   <button
                     key={theme.id}
-                    onClick={() => handleCategoryNavigation(theme.id.toString(), "theme")}
+                    onClick={() =>
+                      handleCategoryNavigation(theme.id.toString(), "theme")
+                    }
                     className="text-[#0e0b0e] text-sm text-left hover:text-purple-600 transition-colors py-2"
                   >
                     {theme.name}

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCategories } from "./CategoryDataProvider";
+import { Menu } from "lucide-react";
 
 interface FilterTopBarProps {
   currentFilters?: Record<string, string[]>; // Para manter filtros da sidebar
@@ -64,9 +65,7 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
 
       if (categoryId === "all") {
         // Para "All", manter apenas filtros vazios (status=Active será aplicado automaticamente)
-        console.log(
-          "FilterTopBar - Limpando todos os filtros (All selecionado)"
-        );
+        
       } else {
         // Verificar se é um gênero ou tema válido
         const genre = genres.find((g) => g.id === categoryId);
@@ -75,34 +74,31 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
         if (genre) {
           // Aplicar apenas o gênero selecionado
           newFilters.genre = [categoryId];
-          console.log("FilterTopBar - Aplicando gênero:", categoryId);
+
         } else if (theme) {
           // Aplicar apenas o tema selecionado
           newFilters.theme = [categoryId];
-          console.log("FilterTopBar - Aplicando tema:", categoryId);
+
         } else {
           // Se não é nem gênero nem tema, manter filtros vazios
           console.log(
-            "FilterTopBar - Categoria não reconhecida, limpando filtros"
+     
           );
         }
       }
 
       // Limpar a pesquisa também
       if (onClearSearch) {
-        console.log("FilterTopBar - Limpando pesquisa");
+
         onClearSearch();
       }
 
       // Verificar se os filtros realmente mudaram antes de chamar o callback
       if (JSON.stringify(currentFilters) !== JSON.stringify(newFilters)) {
-        console.log("FilterTopBar - Novos filtros:", newFilters);
-        console.log("FilterTopBar - Chamando onFiltersChange");
+        
         onFiltersChange(newFilters);
-      } else {
-        console.log("FilterTopBar - Filtros iguais, evitando atualização");
       }
-      console.log("=== FILTER TOPBAR CLICK COMPLETED ===");
+
       return;
     }
 
@@ -162,10 +158,14 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
           <div className="flex items-center flex-1">
             <div className="flex items-center space-x-8">
               {categories.map((category) => (
-                <div key={category.id} className="relative">
+                <div key={category.id} className="relative flex items-center">
+                    {category.id === "all" && (
+                      <Menu className="h-4 w-4 text-white mr-1" />
+                    )}
                   <button
                     onClick={() => {
                       if (category.id === "all") {
+                        
                         handleCategoryClick(category.id);
                       } else {
                         handleDropdownToggle(category.id);

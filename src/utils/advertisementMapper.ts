@@ -165,7 +165,7 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
       }
     }
     //console.log(`No image found for ad ${advertisement.id}, using fallback`); // Debug log
-    return "/logo.svg"; // Fallback para logo
+; // Fallback para logo
   };
 
   return {

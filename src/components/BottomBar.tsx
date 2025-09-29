@@ -46,7 +46,7 @@ const BottomBar: React.FC<BottomBarProps> = ({ className = "" }) => {
   return (
     <div
       // ✅ Container principal com a cor de fundo e padding
-      className={`fixed bottom-0 left-0 right-0 z-50 bg-[#211c49] p-2 md:hidden ${className}`}
+      className={`fixed bottom-0 left-0 right-0 z-50 bg-[#211C49] p-2 md:hidden ${className}`}
     >
       <div className="flex w-full items-center justify-around">
         {" "}
