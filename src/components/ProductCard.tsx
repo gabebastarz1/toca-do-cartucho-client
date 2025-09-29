@@ -35,7 +35,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   location,
   discount,
   saleType,
-  sellerId, // ✅ NOVO: Receber sellerId
+  sellerId, 
   onClick,
 }) => {
   // ✅ Buscar ratings do vendedor
@@ -231,18 +231,27 @@ const ProductCard: React.FC<ProductCardProps> = ({
       {/* Desktop: Layout vertical */}
       <div className="hidden md:block">
         {/* Imagem do produto */}
-        <div className="relative h-48 bg-gray-100 overflow-hidden rounded-t-lg">
+        {saleType && (
+              <span
+                className={`absolute z-50 top-3 right-0 px-3 py-1 inline-block text-xs bg-[#38307C] text-white`}
+              >
+                {getSaleTypeLabel(saleType)}
+              </span>
+            )}
+        <div className="relative h-48 bg-gray-100 overflow-hidden rounded-t-lg border-b border-white border-8 inner-border">
+          
           {image && image.trim() !== "" ? (
             <img
               src={image}
               alt={title}
-              className="absolute inset-0 w-full h-full object-contain bg-white"
+              className="absolute inset-0 w-full h-full object-contain bg-white "
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-200">
               <span className="text-gray-400 text-sm">Sem imagem</span>
             </div>
           )}
+          
         </div>
 
         {/* Conteúdo do card */}
@@ -304,18 +313,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   type
                 )}`}
               >
-                {type === "retro" ? "RETRÔ" : "REPRÔ"}
+                {type === "retro" ? "RETRÔ" : "REPRO"}
               </span>
             </Tooltip>
-            {saleType && (
-              <span
-                className={`px-2 py-1 inline-block text-xs rounded-full border ${getSaleTypeColor(
-                  saleType
-                )}`}
-              >
-                {getSaleTypeLabel(saleType)}
-              </span>
-            )}
+            
           </div>
 
           {/* Localização */}

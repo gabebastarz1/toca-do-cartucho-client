@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Search } from "lucide-react";
 
 interface PriceFilterGroupProps {
@@ -14,53 +14,20 @@ const PriceFilterGroup: React.FC<PriceFilterGroupProps> = ({
   onPriceChange,
   sectionId,
 }) => {
-  // Estado local para os inputs (não aplica automaticamente)
-  const [localMinPrice, setLocalMinPrice] = useState(minPrice);
-  const [localMaxPrice, setLocalMaxPrice] = useState(maxPrice);
-
-  // Sincronizar estado local quando props mudam externamente
-  useEffect(() => {
-    setLocalMinPrice(minPrice);
-    setLocalMaxPrice(maxPrice);
-  }, [minPrice, maxPrice]);
-
   const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalMinPrice(e.target.value);
+    const value = e.target.value;
+    onPriceChange(value, maxPrice);
   };
 
   const handleMaxPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalMaxPrice(e.target.value);
+    const value = e.target.value;
+    onPriceChange(minPrice, value);
   };
 
   const handleApplyFilter = () => {
-    // Aplicar filtro apenas quando confirmar
-    onPriceChange(localMinPrice, localMaxPrice);
+    // O filtro é aplicado automaticamente quando os valores mudam
+    // Este botão serve apenas como feedback visual
   };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleApplyFilter();
-    }
-  };
-
-  // Validação: verificar se preço mínimo é maior que máximo
-  const isInvalidRange = () => {
-    const min = parseFloat(localMinPrice);
-    const max = parseFloat(localMaxPrice);
-
-    // Só valida se ambos os campos têm valores válidos
-    if (
-      !isNaN(min) &&
-      !isNaN(max) &&
-      localMinPrice.trim() !== "" &&
-      localMaxPrice.trim() !== ""
-    ) {
-      return min > max;
-    }
-    return false;
-  };
-
-  const hasValidationError = isInvalidRange();
 
   return (
     <div className="space-y-3">
@@ -71,15 +38,10 @@ const PriceFilterGroup: React.FC<PriceFilterGroupProps> = ({
           type="number"
           min="0"
           step="0.01"
-          value={localMinPrice}
+          value={minPrice}
           onChange={handleMinPriceChange}
-          onKeyPress={handleKeyPress}
           placeholder="Min."
-          className={`flex-1 px-3 py-2 max-w-20 text-sm border-0 rounded-md shadow-sm focus:outline-none transition-all ${
-            hasValidationError
-              ? "bg-red-50 border-2 border-red-300 text-red-700 focus:ring-2 focus:ring-red-500"
-              : "bg-white focus:ring-2 focus:ring-purple-500"
-          }`}
+          className="flex-1 px-3 py-2 max-w-20 text-sm border-0 rounded-md bg-white shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
         />
 
         {/* Input Preço Máximo */}
@@ -88,46 +50,21 @@ const PriceFilterGroup: React.FC<PriceFilterGroupProps> = ({
           type="number"
           min="0"
           step="0.01"
-          value={localMaxPrice}
+          value={maxPrice}
           onChange={handleMaxPriceChange}
-          onKeyPress={handleKeyPress}
           placeholder="Máx."
-          className={`flex-1 px-3 py-2 max-w-20 text-sm border-0 rounded-md shadow-sm focus:outline-none transition-all ${
-            hasValidationError
-              ? "bg-red-50 border-2 border-red-300 text-red-700 focus:ring-2 focus:ring-red-500"
-              : "bg-white focus:ring-2 focus:ring-purple-500"
-          }`}
+          className="flex-1 px-3 py-2 max-w-20 text-sm border-0 rounded-md bg-white shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
         />
 
         {/* Botão de Aplicar */}
         <button
           onClick={handleApplyFilter}
-          disabled={hasValidationError}
-          className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm transition-colors ${
-            hasValidationError
-              ? "bg-gray-300 cursor-not-allowed"
-              : "bg-purple-400 hover:bg-purple-500"
-          }`}
-          title={
-            hasValidationError
-              ? "Corrija os valores antes de aplicar"
-              : "Aplicar filtro de preço"
-          }
+          className="w-10 h-10 bg-purple-400 rounded-full flex items-center justify-center shadow-sm hover:bg-purple-500 transition-colors"
+          title="Aplicar filtro de preço"
         >
-          <Search
-            className={`w-4 h-4 ${
-              hasValidationError ? "text-gray-500" : "text-gray-800"
-            }`}
-          />
+          <Search className="w-4 h-4 text-gray-800" />
         </button>
       </div>
-
-      {/* Aviso de erro */}
-      {hasValidationError && (
-        <div className="text-xs text-red-600  rounded-md px-2 py-1">
-          O preço mínimo não pode ser maior que o máximo
-        </div>
-      )}
     </div>
   );
 };

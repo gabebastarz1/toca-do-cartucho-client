@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Menu } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import { useUserProfile } from "../hooks/useUserProfile";
 import SideBar from "./SideBar";
 import UserDropdown from "./UserDropdown";
 
@@ -35,19 +36,21 @@ const TopBar: React.FC<TopBarProps> = ({
   onSearchConfirm,
 }) => {
   const { user } = useAuth();
+  const { userProfile } = useUserProfile();
   const [showSecondaryHeader, setShowSecondaryHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isSideBarOpen, setIsSideBarOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
-  // Usar o nome do usuário do contexto de autenticação se disponível
+  // Usar o nome do usuário do perfil se disponível, senão do contexto de autenticação
   const displayUserName =
     userName ||
-    (user
-      ? user.firstName && user.lastName
-        ? `${user.firstName} ${user.lastName}`.trim()
-        : user.nickName || "Usuário"
-      : "Usuário");
+    (userProfile?.firstName && userProfile?.lastName
+      ? `${userProfile.firstName} ${userProfile.lastName}`.trim()
+      : userProfile?.nickName ||
+        (user?.firstName && user?.lastName
+          ? `${user.firstName} ${user.lastName}`.trim()
+          : user?.nickName || "Usuário"));
 
   let justifyLogo: string;
   switch (logoPosition) {
@@ -60,6 +63,14 @@ const TopBar: React.FC<TopBarProps> = ({
     default:
       justifyLogo = "justify-start ml-10";
   }
+
+  const displayUser = userProfile || user;
+
+
+  const displayInitial =
+    displayUser?.firstName?.charAt(0) ||
+    displayUser?.nickName?.charAt(0) ||
+    "U";
 
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState(searchValue);
@@ -135,6 +146,7 @@ const TopBar: React.FC<TopBarProps> = ({
     <header className="sticky top-0 z-50 w-full">
       <div className="w-full bg-[#211C49] flex items-center justify-between px-2 sm:px-14 py-3 relative z-10">
         <div className="hidden md:flex w-full items-center justify-between">
+          <div className="flex items-center gap-2 w-2/3">  
           <div className={`flex items-center gap-2 ${justifyLogo}`}>
             <button
               type="button"
@@ -153,10 +165,10 @@ const TopBar: React.FC<TopBarProps> = ({
           {/* Barra de pesquisa - Desktop*/}
           {showSearchBar && (
             <div
-              className={`flex-1 mx-4 ease-in-out overflow-hidden max-w-2xl opacity-100}`}
+              className={`flex-1 mx-4 ease-in-out overflow-hidden max-w-2xl w-full opacity-100}`}
             >
               <form onSubmit={handleSearchSubmit} className="w-full">
-                <div className="flex rounded-full overflow-hidden w-full">
+                <div className="flex rounded-md overflow-hidden w-full">
                   <input
                     type="text"
                     value={searchQuery}
@@ -166,15 +178,16 @@ const TopBar: React.FC<TopBarProps> = ({
                   />
                   <button
                     type="submit"
-                    className="bg-purple-300 flex items-center justify-center px-6"
+                    className="bg-[#B5B6E4] flex items-center justify-center px-6 z-50"
                   >
-                    <Search className="h-4 w-4 text-gray-600" />
+                    <Search className="h-4 w-4 text-[#1D1B20]" />
                   </button>
                 </div>
               </form>
             </div>
           )}
 
+      </div> 
           <div className="flex-none flex items-center space-x-4">
             {rightButtonText && (
               <button
@@ -196,13 +209,13 @@ const TopBar: React.FC<TopBarProps> = ({
                 >
                   {userAvatar && userAvatar.trim() !== "" ? (
                     <img
-                      src={userAvatar}
+                      src={userAvatar }
                       alt={displayUserName}
                       className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-                      <span className="text-gray-600 text-lg">👤</span>
+                      <span className="text-gray-600 text-lg font-semibold">{displayInitial}</span>
                     </div>
                   )}
                 </button>
@@ -250,7 +263,7 @@ const TopBar: React.FC<TopBarProps> = ({
                   />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                    <span className="text-gray-600 text-sm">👤</span>
+                    <span className="text-gray-600 text-sm font-semibold">{displayInitial}</span>
                   </div>
                 )}
               </button>
