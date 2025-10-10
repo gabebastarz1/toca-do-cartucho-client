@@ -161,6 +161,15 @@ export interface AddressDTO {
   createdAt: string;
 }
 
+export interface UserProfileImageDTO {
+  id: number;
+  originalFileName: string;
+  userId: string;
+  preSignedUrl: string;
+  urlExpiresIn: string;
+  createdAt: string;
+}
+
 export interface UserDTO {
   id: string;
   nickName: string;
@@ -169,10 +178,12 @@ export interface UserDTO {
   lastName?: string;
   slug: string;
   phoneNumber?: string;
-  createdAt?: string; // ✅ NOVO: Data de criação do usuário
-  addresses?: UserAddressDTO[]; // ✅ NOVO: Endereços do usuário
+  cpf?: string;
+  createdAt?: string;
+  addresses?: UserAddressDTO[]; 
   roles?: RoleDTO[];
   favoriteAdvertisements?: AdvertisementDTO[];
+  profileImage?: UserProfileImageDTO;
 }
 
 // Tipos personalizados para evitar conflitos
@@ -185,6 +196,32 @@ export interface CustomRegisterRequest {
   email: string;
   password: string;
   nickName: string;
+}
+
+export interface UserForUpdateDTO {
+  nickName?: string;
+  firstName?: string;
+  lastName?: string;
+  cpf?: string;
+  roles?: string[];
+  email?: string;
+  phoneNumber?: string;
+  addresses?: UserAddressForUpdateDTO[];
+}
+
+export interface UserAddressForUpdateDTO {
+  address: AddressForCreationDTO;
+  isPrimary: boolean;
+}
+
+export interface AddressForCreationDTO {
+  zipCode: string;
+  street: string;
+  number: string;
+  complement?: string;
+  neighborhood: string;
+  city: string;
+  state: string;
 }
 
 export interface CustomUserForUpdateDTO {

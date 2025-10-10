@@ -111,8 +111,6 @@ class AdvertisementCreationService {
         throw new Error(`Dados inválidos: ${validationErrors.join(", ")}`);
       }
 
-      // 2. Criar o anúncio principal e suas variações de uma só vez.
-      //    A resposta deve conter os IDs reais de tudo que foi criado.
       const advertisement = await this.createAdvertisement(backendData);
 
       // 3. Fazer upload das imagens do anúncio principal
@@ -137,13 +135,7 @@ class AdvertisementCreationService {
               `Fazendo upload de imagens para a variação ID: ${createdVariation.id}`
             );
 
-            // SOLUÇÃO: Usar o ID da variação como advertisementId para vincular as imagens diretamente à variação
-            // Como as variações são anúncios separados no backend, podemos usar o ID da variação como advertisementId
-            await this.uploadImages(
-              createdVariation.id, // Usar o ID da variação como advertisementId
-              variationImages
-              // Não precisamos mais do variationId pois estamos usando o ID da variação diretamente
-            );
+            await this.uploadImages(createdVariation.id, variationImages);
           }
         }
       } else {

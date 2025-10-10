@@ -5,11 +5,12 @@ interface HeadProps {
   iconHref?: string;
 }
 
-const Head: React.FC<HeadProps> = ({ title, iconHref = "/logo-icon.svg" }) => {
+const Head: React.FC<HeadProps> = ({
+  title,
+  iconHref = "/Logos/logo-icon.svg",
+}) => {
   React.useEffect(() => {
-    // Atualiza o título da página
     document.title = title;
-    // Atualiza o favicon
     let link = document.querySelector("link[rel='icon']");
     if (!link) {
       link = document.createElement("link");
@@ -23,12 +24,3 @@ const Head: React.FC<HeadProps> = ({ title, iconHref = "/logo-icon.svg" }) => {
 };
 
 export default Head;
-
-
-// ---Como importar--- 
-/*
-<Head title="Cadastrar anúncio - Apenas Venda" iconHref="/logo-icon.svg" />
-
-Podendo manter também apenas o título:
-<Head title="Cadastrar anúncio - Apenas Venda" />
-*/

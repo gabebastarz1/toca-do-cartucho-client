@@ -2,6 +2,7 @@ import React from "react";
 import { Star, MapPin } from "lucide-react";
 import Tooltip from "./Tooltip";
 import { useSellerRatings } from "../hooks/useSellerRatings";
+import FavoriteButton from "./FavoriteButton";
 
 interface ProductCardProps {
   id: string;
@@ -18,12 +19,13 @@ interface ProductCardProps {
   genre?: string;
   theme?: string;
   saleType?: "sale" | "trade" | "sale-trade";
-  sellerId?: string; // ✅ NOVO: ID do vendedor para buscar ratings
-  parentAdvertisementId?: number; // ✅ NOVO: ID do anúncio pai para variações
+  sellerId?: string;
+  parentAdvertisementId?: number;
   onClick?: () => void;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
+  id,
   title,
   image,
   rating,
@@ -35,13 +37,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
   location,
   discount,
   saleType,
-  sellerId, 
+  sellerId,
   onClick,
 }) => {
-  // ✅ Buscar ratings do vendedor
   const { averageRating, totalRatings } = useSellerRatings(sellerId);
 
-  // ✅ Usar ratings do vendedor se disponíveis, senão usar valores padrão
   const displayRating = averageRating > 0 ? averageRating : rating;
   const displayReviewCount = totalRatings > 0 ? totalRatings : reviewCount;
   const formatPrice = (price: number) => {
@@ -112,6 +112,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
     return labels[saleType as keyof typeof labels] || "";
   };
 
+  {
+    /* 
   const getSaleTypeColor = (saleType?: string) => {
     const colors = {
       sale: "bg-green-100 text-green-800 border-green-200",
@@ -123,9 +125,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
       "bg-gray-100 text-gray-800 border-gray-200"
     );
   };
-
+*/
+  }
   const renderStars = (rating: number) => {
-    // ✅ Validar e normalizar o rating
     const validRating = Math.max(0, Math.min(5, rating || 0));
     return Array.from({ length: 5 }, (_, index) => (
       <Star
@@ -144,10 +146,29 @@ const ProductCard: React.FC<ProductCardProps> = ({
       className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 cursor-pointer transform hover:scale-105 transition-transform relative"
       onClick={onClick}
     >
+      {/* ✅ Botão de favorito no canto superior direito */}
+      <div
+        className="absolute top-2 right-2 z-10"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <FavoriteButton
+          advertisementId={parseInt(id)}
+          size="sm"
+          className="bg-white/80 backdrop-blur-sm hover:bg-white"
+        />
+      </div>
+
       {/* ✅ NOVO: Layout responsivo - Horizontal no mobile, Vertical no desktop */}
 
       {/* Mobile: Layout horizontal */}
       <div className="flex items-center md:hidden">
+        {saleType && (
+          <span
+            className={`absolute z-50 top-3 right-0 px-3 py-1 inline-block text-xs bg-[#38307C] text-white shadow-xl`}
+          >
+            {getSaleTypeLabel(saleType)}
+          </span>
+        )}
         {/* Imagem à esquerda */}
         <div className="w-24 h-24 bg-gray-100 overflow-hidden rounded-l-lg flex-shrink-0 flex items-center justify-center">
           {image && image.trim() !== "" ? (
@@ -232,14 +253,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <div className="hidden md:block">
         {/* Imagem do produto */}
         {saleType && (
-              <span
-                className={`absolute z-50 top-3 right-0 px-3 py-1 inline-block text-xs bg-[#38307C] text-white`}
-              >
-                {getSaleTypeLabel(saleType)}
-              </span>
-            )}
+          <span
+            className={`absolute z-50 top-3 right-0 px-3 py-1 inline-block text-xs bg-[#38307C] text-white shadow-xl`}
+          >
+            {getSaleTypeLabel(saleType)}
+          </span>
+        )}
         <div className="relative h-48 bg-gray-100 overflow-hidden rounded-t-lg border-b border-white border-8 inner-border">
-          
           {image && image.trim() !== "" ? (
             <img
               src={image}
@@ -251,7 +271,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
               <span className="text-gray-400 text-sm">Sem imagem</span>
             </div>
           )}
-          
         </div>
 
         {/* Conteúdo do card */}
@@ -316,7 +335,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 {type === "retro" ? "RETRÔ" : "REPRO"}
               </span>
             </Tooltip>
-            
           </div>
 
           {/* Localização */}

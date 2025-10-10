@@ -3,11 +3,25 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { ChevronUp } from "lucide-react";
+import { UserDTO } from "../api/types";
+import { User } from "../services/authService";
 
 interface UserDropdownProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+// Tipo union para incluir profileImage
+type UserWithProfileImage = (User | UserDTO) & {
+  profileImage?: {
+    id: number;
+    originalFileName: string;
+    userId: string;
+    preSignedUrl: string;
+    urlExpiresIn: string;
+    createdAt: string;
+  };
+};
 
 const UserDropdown: React.FC<UserDropdownProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -19,9 +33,10 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ isOpen, onClose }) => {
     onClose();
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     onClose();
+    window.location.reload(); // Recarrega a página para limpar o estado
   };
 
   // Usar dados do perfil se disponível, senão do contexto de autenticação
@@ -36,6 +51,10 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ isOpen, onClose }) => {
     displayUser?.nickName?.charAt(0) ||
     "U";
 
+  // Usar foto do perfil se disponível
+  const profileImageUrl = (displayUser as UserWithProfileImage)?.profileImage
+    ?.preSignedUrl;
+
   if (!isOpen) return null;
 
   return (
@@ -47,7 +66,25 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ isOpen, onClose }) => {
           className="w-full"
         >
           <div className="flex items-center mb-4">
-            <div className="w-14 h-14 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+            {profileImageUrl ? (
+              <img
+                src={profileImageUrl}
+                alt={displayName}
+                className="w-14 h-14 rounded-full object-cover mr-3"
+                onError={(e) => {
+                  // Fallback para inicial se a imagem falhar
+                  e.currentTarget.style.display = "none";
+                  e.currentTarget.nextElementSibling?.classList.remove(
+                    "hidden"
+                  );
+                }}
+              />
+            ) : null}
+            <div
+              className={`w-14 h-14 rounded-full bg-gray-300 flex items-center justify-center mr-3 ${
+                profileImageUrl ? "hidden" : ""
+              }`}
+            >
               <span className="text-gray-600 text-lg font-semibold">
                 {displayInitial}
               </span>

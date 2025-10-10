@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { useIsMobile } from "../hooks/useIsMobile";
 
-
 export interface OrderingOption {
   value: string;
   label: string;
@@ -106,10 +105,8 @@ const OrderingSelector: React.FC<OrderingSelectorProps> = ({
         onClick={handleToggle}
         className="flex items-center gap-2 px-3 py-1"
       >
-        <span className="text-sm font-normal text-gray-700">
-          {"Ordenar"}
-        </span>
-        <img src="../public/fi-rr-apps-sort.svg"  />
+        <span className="text-sm font-normal text-gray-700">{"Ordenar"}</span>
+        <img src="/Icons/fi-rr-apps-sort.svg" />
       </button>
 
       {/* Sidebar Mobile */}
@@ -125,9 +122,7 @@ const OrderingSelector: React.FC<OrderingSelectorProps> = ({
           <div className="fixed right-0 top-0 h-full w-100 bg-[#F4F3F5] shadow-xl z-50 transform transition-transform duration-300 ease-in-out">
             {/* Header */}
             <div className="flex items-center justify-between p-3 pt-14 pl-5 border-b border-gray-200">
-              <h2 className="text-md font-normal c">
-                Ordenar por
-              </h2>
+              <h2 className="text-md font-normal c">Ordenar por</h2>
             </div>
 
             {/* Options */}

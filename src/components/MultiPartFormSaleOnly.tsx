@@ -501,7 +501,7 @@ const MultiPartFormSaleOnly = () => {
 
   return (
     <>
-      <Head title="Cadastrar anúncio" iconHref="/logo-icon.svg" />
+      <Head title="Cadastrar anúncio" iconHref="/Logos/logo-icon.svg" />
       <ModalAlert
         isOpen={showSuccessMessage}
         onClose={() => setShowSuccessMessage(false)}
@@ -998,9 +998,7 @@ const MultiPartFormSaleOnly = () => {
               steps={stepsArray}
               onBack={prevStep}
             />
-            <div
-              className={`${isMobile ? "p-4" : "p-6"} space-y-6`}
-            >
+            <div className={`${isMobile ? "p-4" : "p-6"} space-y-6`}>
               {/* Lista de variações existentes */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -2040,29 +2038,29 @@ const MultiPartFormSaleOnly = () => {
               ) : (
                 // =================== BOTÃO DE ADICIONAR ===================
                 <div className="px-6">
-                <button
-                  onClick={() => {
-                    setVariationData({
-                      titulo: formData.titulo || "",
-                      tipoCartucho: formData.tipoCartucho || "",
-                      estadoPreservacao: formData.estadoPreservacao || "",
-                      regiao: formData.regiao || "",
-                      idiomaAudio: formData.idiomaAudio || "",
-                      idiomaLegenda: formData.idiomaLegenda || "",
-                      idiomaInterface: formData.idiomaInterface || "",
-                      preco: formData.preco || "",
-                      estoque: formData.estoque || "",
-                      descricao: formData.descricao || "",
-                      imagens: Array(4).fill(null),
-                    });
-                    setEditingVariationId("new");
-                  }}
-                  className={`w-full border-2 border-dashed border-purple-400 ${
-                    isMobile ? "p-4" : "p-6"
-                  } rounded-lg text-purple-600 hover:bg-purple-50 hover:border-purple-600 transition-colors font-semibold`}
-                >
-                  + Adicionar nova variação
-                </button>
+                  <button
+                    onClick={() => {
+                      setVariationData({
+                        titulo: formData.titulo || "",
+                        tipoCartucho: formData.tipoCartucho || "",
+                        estadoPreservacao: formData.estadoPreservacao || "",
+                        regiao: formData.regiao || "",
+                        idiomaAudio: formData.idiomaAudio || "",
+                        idiomaLegenda: formData.idiomaLegenda || "",
+                        idiomaInterface: formData.idiomaInterface || "",
+                        preco: formData.preco || "",
+                        estoque: formData.estoque || "",
+                        descricao: formData.descricao || "",
+                        imagens: Array(4).fill(null),
+                      });
+                      setEditingVariationId("new");
+                    }}
+                    className={`w-full border-2 border-dashed border-purple-400 ${
+                      isMobile ? "p-4" : "p-6"
+                    } rounded-lg text-purple-600 hover:bg-purple-50 hover:border-purple-600 transition-colors font-semibold`}
+                  >
+                    + Adicionar nova variação
+                  </button>
                 </div>
               )}
             </div>
@@ -2103,7 +2101,7 @@ const MultiPartFormSaleOnly = () => {
               </p>
               {isMobile ? (
                 <div className="flex flex-col items-center justify-center gap-4">
-                  <img src="../public/computador.svg" alt="" />
+                  <img src="/Icons/computador.svg" alt="" />
                   {/* Botões */}
                   <div className="space-y-4">
                     <button
@@ -2124,7 +2122,7 @@ const MultiPartFormSaleOnly = () => {
                 </div>
               ) : (
                 <div className="flex items-center justify-center gap-4">
-                  <img src="../public/computador.svg" alt="" />
+                  <img src="/Icons/computador.svg" alt="" />
                   {/* Botões */}
                   <div className="space-y-4">
                     <button

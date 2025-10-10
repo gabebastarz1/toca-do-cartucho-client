@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@100;200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@100;200;300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 @tailwind base;
 @tailwind components;
@@ -7,7 +7,7 @@
 
 
 @theme {
-  --font-lexend: 'Lexend Deca', 'sans-serif';
+  --font-lexend: 'Lexend', 'sans-serif';
   --font-vt323: 'VT323', monospace;
 }
 @layer base {
@@ -120,13 +120,14 @@
 @layer base {
   * {
     @apply border-border;
-
+    
     scrollbar-gutter: hidden; 
   }
   body {
     @apply bg-background text-foreground;
-    font-family:  'Lexend Deca', 'sans-serif';
+    font-family: 'Lexend', 'sans-serif';
     font-weight: 400;
+    background-color: #F4F3F5;
     
   }
   

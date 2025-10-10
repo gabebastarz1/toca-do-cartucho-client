@@ -35,7 +35,7 @@ const UserProfileTest: React.FC = () => {
 
         <div>
           <h4 className="font-medium text-gray-700">
-            Dados da API /api/users/profile-info:
+            Dados da API /api/accounts/profile:
           </h4>
           <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto">
             {JSON.stringify(userProfile, null, 2)}

@@ -3,14 +3,19 @@ import { AdvertisementDTO } from "../api/types";
 
 interface ProductCharacteristicsProps {
   advertisement?: AdvertisementDTO;
+  selectedVariation?: AdvertisementDTO; // ✅ NOVA: Variação selecionada
 }
 
 const ProductCharacteristics: React.FC<ProductCharacteristicsProps> = ({
   advertisement,
+  selectedVariation,
 }) => {
   // ✅ Função para extrair dados reais do advertisement
   const getCharacteristics = () => {
-    if (!advertisement) {
+    // ✅ Usar a variação selecionada se disponível, senão usar o advertisement principal
+    const dataSource = selectedVariation || advertisement;
+
+    if (!dataSource) {
       return [
         { label: "Gêneros", value: "Não informado" },
         { label: "Temáticas", value: "Não informado" },
@@ -27,48 +32,62 @@ const ProductCharacteristics: React.FC<ProductCharacteristicsProps> = ({
 
     // ✅ Extrair gêneros
     const genres =
-      advertisement.game?.genres
-        ?.map((g: any) => g.genre?.name || g.name)
+      dataSource.game?.genres
+        ?.map(
+          (g: { genre?: { name: string }; name?: string }) =>
+            g.genre?.name || g.name
+        )
         .filter(Boolean)
         .join(", ") || "Não informado";
 
     // ✅ Extrair temas
     const themes =
-      advertisement.game?.themes
-        ?.map((t: any) => t.theme?.name || t.name)
+      dataSource.game?.themes
+        ?.map(
+          (t: { theme?: { name: string }; name?: string }) =>
+            t.theme?.name || t.name
+        )
         .filter(Boolean)
         .join(", ") || "Não informado";
 
     // ✅ Extrair modos de jogo
     let gameModes = "Não informado";
-    if (advertisement.game?.gameGameModes) {
-      const modes = advertisement.game.gameGameModes
-        .map((gm: any) => gm.gameModes?.name || gm.gameMode?.name || gm.name)
+    if (dataSource.game?.gameGameModes) {
+      const modes = dataSource.game.gameGameModes
+        .map(
+          (gm: {
+            gameModes?: { name: string };
+            gameMode?: { name: string };
+            name?: string;
+          }) => gm.gameModes?.name || gm.gameMode?.name || gm.name
+        )
         .filter(Boolean);
       gameModes = modes.length > 0 ? modes.join(", ") : "Não informado";
     }
 
     // ✅ Extrair franquia
     const franchise =
-      advertisement.game?.franchises
-        ?.map((f: any) => f.franchise?.name || f.name)
+      dataSource.game?.franchises
+        ?.map(
+          (f: { franchise?: { name: string }; name?: string }) =>
+            f.franchise?.name || f.name
+        )
         .filter(Boolean)
         .join(", ") || "Não informado";
 
     // ✅ Extrair tipo de cartucho
-    const cartridgeType = advertisement.cartridgeType?.name || "Não informado";
+    const cartridgeType = dataSource.cartridgeType?.name || "Não informado";
 
     // ✅ Extrair estado de preservação
     const preservationState =
-      advertisement.preservationState?.name || "Não informado";
+      dataSource.preservationState?.name || "Não informado";
 
     // ✅ Extrair região
-    const region =
-      advertisement.gameLocalization?.region?.name || "Não informado";
+    const region = dataSource.gameLocalization?.region?.name || "Não informado";
 
     // ✅ Extrair idiomas do áudio
     const audioLanguages =
-      advertisement.advertisementLanguageSupports
+      dataSource.advertisementLanguageSupports
         ?.filter((als: any) => {
           const typeName =
             als.languageSupport?.languageSupportType?.name?.toLowerCase() || "";
@@ -81,7 +100,7 @@ const ProductCharacteristics: React.FC<ProductCharacteristicsProps> = ({
 
     // ✅ Extrair idiomas da legenda
     const subtitleLanguages =
-      advertisement.advertisementLanguageSupports
+      dataSource.advertisementLanguageSupports
         ?.filter((als: any) => {
           const typeName =
             als.languageSupport?.languageSupportType?.name?.toLowerCase() || "";
@@ -98,7 +117,7 @@ const ProductCharacteristics: React.FC<ProductCharacteristicsProps> = ({
 
     // ✅ Extrair idiomas da interface
     const interfaceLanguages =
-      advertisement.advertisementLanguageSupports
+      dataSource.advertisementLanguageSupports
         ?.filter((als: any) => {
           const typeName =
             als.languageSupport?.languageSupportType?.name?.toLowerCase() || "";
@@ -125,9 +144,29 @@ const ProductCharacteristics: React.FC<ProductCharacteristicsProps> = ({
 
   const characteristics = getCharacteristics();
 
+  // ✅ Log para debug
+  console.log("🔍 [ProductCharacteristics] Debug:");
+  console.log("🔍 [ProductCharacteristics] advertisement:", advertisement);
+  console.log(
+    "🔍 [ProductCharacteristics] selectedVariation:",
+    selectedVariation
+  );
+  console.log(
+    "🔍 [ProductCharacteristics] dataSource:",
+    selectedVariation || advertisement
+  );
+  console.log("🔍 [ProductCharacteristics] characteristics:", characteristics);
+
   return (
     <div id="product-characteristics" className="bg-white rounded-lg p-6 ">
-      <h2 className="text-xl font-semibold mb-6">Características do produto</h2>
+      <h2 className="text-xl font-semibold mb-6">
+        Características do produto
+        {selectedVariation && (
+          <span className="text-sm font-normal text-gray-600 ml-2">
+            (Variação selecionada)
+          </span>
+        )}
+      </h2>
       <div>
         <h3 className="text-lg mb-4">Detalhes técnicos</h3>
         <div className="border border-gray-200 rounded-md overflow-hidden md:w-1/2 w-full">

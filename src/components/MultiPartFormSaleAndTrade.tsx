@@ -586,7 +586,7 @@ const MultiPartFormSaleAndTrade = () => {
 
   return (
     <>
-      <Head title="Cadastrar anúncio" iconHref="/logo-icon.svg" />
+      <Head title="Cadastrar anúncio" iconHref="/Logos/logo-icon.svg" />
       <ModalAlert
         isOpen={showSuccessMessage}
         onClose={() => setShowSuccessMessage(false)}
@@ -776,11 +776,11 @@ const MultiPartFormSaleAndTrade = () => {
               {/* Mostrar campo de região apenas se um jogo está selecionado E há regiões disponíveis */}
               {formData.jogo &&
               mainGameData.getAvailableRegions().length > 0 ? (
-              <div>
-                <label className="block mb-1 text-sm font-semibold">
-                  Região do Cartucho
-                </label>
-                <CustomSelect
+                <div>
+                  <label className="block mb-1 text-sm font-semibold">
+                    Região do Cartucho
+                  </label>
+                  <CustomSelect
                     options={mainGameData.getAvailableRegions().map((r) => ({
                       value: r.id.toString(),
                       label: r.name,
@@ -800,20 +800,20 @@ const MultiPartFormSaleAndTrade = () => {
                           }
                         : null
                     }
-                  onChange={(opt) => handleSelectChange("regiao", opt.value)}
-                  required={true}
-                  showValidation={showValidation.step2}
-                />
-              </div>
+                    onChange={(opt) => handleSelectChange("regiao", opt.value)}
+                    required={true}
+                    showValidation={showValidation.step2}
+                  />
+                </div>
               ) : null}
               {/* Mostrar campo de idioma do áudio apenas se um jogo está selecionado E há idiomas disponíveis */}
               {formData.jogo &&
               mainGameData.getAvailableAudioLanguages().length > 0 ? (
-              <div>
-                <label className="block mb-1 text-sm font-semibold">
-                  Idioma do Áudio
-                </label>
-                <CustomSelect
+                <div>
+                  <label className="block mb-1 text-sm font-semibold">
+                    Idioma do Áudio
+                  </label>
+                  <CustomSelect
                     options={mainGameData
                       .getAvailableAudioLanguages()
                       .map((l) => ({
@@ -836,22 +836,22 @@ const MultiPartFormSaleAndTrade = () => {
                           }
                         : null
                     }
-                  onChange={(opt) =>
-                    handleSelectChange("idiomaAudio", opt.value)
-                  }
-                  required={true}
-                  showValidation={showValidation.step2}
-                />
-              </div>
+                    onChange={(opt) =>
+                      handleSelectChange("idiomaAudio", opt.value)
+                    }
+                    required={true}
+                    showValidation={showValidation.step2}
+                  />
+                </div>
               ) : null}
               {/* Mostrar campo de idioma da legenda apenas se um jogo está selecionado E há idiomas disponíveis */}
               {formData.jogo &&
               mainGameData.getAvailableSubtitleLanguages().length > 0 ? (
-              <div>
-                <label className="block mb-1 text-sm font-semibold">
-                  Idioma da Legenda
-                </label>
-                <CustomSelect
+                <div>
+                  <label className="block mb-1 text-sm font-semibold">
+                    Idioma da Legenda
+                  </label>
+                  <CustomSelect
                     options={mainGameData
                       .getAvailableSubtitleLanguages()
                       .map((l) => ({
@@ -874,22 +874,22 @@ const MultiPartFormSaleAndTrade = () => {
                           }
                         : null
                     }
-                  onChange={(opt) =>
-                    handleSelectChange("idiomaLegenda", opt.value)
-                  }
-                  required={true}
-                  showValidation={showValidation.step2}
-                />
-              </div>
+                    onChange={(opt) =>
+                      handleSelectChange("idiomaLegenda", opt.value)
+                    }
+                    required={true}
+                    showValidation={showValidation.step2}
+                  />
+                </div>
               ) : null}
               {/* Mostrar campo de idioma da interface apenas se um jogo está selecionado E há idiomas disponíveis */}
               {formData.jogo &&
               mainGameData.getAvailableInterfaceLanguages().length > 0 ? (
-              <div>
-                <label className="block mb-1 text-sm font-semibold">
-                  Idioma da Interface
-                </label>
-                <CustomSelect
+                <div>
+                  <label className="block mb-1 text-sm font-semibold">
+                    Idioma da Interface
+                  </label>
+                  <CustomSelect
                     options={mainGameData
                       .getAvailableInterfaceLanguages()
                       .map((l) => ({
@@ -914,13 +914,13 @@ const MultiPartFormSaleAndTrade = () => {
                           }
                         : null
                     }
-                  onChange={(opt) =>
-                    handleSelectChange("idiomaInterface", opt.value)
-                  }
-                  required={true}
-                  showValidation={showValidation.step2}
-                />
-              </div>
+                    onChange={(opt) =>
+                      handleSelectChange("idiomaInterface", opt.value)
+                    }
+                    required={true}
+                    showValidation={showValidation.step2}
+                  />
+                </div>
               ) : null}
 
               <p className="text-sm">
@@ -1002,11 +1002,11 @@ const MultiPartFormSaleAndTrade = () => {
               {/* Mostrar campo de região apenas se um jogo de troca está selecionado E há regiões disponíveis */}
               {formData.jogosTroca &&
               tradeGameData.getAvailableRegions().length > 0 ? (
-              <div>
-                <label className="block mb-1 text-sm font-semibold">
-                  Região do Cartucho
-                </label>
-                <CustomSelect
+                <div>
+                  <label className="block mb-1 text-sm font-semibold">
+                    Região do Cartucho
+                  </label>
+                  <CustomSelect
                     options={tradeGameData.getAvailableRegions().map((r) => ({
                       value: r.id.toString(),
                       label: r.name,
@@ -1027,22 +1027,22 @@ const MultiPartFormSaleAndTrade = () => {
                           }
                         : null
                     }
-                  onChange={(opt) =>
-                    handleSelectChange("regioesTroca", opt.value)
-                  }
-                  required={true}
-                  showValidation={showValidation.step3}
-                />
-              </div>
+                    onChange={(opt) =>
+                      handleSelectChange("regioesTroca", opt.value)
+                    }
+                    required={true}
+                    showValidation={showValidation.step3}
+                  />
+                </div>
               ) : null}
               {/* Mostrar campo de idioma do áudio apenas se um jogo de troca está selecionado E há idiomas disponíveis */}
               {formData.jogosTroca &&
               tradeGameData.getAvailableAudioLanguages().length > 0 ? (
-              <div>
-                <label className="block mb-1 text-sm font-semibold">
-                  Idioma do Áudio
-                </label>
-                <CustomSelect
+                <div>
+                  <label className="block mb-1 text-sm font-semibold">
+                    Idioma do Áudio
+                  </label>
+                  <CustomSelect
                     options={tradeGameData
                       .getAvailableAudioLanguages()
                       .map((l) => ({
@@ -1068,22 +1068,22 @@ const MultiPartFormSaleAndTrade = () => {
                           }
                         : null
                     }
-                  onChange={(opt) =>
-                    handleSelectChange("idiomasAudioTroca", opt.value)
-                  }
-                  required={true}
-                  showValidation={showValidation.step3}
-                />
-              </div>
+                    onChange={(opt) =>
+                      handleSelectChange("idiomasAudioTroca", opt.value)
+                    }
+                    required={true}
+                    showValidation={showValidation.step3}
+                  />
+                </div>
               ) : null}
               {/* Mostrar campo de idioma da legenda apenas se um jogo de troca está selecionado E há idiomas disponíveis */}
               {formData.jogosTroca &&
               tradeGameData.getAvailableSubtitleLanguages().length > 0 ? (
-              <div>
-                <label className="block mb-1 text-sm font-semibold">
-                  Idioma da Legenda
-                </label>
-                <CustomSelect
+                <div>
+                  <label className="block mb-1 text-sm font-semibold">
+                    Idioma da Legenda
+                  </label>
+                  <CustomSelect
                     options={tradeGameData
                       .getAvailableSubtitleLanguages()
                       .map((l) => ({
@@ -1110,22 +1110,22 @@ const MultiPartFormSaleAndTrade = () => {
                           }
                         : null
                     }
-                  onChange={(opt) =>
-                    handleSelectChange("idiomasLegendaTroca", opt.value)
-                  }
-                  required={true}
-                  showValidation={showValidation.step3}
-                />
-              </div>
+                    onChange={(opt) =>
+                      handleSelectChange("idiomasLegendaTroca", opt.value)
+                    }
+                    required={true}
+                    showValidation={showValidation.step3}
+                  />
+                </div>
               ) : null}
               {/* Mostrar campo de idioma da interface apenas se um jogo de troca está selecionado E há idiomas disponíveis */}
               {formData.jogosTroca &&
               tradeGameData.getAvailableInterfaceLanguages().length > 0 ? (
-              <div>
-                <label className="block mb-1 text-sm font-semibold">
-                  Idioma da Interface
-                </label>
-                <CustomSelect
+                <div>
+                  <label className="block mb-1 text-sm font-semibold">
+                    Idioma da Interface
+                  </label>
+                  <CustomSelect
                     options={tradeGameData
                       .getAvailableInterfaceLanguages()
                       .map((l) => ({
@@ -1152,13 +1152,13 @@ const MultiPartFormSaleAndTrade = () => {
                           }
                         : null
                     }
-                  onChange={(opt) =>
-                    handleSelectChange("idiomasInterfaceTroca", opt.value)
-                  }
-                  required={true}
-                  showValidation={showValidation.step3}
-                />
-              </div>
+                    onChange={(opt) =>
+                      handleSelectChange("idiomasInterfaceTroca", opt.value)
+                    }
+                    required={true}
+                    showValidation={showValidation.step3}
+                  />
+                </div>
               ) : null}
             </div>
           </>
@@ -1262,9 +1262,7 @@ const MultiPartFormSaleAndTrade = () => {
               steps={stepsArray}
               onBack={prevStep}
             />
-            <div
-              className={`${isMobile ? "p-4" : "p-6"} space-y-6`}
-            >
+            <div className={`${isMobile ? "p-4" : "p-6"} space-y-6`}>
               {/* Lista de variações existentes */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -1402,22 +1400,22 @@ const MultiPartFormSaleAndTrade = () => {
                           {/* Mostrar campo de região apenas se um jogo está selecionado E há regiões disponíveis */}
                           {formData.jogo &&
                           mainGameData.getAvailableRegions().length > 0 ? (
-                          <div
-                            className={`flex ${
-                              isMobile ? "flex-col gap-2" : "items-center"
-                            }`}
-                          >
-                            <label
-                              className={`font-medium text-gray-700 flex-shrink-0 ${
-                                isMobile
-                                  ? "text-start text-md"
-                                  : "text-end text-sm w-40"
-                              } pr-2`}
+                            <div
+                              className={`flex ${
+                                isMobile ? "flex-col gap-2" : "items-center"
+                              }`}
                             >
-                              Região do Cartucho:
-                            </label>
-                            <div className="flex-1">
-                              <CustomSelect
+                              <label
+                                className={`font-medium text-gray-700 flex-shrink-0 ${
+                                  isMobile
+                                    ? "text-start text-md"
+                                    : "text-end text-sm w-40"
+                                } pr-2`}
+                              >
+                                Região do Cartucho:
+                              </label>
+                              <div className="flex-1">
+                                <CustomSelect
                                   options={mainGameData
                                     .getAvailableRegions()
                                     .map((r) => ({
@@ -1445,38 +1443,38 @@ const MultiPartFormSaleAndTrade = () => {
                                         }
                                       : null
                                   }
-                                onChange={(opt) =>
-                                  handleVariationSelectChange(
-                                    "regiao",
-                                    opt.value
-                                  )
-                                }
-                                required={true}
-                                showValidation={showValidation.step5}
-                              />
+                                  onChange={(opt) =>
+                                    handleVariationSelectChange(
+                                      "regiao",
+                                      opt.value
+                                    )
+                                  }
+                                  required={true}
+                                  showValidation={showValidation.step5}
+                                />
+                              </div>
                             </div>
-                          </div>
                           ) : null}
                           {/* Mostrar campo de idioma do áudio apenas se um jogo está selecionado E há idiomas disponíveis */}
                           {formData.jogo &&
                           mainGameData.getAvailableAudioLanguages().length >
                             0 ? (
-                          <div
-                            className={`flex ${
-                              isMobile ? "flex-col gap-2" : "items-center"
-                            }`}
-                          >
-                            <label
-                              className={`font-medium text-gray-700 flex-shrink-0 ${
-                                isMobile
-                                  ? "text-start text-md"
-                                  : "text-end text-sm w-40"
-                              } pr-2`}
+                            <div
+                              className={`flex ${
+                                isMobile ? "flex-col gap-2" : "items-center"
+                              }`}
                             >
-                              Idioma do Audio:
-                            </label>
-                            <div className="flex-1">
-                              <CustomSelect
+                              <label
+                                className={`font-medium text-gray-700 flex-shrink-0 ${
+                                  isMobile
+                                    ? "text-start text-md"
+                                    : "text-end text-sm w-40"
+                                } pr-2`}
+                              >
+                                Idioma do Audio:
+                              </label>
+                              <div className="flex-1">
+                                <CustomSelect
                                   options={mainGameData
                                     .getAvailableAudioLanguages()
                                     .map((l) => ({
@@ -1504,38 +1502,38 @@ const MultiPartFormSaleAndTrade = () => {
                                         }
                                       : null
                                   }
-                                onChange={(opt) =>
-                                  handleVariationSelectChange(
-                                    "idiomaAudio",
-                                    opt.value
-                                  )
-                                }
-                                required={true}
-                                showValidation={showValidation.step5}
-                              />
+                                  onChange={(opt) =>
+                                    handleVariationSelectChange(
+                                      "idiomaAudio",
+                                      opt.value
+                                    )
+                                  }
+                                  required={true}
+                                  showValidation={showValidation.step5}
+                                />
+                              </div>
                             </div>
-                          </div>
                           ) : null}
                           {/* Mostrar campo de idioma da legenda apenas se um jogo está selecionado E há idiomas disponíveis */}
                           {formData.jogo &&
                           mainGameData.getAvailableSubtitleLanguages().length >
                             0 ? (
-                          <div
-                            className={`flex ${
-                              isMobile ? "flex-col gap-2" : "items-center"
-                            }`}
-                          >
-                            <label
-                              className={`font-medium text-gray-700 flex-shrink-0 ${
-                                isMobile
-                                  ? "text-start text-md"
-                                  : "text-end text-sm w-40"
-                              } pr-2`}
+                            <div
+                              className={`flex ${
+                                isMobile ? "flex-col gap-2" : "items-center"
+                              }`}
                             >
-                              Idioma da Legenda:
-                            </label>
-                            <div className="flex-1">
-                              <CustomSelect
+                              <label
+                                className={`font-medium text-gray-700 flex-shrink-0 ${
+                                  isMobile
+                                    ? "text-start text-md"
+                                    : "text-end text-sm w-40"
+                                } pr-2`}
+                              >
+                                Idioma da Legenda:
+                              </label>
+                              <div className="flex-1">
+                                <CustomSelect
                                   options={mainGameData
                                     .getAvailableSubtitleLanguages()
                                     .map((l) => ({
@@ -1563,38 +1561,38 @@ const MultiPartFormSaleAndTrade = () => {
                                         }
                                       : null
                                   }
-                                onChange={(opt) =>
-                                  handleVariationSelectChange(
-                                    "idiomaLegenda",
-                                    opt.value
-                                  )
-                                }
-                                required={true}
-                                showValidation={showValidation.step5}
-                              />
+                                  onChange={(opt) =>
+                                    handleVariationSelectChange(
+                                      "idiomaLegenda",
+                                      opt.value
+                                    )
+                                  }
+                                  required={true}
+                                  showValidation={showValidation.step5}
+                                />
+                              </div>
                             </div>
-                          </div>
                           ) : null}
                           {/* Mostrar campo de idioma da interface apenas se um jogo está selecionado E há idiomas disponíveis */}
                           {formData.jogo &&
                           mainGameData.getAvailableInterfaceLanguages().length >
                             0 ? (
-                          <div
-                            className={`flex ${
-                              isMobile ? "flex-col gap-2" : "items-center"
-                            }`}
-                          >
-                            <label
-                              className={`font-medium text-gray-700 flex-shrink-0 ${
-                                isMobile
-                                  ? "text-start text-md"
-                                  : "text-end text-sm w-40"
-                              } pr-2`}
+                            <div
+                              className={`flex ${
+                                isMobile ? "flex-col gap-2" : "items-center"
+                              }`}
                             >
-                              Idioma da Interface:
-                            </label>
-                            <div className="flex-1">
-                              <CustomSelect
+                              <label
+                                className={`font-medium text-gray-700 flex-shrink-0 ${
+                                  isMobile
+                                    ? "text-start text-md"
+                                    : "text-end text-sm w-40"
+                                } pr-2`}
+                              >
+                                Idioma da Interface:
+                              </label>
+                              <div className="flex-1">
+                                <CustomSelect
                                   options={mainGameData
                                     .getAvailableInterfaceLanguages()
                                     .map((l) => ({
@@ -1622,17 +1620,17 @@ const MultiPartFormSaleAndTrade = () => {
                                         }
                                       : null
                                   }
-                                onChange={(opt) =>
-                                  handleVariationSelectChange(
-                                    "idiomaInterface",
-                                    opt.value
-                                  )
-                                }
-                                required={true}
-                                showValidation={showValidation.step5}
-                              />
+                                  onChange={(opt) =>
+                                    handleVariationSelectChange(
+                                      "idiomaInterface",
+                                      opt.value
+                                    )
+                                  }
+                                  required={true}
+                                  showValidation={showValidation.step5}
+                                />
+                              </div>
                             </div>
-                          </div>
                           ) : null}
                           <div
                             className={`flex ${
@@ -1892,22 +1890,22 @@ const MultiPartFormSaleAndTrade = () => {
                                 });
                                 return shouldShow;
                               })() ? (
-                              <div
-                                className={`flex ${
-                                  isMobile ? "flex-col gap-2" : "items-center"
-                                }`}
-                              >
-                                <label
-                                  className={`font-medium text-gray-700 flex-shrink-0 ${
-                                    isMobile
-                                      ? "text-start text-md"
-                                      : "text-end text-sm w-40"
-                                  } pr-2`}
+                                <div
+                                  className={`flex ${
+                                    isMobile ? "flex-col gap-2" : "items-center"
+                                  }`}
                                 >
-                                  Região do Cartucho:
-                                </label>
-                                <div className="flex-1">
-                                  <CustomSelect
+                                  <label
+                                    className={`font-medium text-gray-700 flex-shrink-0 ${
+                                      isMobile
+                                        ? "text-start text-md"
+                                        : "text-end text-sm w-40"
+                                    } pr-2`}
+                                  >
+                                    Região do Cartucho:
+                                  </label>
+                                  <div className="flex-1">
+                                    <CustomSelect
                                       options={tradeGameData
                                         .getAvailableRegions()
                                         .map((r) => ({
@@ -1935,38 +1933,38 @@ const MultiPartFormSaleAndTrade = () => {
                                             }
                                           : null
                                       }
-                                    onChange={(opt) =>
-                                      handleVariationSelectChange(
-                                        "regioesTroca",
-                                        opt.value
-                                      )
-                                    }
-                                    required={true}
-                                    showValidation={showValidation.step5}
-                                  />
+                                      onChange={(opt) =>
+                                        handleVariationSelectChange(
+                                          "regioesTroca",
+                                          opt.value
+                                        )
+                                      }
+                                      required={true}
+                                      showValidation={showValidation.step5}
+                                    />
+                                  </div>
                                 </div>
-                              </div>
                               ) : null}
                               {/* Mostrar campo de idioma do áudio de troca apenas se um jogo de troca está selecionado E há idiomas disponíveis */}
                               {variationData.jogosTroca &&
                               tradeGameData.getAvailableAudioLanguages()
                                 .length > 0 ? (
-                              <div
-                                className={`flex ${
-                                  isMobile ? "flex-col gap-2" : "items-center"
-                                }`}
-                              >
-                                <label
-                                  className={`font-medium text-gray-700 flex-shrink-0 ${
-                                    isMobile
-                                      ? "text-start text-md"
-                                      : "text-end text-sm w-40"
-                                  } pr-2`}
+                                <div
+                                  className={`flex ${
+                                    isMobile ? "flex-col gap-2" : "items-center"
+                                  }`}
                                 >
-                                  Idioma de Áudio:
-                                </label>
-                                <div className="flex-1">
-                                  <CustomSelect
+                                  <label
+                                    className={`font-medium text-gray-700 flex-shrink-0 ${
+                                      isMobile
+                                        ? "text-start text-md"
+                                        : "text-end text-sm w-40"
+                                    } pr-2`}
+                                  >
+                                    Idioma de Áudio:
+                                  </label>
+                                  <div className="flex-1">
+                                    <CustomSelect
                                       options={tradeGameData
                                         .getAvailableAudioLanguages()
                                         .map((l) => ({
@@ -1979,7 +1977,7 @@ const MultiPartFormSaleAndTrade = () => {
                                           .find(
                                             (l) =>
                                               l.id.toString() ===
-                                        variationData.idiomasAudioTroca
+                                              variationData.idiomasAudioTroca
                                           )
                                           ? {
                                               value:
@@ -1995,38 +1993,38 @@ const MultiPartFormSaleAndTrade = () => {
                                             }
                                           : null
                                       }
-                                    onChange={(opt) =>
-                                      handleVariationSelectChange(
-                                        "idiomasAudioTroca",
-                                        opt.value
-                                      )
-                                    }
-                                    required={true}
-                                    showValidation={showValidation.step5}
-                                  />
+                                      onChange={(opt) =>
+                                        handleVariationSelectChange(
+                                          "idiomasAudioTroca",
+                                          opt.value
+                                        )
+                                      }
+                                      required={true}
+                                      showValidation={showValidation.step5}
+                                    />
+                                  </div>
                                 </div>
-                              </div>
                               ) : null}
                               {/* Mostrar campo de idioma da legenda de troca apenas se um jogo de troca está selecionado E há idiomas disponíveis */}
                               {variationData.jogosTroca &&
                               tradeGameData.getAvailableSubtitleLanguages()
                                 .length > 0 ? (
-                              <div
-                                className={`flex ${
-                                  isMobile ? "flex-col gap-2" : "items-center"
-                                }`}
-                              >
-                                <label
-                                  className={`font-medium text-gray-700 flex-shrink-0 ${
-                                    isMobile
-                                      ? "text-start text-md"
-                                      : "text-end text-sm w-40"
-                                  } pr-2`}
+                                <div
+                                  className={`flex ${
+                                    isMobile ? "flex-col gap-2" : "items-center"
+                                  }`}
                                 >
-                                  Idioma de Legenda:
-                                </label>
-                                <div className="flex-1">
-                                  <CustomSelect
+                                  <label
+                                    className={`font-medium text-gray-700 flex-shrink-0 ${
+                                      isMobile
+                                        ? "text-start text-md"
+                                        : "text-end text-sm w-40"
+                                    } pr-2`}
+                                  >
+                                    Idioma de Legenda:
+                                  </label>
+                                  <div className="flex-1">
+                                    <CustomSelect
                                       options={tradeGameData
                                         .getAvailableSubtitleLanguages()
                                         .map((l) => ({
@@ -2039,7 +2037,7 @@ const MultiPartFormSaleAndTrade = () => {
                                           .find(
                                             (l) =>
                                               l.id.toString() ===
-                                        variationData.idiomasLegendaTroca
+                                              variationData.idiomasLegendaTroca
                                           )
                                           ? {
                                               value:
@@ -2055,38 +2053,38 @@ const MultiPartFormSaleAndTrade = () => {
                                             }
                                           : null
                                       }
-                                    onChange={(opt) =>
-                                      handleVariationSelectChange(
-                                        "idiomasLegendaTroca",
-                                        opt.value
-                                      )
-                                    }
-                                    required={true}
-                                    showValidation={showValidation.step5}
-                                  />
+                                      onChange={(opt) =>
+                                        handleVariationSelectChange(
+                                          "idiomasLegendaTroca",
+                                          opt.value
+                                        )
+                                      }
+                                      required={true}
+                                      showValidation={showValidation.step5}
+                                    />
+                                  </div>
                                 </div>
-                              </div>
                               ) : null}
                               {/* Mostrar campo de idioma da interface de troca apenas se um jogo de troca está selecionado E há idiomas disponíveis */}
                               {variationData.jogosTroca &&
                               tradeGameData.getAvailableInterfaceLanguages()
                                 .length > 0 ? (
-                              <div
-                                className={`flex ${
-                                  isMobile ? "flex-col gap-2" : "items-center"
-                                }`}
-                              >
-                                <label
-                                  className={`font-medium text-gray-700 flex-shrink-0 ${
-                                    isMobile
-                                      ? "text-start text-md"
-                                      : "text-end text-sm w-40"
-                                  } pr-2`}
+                                <div
+                                  className={`flex ${
+                                    isMobile ? "flex-col gap-2" : "items-center"
+                                  }`}
                                 >
-                                  Idioma de Interface:
-                                </label>
-                                <div className="flex-1">
-                                  <CustomSelect
+                                  <label
+                                    className={`font-medium text-gray-700 flex-shrink-0 ${
+                                      isMobile
+                                        ? "text-start text-md"
+                                        : "text-end text-sm w-40"
+                                    } pr-2`}
+                                  >
+                                    Idioma de Interface:
+                                  </label>
+                                  <div className="flex-1">
+                                    <CustomSelect
                                       options={tradeGameData
                                         .getAvailableInterfaceLanguages()
                                         .map((l) => ({
@@ -2099,7 +2097,7 @@ const MultiPartFormSaleAndTrade = () => {
                                           .find(
                                             (l) =>
                                               l.id.toString() ===
-                                        variationData.idiomasInterfaceTroca
+                                              variationData.idiomasInterfaceTroca
                                           )
                                           ? {
                                               value:
@@ -2115,17 +2113,17 @@ const MultiPartFormSaleAndTrade = () => {
                                             }
                                           : null
                                       }
-                                    onChange={(opt) =>
-                                      handleVariationSelectChange(
-                                        "idiomasInterfaceTroca",
-                                        opt.value
-                                      )
-                                    }
-                                    required={true}
-                                    showValidation={showValidation.step5}
-                                  />
+                                      onChange={(opt) =>
+                                        handleVariationSelectChange(
+                                          "idiomasInterfaceTroca",
+                                          opt.value
+                                        )
+                                      }
+                                      required={true}
+                                      showValidation={showValidation.step5}
+                                    />
+                                  </div>
                                 </div>
-                              </div>
                               ) : null}
                             </div>
                           </div>
@@ -2350,22 +2348,22 @@ const MultiPartFormSaleAndTrade = () => {
                     {/* Mostrar campo de região apenas se um jogo está selecionado E há regiões disponíveis */}
                     {formData.jogo &&
                     mainGameData.getAvailableRegions().length > 0 ? (
-                    <div
-                      className={`flex ${
-                        isMobile ? "flex-col gap-2" : "items-center"
-                      }`}
-                    >
-                      <label
-                        className={`font-medium text-gray-700 flex-shrink-0 ${
-                          isMobile
-                            ? "text-start text-md"
-                            : "text-end text-sm w-40"
-                        } pr-2`}
+                      <div
+                        className={`flex ${
+                          isMobile ? "flex-col gap-2" : "items-center"
+                        }`}
                       >
-                        Região do Cartucho:
-                      </label>
-                      <div className="flex-1">
-                        <CustomSelect
+                        <label
+                          className={`font-medium text-gray-700 flex-shrink-0 ${
+                            isMobile
+                              ? "text-start text-md"
+                              : "text-end text-sm w-40"
+                          } pr-2`}
+                        >
+                          Região do Cartucho:
+                        </label>
+                        <div className="flex-1">
+                          <CustomSelect
                             options={mainGameData
                               .getAvailableRegions()
                               .map((r) => ({
@@ -2392,34 +2390,34 @@ const MultiPartFormSaleAndTrade = () => {
                                   }
                                 : null
                             }
-                          onChange={(opt) =>
-                            handleVariationSelectChange("regiao", opt.value)
-                          }
-                          required={true}
-                          showValidation={showValidation.step5}
-                        />
+                            onChange={(opt) =>
+                              handleVariationSelectChange("regiao", opt.value)
+                            }
+                            required={true}
+                            showValidation={showValidation.step5}
+                          />
+                        </div>
                       </div>
-                    </div>
                     ) : null}
                     {/* Mostrar campo de idioma do áudio apenas se um jogo está selecionado E há idiomas disponíveis */}
                     {formData.jogo &&
                     mainGameData.getAvailableAudioLanguages().length > 0 ? (
-                    <div
-                      className={`flex ${
-                        isMobile ? "flex-col gap-2" : "items-center"
-                      }`}
-                    >
-                      <label
-                        className={`font-medium text-gray-700 flex-shrink-0 ${
-                          isMobile
-                            ? "text-start text-md"
-                            : "text-end text-sm w-40"
-                        } pr-2`}
+                      <div
+                        className={`flex ${
+                          isMobile ? "flex-col gap-2" : "items-center"
+                        }`}
                       >
-                        Idioma do Audio:
-                      </label>
-                      <div className="flex-1">
-                        <CustomSelect
+                        <label
+                          className={`font-medium text-gray-700 flex-shrink-0 ${
+                            isMobile
+                              ? "text-start text-md"
+                              : "text-end text-sm w-40"
+                          } pr-2`}
+                        >
+                          Idioma do Audio:
+                        </label>
+                        <div className="flex-1">
+                          <CustomSelect
                             options={mainGameData
                               .getAvailableAudioLanguages()
                               .map((l) => ({
@@ -2447,37 +2445,37 @@ const MultiPartFormSaleAndTrade = () => {
                                   }
                                 : null
                             }
-                          onChange={(opt) =>
-                            handleVariationSelectChange(
-                              "idiomaAudio",
-                              opt.value
-                            )
-                          }
-                          required={true}
-                          showValidation={showValidation.step5}
-                        />
+                            onChange={(opt) =>
+                              handleVariationSelectChange(
+                                "idiomaAudio",
+                                opt.value
+                              )
+                            }
+                            required={true}
+                            showValidation={showValidation.step5}
+                          />
+                        </div>
                       </div>
-                    </div>
                     ) : null}
                     {/* Mostrar campo de idioma da legenda apenas se um jogo está selecionado E há idiomas disponíveis */}
                     {formData.jogo &&
                     mainGameData.getAvailableSubtitleLanguages().length > 0 ? (
-                    <div
-                      className={`flex ${
-                        isMobile ? "flex-col gap-2" : "items-center"
-                      }`}
-                    >
-                      <label
-                        className={`font-medium text-gray-700 flex-shrink-0 ${
-                          isMobile
-                            ? "text-start text-md"
-                            : "text-end text-sm w-40"
-                        } pr-2`}
+                      <div
+                        className={`flex ${
+                          isMobile ? "flex-col gap-2" : "items-center"
+                        }`}
                       >
-                        Idioma da Legenda:
-                      </label>
-                      <div className="flex-1">
-                        <CustomSelect
+                        <label
+                          className={`font-medium text-gray-700 flex-shrink-0 ${
+                            isMobile
+                              ? "text-start text-md"
+                              : "text-end text-sm w-40"
+                          } pr-2`}
+                        >
+                          Idioma da Legenda:
+                        </label>
+                        <div className="flex-1">
+                          <CustomSelect
                             options={mainGameData
                               .getAvailableSubtitleLanguages()
                               .map((l) => ({
@@ -2505,37 +2503,37 @@ const MultiPartFormSaleAndTrade = () => {
                                   }
                                 : null
                             }
-                          onChange={(opt) =>
-                            handleVariationSelectChange(
-                              "idiomaLegenda",
-                              opt.value
-                            )
-                          }
-                          required={true}
-                          showValidation={showValidation.step5}
-                        />
+                            onChange={(opt) =>
+                              handleVariationSelectChange(
+                                "idiomaLegenda",
+                                opt.value
+                              )
+                            }
+                            required={true}
+                            showValidation={showValidation.step5}
+                          />
+                        </div>
                       </div>
-                    </div>
                     ) : null}
                     {/* Mostrar campo de idioma da interface apenas se um jogo está selecionado E há idiomas disponíveis */}
                     {formData.jogo &&
                     mainGameData.getAvailableInterfaceLanguages().length > 0 ? (
-                    <div
-                      className={`flex ${
-                        isMobile ? "flex-col gap-2" : "items-center"
-                      }`}
-                    >
-                      <label
-                        className={`font-medium text-gray-700 flex-shrink-0 ${
-                          isMobile
-                            ? "text-start text-md"
-                            : "text-end text-sm w-40"
-                        } pr-2`}
+                      <div
+                        className={`flex ${
+                          isMobile ? "flex-col gap-2" : "items-center"
+                        }`}
                       >
-                        Idioma da Interface:
-                      </label>
-                      <div className="flex-1">
-                        <CustomSelect
+                        <label
+                          className={`font-medium text-gray-700 flex-shrink-0 ${
+                            isMobile
+                              ? "text-start text-md"
+                              : "text-end text-sm w-40"
+                          } pr-2`}
+                        >
+                          Idioma da Interface:
+                        </label>
+                        <div className="flex-1">
+                          <CustomSelect
                             options={mainGameData
                               .getAvailableInterfaceLanguages()
                               .map((l) => ({
@@ -2563,17 +2561,17 @@ const MultiPartFormSaleAndTrade = () => {
                                   }
                                 : null
                             }
-                          onChange={(opt) =>
-                            handleVariationSelectChange(
-                              "idiomaInterface",
-                              opt.value
-                            )
-                          }
-                          required={true}
-                          showValidation={showValidation.step5}
-                        />
+                            onChange={(opt) =>
+                              handleVariationSelectChange(
+                                "idiomaInterface",
+                                opt.value
+                              )
+                            }
+                            required={true}
+                            showValidation={showValidation.step5}
+                          />
+                        </div>
                       </div>
-                    </div>
                     ) : null}
                     <div
                       className={`flex ${
@@ -2806,22 +2804,22 @@ const MultiPartFormSaleAndTrade = () => {
                         {/* Mostrar campo de região de troca apenas se um jogo de troca está selecionado E há regiões disponíveis */}
                         {variationData.jogosTroca &&
                         tradeGameData.getAvailableRegions().length > 0 ? (
-                        <div
-                          className={`flex ${
-                            isMobile ? "flex-col gap-2" : "items-center"
-                          }`}
-                        >
-                          <label
-                            className={`font-medium text-gray-700 flex-shrink-0 ${
-                              isMobile
-                                ? "text-start text-md"
-                                : "text-end text-sm w-40"
-                            } pr-2`}
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
                           >
-                            Região do Cartucho:
-                          </label>
-                          <div className="flex-1">
-                            <CustomSelect
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Região do Cartucho:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
                                 options={tradeGameData
                                   .getAvailableRegions()
                                   .map((r) => ({
@@ -2849,38 +2847,38 @@ const MultiPartFormSaleAndTrade = () => {
                                       }
                                     : null
                                 }
-                              onChange={(opt) =>
-                                handleVariationSelectChange(
-                                  "regioesTroca",
-                                  opt.value
-                                )
-                              }
-                              required={true}
-                              showValidation={showValidation.step5}
-                            />
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "regioesTroca",
+                                    opt.value
+                                  )
+                                }
+                                required={true}
+                                showValidation={showValidation.step5}
+                              />
+                            </div>
                           </div>
-                        </div>
                         ) : null}
                         {/* Mostrar campo de idioma do áudio de troca apenas se um jogo de troca está selecionado E há idiomas disponíveis */}
                         {variationData.jogosTroca &&
                         tradeGameData.getAvailableAudioLanguages().length >
                           0 ? (
-                        <div
-                          className={`flex ${
-                            isMobile ? "flex-col gap-2" : "items-center"
-                          }`}
-                        >
-                          <label
-                            className={`font-medium text-gray-700 flex-shrink-0 ${
-                              isMobile
-                                ? "text-start text-md"
-                                : "text-end text-sm w-40"
-                            } pr-2`}
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
                           >
-                            Idioma de Áudio:
-                          </label>
-                          <div className="flex-1">
-                            <CustomSelect
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Idioma de Áudio:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
                                 options={tradeGameData
                                   .getAvailableAudioLanguages()
                                   .map((l) => ({
@@ -2898,7 +2896,7 @@ const MultiPartFormSaleAndTrade = () => {
                                     ? {
                                         value: variationData.idiomasAudioTroca,
                                         label:
-                                        tradeGameData
+                                          tradeGameData
                                             .getAvailableAudioLanguages()
                                             .find(
                                               (l) =>
@@ -2908,38 +2906,38 @@ const MultiPartFormSaleAndTrade = () => {
                                       }
                                     : null
                                 }
-                              onChange={(opt) =>
-                                handleVariationSelectChange(
-                                  "idiomasAudioTroca",
-                                  opt.value
-                                )
-                              }
-                              required={true}
-                              showValidation={showValidation.step5}
-                            />
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "idiomasAudioTroca",
+                                    opt.value
+                                  )
+                                }
+                                required={true}
+                                showValidation={showValidation.step5}
+                              />
+                            </div>
                           </div>
-                        </div>
                         ) : null}
                         {/* Mostrar campo de idioma da legenda de troca apenas se um jogo de troca está selecionado E há idiomas disponíveis */}
                         {variationData.jogosTroca &&
                         tradeGameData.getAvailableSubtitleLanguages().length >
                           0 ? (
-                        <div
-                          className={`flex ${
-                            isMobile ? "flex-col gap-2" : "items-center"
-                          }`}
-                        >
-                          <label
-                            className={`font-medium text-gray-700 flex-shrink-0 ${
-                              isMobile
-                                ? "text-start text-md"
-                                : "text-end text-sm w-40"
-                            } pr-2`}
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
                           >
-                            Idioma de Legenda:
-                          </label>
-                          <div className="flex-1">
-                            <CustomSelect
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Idioma de Legenda:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
                                 options={tradeGameData
                                   .getAvailableSubtitleLanguages()
                                   .map((l) => ({
@@ -2958,7 +2956,7 @@ const MultiPartFormSaleAndTrade = () => {
                                         value:
                                           variationData.idiomasLegendaTroca,
                                         label:
-                                        tradeGameData
+                                          tradeGameData
                                             .getAvailableSubtitleLanguages()
                                             .find(
                                               (l) =>
@@ -2968,38 +2966,38 @@ const MultiPartFormSaleAndTrade = () => {
                                       }
                                     : null
                                 }
-                              onChange={(opt) =>
-                                handleVariationSelectChange(
-                                  "idiomasLegendaTroca",
-                                  opt.value
-                                )
-                              }
-                              required={true}
-                              showValidation={showValidation.step5}
-                            />
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "idiomasLegendaTroca",
+                                    opt.value
+                                  )
+                                }
+                                required={true}
+                                showValidation={showValidation.step5}
+                              />
+                            </div>
                           </div>
-                        </div>
                         ) : null}
                         {/* Mostrar campo de idioma da interface de troca apenas se um jogo de troca está selecionado E há idiomas disponíveis */}
                         {variationData.jogosTroca &&
                         tradeGameData.getAvailableInterfaceLanguages().length >
                           0 ? (
-                        <div
-                          className={`flex ${
-                            isMobile ? "flex-col gap-2" : "items-center"
-                          }`}
-                        >
-                          <label
-                            className={`font-medium text-gray-700 flex-shrink-0 ${
-                              isMobile
-                                ? "text-start text-md"
-                                : "text-end text-sm w-40"
-                            } pr-2`}
+                          <div
+                            className={`flex ${
+                              isMobile ? "flex-col gap-2" : "items-center"
+                            }`}
                           >
-                            Idioma de Interface:
-                          </label>
-                          <div className="flex-1">
-                            <CustomSelect
+                            <label
+                              className={`font-medium text-gray-700 flex-shrink-0 ${
+                                isMobile
+                                  ? "text-start text-md"
+                                  : "text-end text-sm w-40"
+                              } pr-2`}
+                            >
+                              Idioma de Interface:
+                            </label>
+                            <div className="flex-1">
+                              <CustomSelect
                                 options={tradeGameData
                                   .getAvailableInterfaceLanguages()
                                   .map((l) => ({
@@ -3012,13 +3010,13 @@ const MultiPartFormSaleAndTrade = () => {
                                     .find(
                                       (l) =>
                                         l.id.toString() ===
-                                  variationData.idiomasInterfaceTroca
+                                        variationData.idiomasInterfaceTroca
                                     )
                                     ? {
                                         value:
                                           variationData.idiomasInterfaceTroca,
                                         label:
-                                        tradeGameData
+                                          tradeGameData
                                             .getAvailableInterfaceLanguages()
                                             .find(
                                               (l) =>
@@ -3028,17 +3026,17 @@ const MultiPartFormSaleAndTrade = () => {
                                       }
                                     : null
                                 }
-                              onChange={(opt) =>
-                                handleVariationSelectChange(
-                                  "idiomasInterfaceTroca",
-                                  opt.value
-                                )
-                              }
-                              required={true}
-                              showValidation={showValidation.step5}
-                            />
+                                onChange={(opt) =>
+                                  handleVariationSelectChange(
+                                    "idiomasInterfaceTroca",
+                                    opt.value
+                                  )
+                                }
+                                required={true}
+                                showValidation={showValidation.step5}
+                              />
+                            </div>
                           </div>
-                        </div>
                         ) : null}
                       </div>
                     </div>
@@ -3058,38 +3056,38 @@ const MultiPartFormSaleAndTrade = () => {
               ) : (
                 // =================== BOTÃO DE ADICIONAR ===================
                 <div className="px-6">
-                <button
-                  onClick={() => {
-                    setVariationData({
-                      titulo: formData.titulo || "",
-                      tipoCartucho: formData.tipoCartucho || "",
-                      estadoPreservacao: formData.estadoPreservacao || "",
-                      regiao: formData.regiao || "",
-                      idiomaAudio: formData.idiomaAudio || "",
-                      idiomaLegenda: formData.idiomaLegenda || "",
-                      idiomaInterface: formData.idiomaInterface || "",
-                      preco: formData.preco || "",
-                      estoque: formData.estoque || "",
-                      descricao: formData.descricao || "",
-                      imagens: Array(4).fill(null),
-                      jogosTroca: formData.jogosTroca || "",
-                      tiposTroca: formData.tiposTroca || "",
-                      estadosTroca: formData.estadosTroca || "",
-                      regioesTroca: formData.regioesTroca || "",
-                      idiomasAudioTroca: formData.idiomasAudioTroca || "",
-                      idiomasLegendaTroca: formData.idiomasLegendaTroca || "",
-                      idiomasInterfaceTroca:
-                        formData.idiomasInterfaceTroca || "",
-                    });
-                    setEditingVariationId("new");
-                  }}
-                  className={`w-full border-2 border-dashed border-purple-400 ${
-                    isMobile ? "p-4" : "p-6"
-                  } rounded-lg text-purple-600 hover:bg-purple-50 hover:border-purple-600 transition-colors font-semibold`}
-                >
-                  + Adicionar nova variação
-                </button>
-              </div>
+                  <button
+                    onClick={() => {
+                      setVariationData({
+                        titulo: formData.titulo || "",
+                        tipoCartucho: formData.tipoCartucho || "",
+                        estadoPreservacao: formData.estadoPreservacao || "",
+                        regiao: formData.regiao || "",
+                        idiomaAudio: formData.idiomaAudio || "",
+                        idiomaLegenda: formData.idiomaLegenda || "",
+                        idiomaInterface: formData.idiomaInterface || "",
+                        preco: formData.preco || "",
+                        estoque: formData.estoque || "",
+                        descricao: formData.descricao || "",
+                        imagens: Array(4).fill(null),
+                        jogosTroca: formData.jogosTroca || "",
+                        tiposTroca: formData.tiposTroca || "",
+                        estadosTroca: formData.estadosTroca || "",
+                        regioesTroca: formData.regioesTroca || "",
+                        idiomasAudioTroca: formData.idiomasAudioTroca || "",
+                        idiomasLegendaTroca: formData.idiomasLegendaTroca || "",
+                        idiomasInterfaceTroca:
+                          formData.idiomasInterfaceTroca || "",
+                      });
+                      setEditingVariationId("new");
+                    }}
+                    className={`w-full border-2 border-dashed border-purple-400 ${
+                      isMobile ? "p-4" : "p-6"
+                    } rounded-lg text-purple-600 hover:bg-purple-50 hover:border-purple-600 transition-colors font-semibold`}
+                  >
+                    + Adicionar nova variação
+                  </button>
+                </div>
               )}
             </div>
           </>
@@ -3127,7 +3125,7 @@ const MultiPartFormSaleAndTrade = () => {
               </p>
               {isMobile ? (
                 <div className="flex flex-col items-center justify-center gap-4">
-                  <img src="../public/computador.svg" alt="" />
+                  <img src="/Icons/computador.svg" alt="" />
                   {/* Botões */}
                   <div className="space-y-4">
                     <button
@@ -3148,7 +3146,7 @@ const MultiPartFormSaleAndTrade = () => {
                 </div>
               ) : (
                 <div className="flex items-center justify-center gap-4">
-                  <img src="../public/computador.svg" alt="" />
+                  <img src="/Icons/computador.svg" alt="" />
                   {/* Botões */}
                   <div className="space-y-4">
                     <button

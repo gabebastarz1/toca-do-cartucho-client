@@ -3,7 +3,7 @@ import { AdvertisementFilteringDTO } from '../services/advertisementService';
 // Interface para os filtros do frontend
 export interface FrontendFilters {
   conditions?: string[];
-  preservation?: string[];
+  preservationStateIds?: string[];
   cartridgeType?: string[];
   price?: string[];
   theme?: string[];
@@ -55,7 +55,6 @@ export const mapFrontendFiltersToBackend = (
     );
     
     if (saleConditions.length > 0) {
-      // Se há múltiplas condições, usar a mais inclusiva
       const hasSaleOnly = saleConditions.includes("sale-only");
       const hasTradeOnly = saleConditions.includes("trade-only");
       const hasSaleTrade = saleConditions.includes("sale-trade");
@@ -77,8 +76,8 @@ export const mapFrontendFiltersToBackend = (
   }
 
   // Processar estados de preservação
-  if (frontendFilters.preservation?.length) {
-    backendFilters.preservationStateIds = frontendFilters.preservation
+  if (frontendFilters.preservationStateIds?.length) {
+    backendFilters.preservationStateIds = frontendFilters.preservationStateIds
       .map(preservation => preservationStateMapping[preservation])
       .filter(id => id !== undefined);
   }

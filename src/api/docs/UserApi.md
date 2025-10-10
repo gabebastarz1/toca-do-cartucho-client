@@ -12,7 +12,7 @@ All URIs are relative to *http://localhost*
 |[**apiUsersIdPatch**](#apiusersidpatch) | **PATCH** /api/users/{id} | |
 |[**apiUsersPatch**](#apiuserspatch) | **PATCH** /api/users | |
 |[**apiUsersPost**](#apiuserspost) | **POST** /api/users | |
-|[**apiUsersProfileInfoGet**](#apiusersprofileinfoget) | **GET** /api/users/profile-info | |
+|[**apiUsersProfileGet**](#apiusersprofileget) | **GET** /api/accounts/profile | |
 |[**apiUsersSecuredGet**](#apiuserssecuredget) | **GET** /api/users/secured | |
 
 # **apiUsersFavoriteAdvertisementsIdDelete**
@@ -431,8 +431,8 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **apiUsersProfileInfoGet**
-> apiUsersProfileInfoGet()
+# **apiUsersProfileGet**
+> apiUsersProfileGet()
 
 
 ### Example
@@ -446,7 +446,7 @@ import {
 const configuration = new Configuration();
 const apiInstance = new UserApi(configuration);
 
-const { status, data } = await apiInstance.apiUsersProfileInfoGet();
+const { status, data } = await apiInstance.apiUsersProfileGet();
 ```
 
 ### Parameters

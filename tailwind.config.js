@@ -9,6 +9,7 @@ export default {
   	extend: {
   		fontFamily: {
   			'vt323': ['VT323', 'monospace'],
+  			'lexend': ['Lexend', 'sans-serif'],
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

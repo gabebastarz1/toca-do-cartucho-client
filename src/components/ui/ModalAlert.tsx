@@ -58,7 +58,7 @@ const ModalAlert: React.FC<ModalAlertProps> = ({
             <div className="flex justify-between">
               <h3 className="text-sm font-medium text-black mb-1">{title}</h3>
               <img
-                src="../../public/checkcircle.svg"
+                src="/Icons/CheckCircle.svg"
                 alt=""
                 className="w-[18px] h-[18px]"
               />
@@ -66,7 +66,11 @@ const ModalAlert: React.FC<ModalAlertProps> = ({
             <h2 className="text-base font-semibold text-black mb-2">
               {subtitle}
             </h2>
-            <div className={`${isMobile ? "justify-between" : "flex justify-between"}`}>
+            <div
+              className={`${
+                isMobile ? "justify-between" : "flex justify-between"
+              }`}
+            >
               <p className="text-xs text-black leading-relaxed">
                 {description}
               </p>

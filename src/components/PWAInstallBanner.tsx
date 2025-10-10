@@ -6,7 +6,6 @@ const PWAInstallBanner: React.FC = () => {
   const { isInstallable, isInstalled, installApp } = usePWA();
   const [isDismissed, setIsDismissed] = useState(false);
 
-  // Não mostrar se já estiver instalado ou foi dispensado
   if (isInstalled || isDismissed || !isInstallable) {
     return null;
   }
@@ -26,7 +25,7 @@ const PWAInstallBanner: React.FC = () => {
           <div className="flex items-start space-x-3 flex-1">
             <div className="flex-shrink-0">
               <img
-                src="/logo-icon.svg"
+                src="/Logos/logo-icon.svg"
                 alt="Toca do Cartucho"
                 className="w-8 h-8"
               />

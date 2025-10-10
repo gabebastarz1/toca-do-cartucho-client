@@ -49,11 +49,9 @@ const initializeSelectedFilters = (
         const prefix = sectionPrefixes[key] || "";
         // Converter IDs para IDs prefixados (lidando com IDs que já têm prefixo)
         const prefixedIds = initialFilters[key].map((id) => {
-          // Se o ID já tem o prefixo correto, usar como está
           if (prefix && id.startsWith(prefix)) {
             return id;
           }
-          // Se não tem prefixo, adicionar
           return prefix ? `${prefix}${id}` : id;
         });
         selected[key] = new Set(prefixedIds);
@@ -123,7 +121,6 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
     initializeSelectedFilters(initialFilters, initialPriceRange)
   );
 
-  // NOVO: Estado para controlar seções expandidas apenas no desktop
   const [desktopExpanded, setDesktopExpanded] = useState<Set<string>>(
     new Set()
   );
@@ -165,7 +162,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
         ],
       },
       {
-        id: "preservation",
+        id: "preservationStateIds",
         title: "Estado de Preservação",
         options: [
           { id: "new", label: "Novo" },
@@ -283,7 +280,6 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
     setSelectedFilters({});
   }, []);
 
-  // NOVO: Handler para expandir/recolher seções no desktop
   const toggleDesktopExpand = useCallback((sectionId: string) => {
     setDesktopExpanded((prev) => {
       const newSet = new Set(prev);

@@ -141,11 +141,13 @@ interface ProductVariationsProps {
   data?: ProductVariationsData;
   variations?: AdvertisementDTO[];
   mainAdvertisement?: AdvertisementDTO;
+  onVariationChange?: (variation: AdvertisementDTO | undefined) => void; // ✅ NOVO: Callback para mudança de variação
 }
 
 const ProductVariations: React.FC<ProductVariationsProps> = ({
   variations = [],
   mainAdvertisement,
+  onVariationChange,
 }) => {
   const location = useLocation();
   const {
@@ -530,6 +532,14 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
 
   const selectedVariation = findCurrentVariation();
 
+  // ✅ NOVO: Notificar quando a variação selecionada mudar
+  React.useEffect(() => {
+    console.log("🔄 [ProductVariations] Variação atual:", selectedVariation);
+    if (onVariationChange) {
+      onVariationChange(selectedVariation);
+    }
+  }, [selectedVariation, onVariationChange]);
+
   if (loading) {
     return (
       <div className="p-6 bg-white rounded-xl border border-gray-200 max-w-sm mx-auto">
@@ -602,6 +612,7 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
         Cartuchos disponíveis:
       </h2>
 
+      {/* 
       {currentAd && (
         <div className="mb-4 p-3 bg-gray-50 rounded-lg border">
           <p className="text-sm font-medium text-gray-700">📦 Seleção atual:</p>
@@ -617,6 +628,7 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
           )}
         </div>
       )}
+      */}
 
       <OptionsSection
         title="Estado de Preservação"

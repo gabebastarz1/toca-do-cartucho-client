@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import TopBar from "../components/TopBar";
 import FilterTopBar from "../components/FilterTopBar";
@@ -23,6 +29,7 @@ const ProductListing: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   // Obter dados de categorias para validação (removido - não mais necessário)
   // Função para inicializar estado baseado na URL (removida - não mais necessária)
@@ -35,7 +42,6 @@ const ProductListing: React.FC = () => {
   const [confirmedSearchQuery, setConfirmedSearchQuery] = useState(""); // Estado confirmado para filtros
   const [isInitialized, setIsInitialized] = useState(false); // Estado para controlar inicialização
 
-  // ✅ NOVO: Estado para ordenação
   const [currentOrdering, setCurrentOrdering] = useState({
     value: "Newest",
     label: "Mais Novo",
@@ -142,10 +148,8 @@ const ProductListing: React.FC = () => {
     parentAdvertisementId?: number
   ) => {
     if (parentAdvertisementId) {
-      // ✅ Se é uma variação, redirecionar para o anúncio principal com a variação pré-selecionada
       navigate(`/anuncio/${parentAdvertisementId}?variation=${productId}`);
     } else {
-      // ✅ Se é um anúncio principal, redirecionar normalmente
       navigate(`/anuncio/${productId}`);
     }
   };
@@ -167,7 +171,6 @@ const ProductListing: React.FC = () => {
     // NÃO atualiza confirmedSearchQuery aqui - só na confirmação
   }, []);
 
-  // ✅ NOVO: Callback para mudança de ordenação
   const handleOrderingChange = useCallback(
     (ordering: { value: string; label: string }) => {
       console.log("ProductListing - Mudando ordenação:", ordering);
@@ -228,7 +231,7 @@ const ProductListing: React.FC = () => {
       }
       console.log("=== HANDLE FILTERS CHANGE COMPLETED ===");
     },
-    [] // ✅ Removido activeFilters das dependências para evitar loop
+    []
   );
 
   useEffect(() => {
@@ -275,6 +278,24 @@ const ProductListing: React.FC = () => {
   const handlePageChange = useCallback(
     (newPage: number) => {
       setPagination({ page: newPage, pageSize });
+
+      // Scroll para o topo da página usando múltiplas abordagens
+      setTimeout(() => {
+        // Abordagem 1: Scroll no window
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
+        // Abordagem 2: Scroll usando a referência do conteúdo
+        if (contentRef.current) {
+          contentRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+
+        // Abordagem 3: Scroll direto no document (fallback)
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }, 150); // Delay um pouco maior para garantir que a mudança foi processada
     },
     [setPagination, pageSize]
   );
@@ -302,7 +323,7 @@ const ProductListing: React.FC = () => {
           />
         </div>
 
-        <div className="pt-36">
+        <div className="pt-36" ref={contentRef}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex gap-6">
               <div className="hidden lg:block">
@@ -324,7 +345,7 @@ const ProductListing: React.FC = () => {
                       className="flex items-center space-x-2 px-4 py-2"
                     >
                       <span>Filtros</span>
-                      <img src="../public/filter.svg" />
+                      <img src="/Icons/Filter.svg" />
                     </button>
 
                     {/* OrderingSelector no mobile */}

@@ -11,7 +11,10 @@ import {
   CreateAdvertisementSaleAndTrade,
   CreateAdvertisementSaleOnly,
   ProductListing,
+  Login,
+  Register,
 } from "./pages";
+import MeusDados from "./pages/MeusDados";
 import About from "./pages/About";
 import Favorites from "./pages/Favorites";
 import { CategoryDataProvider } from "./components/CategoryDataProvider";
@@ -30,10 +33,13 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/sobre" element={<About />} />
               <Route path="/favoritos" element={<Favorites />} />
-              <Route path="/auth" element={<Auth />} />
+              {/* <Route path="/auth" element={<Auth />} /> */}
+              <Route path="/auth" element={<Login />} />
+              <Route path="/cadastro" element={<Register />} />
               <Route path="/anuncio/:id" element={<Advertisement />} />
               <Route path="/criar-anuncio" element={<CreateAdvertisement />} />
               <Route path="/perfil" element={<Profile />} />
+              <Route path="/meus-dados" element={<MeusDados />} />
               <Route path="/criar-conta" element={<CadastroParaAnunciar />} />
               <Route
                 path="/criar-anuncio/apenas-troca"

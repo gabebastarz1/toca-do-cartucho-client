@@ -1,4 +1,5 @@
 import { api } from './api';
+import { userProfileCache } from './userProfileCache';
 
 export interface User {
   id: string;
@@ -9,6 +10,14 @@ export interface User {
   roles: string[];
   phoneNumber?: string;
   slug?: string;
+  profileImage?: {
+    id: number;
+    originalFileName: string;
+    userId: string;
+    preSignedUrl: string;
+    urlExpiresIn: string;
+    createdAt: string;
+  };
 }
 
 export interface LoginRequest {
@@ -36,7 +45,7 @@ class AuthService {
   // Login usando endpoint do Identity API
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     try {
-      const response = await api.post('/login', credentials, {
+      const response = await api.post('/api/accounts/login', credentials, {
         params: {
           useCookies: true
         }
@@ -45,11 +54,12 @@ class AuthService {
       // Se o backend retornar um token JWT
       if (response.data.token) {
         this.setAuthData(response.data.token, response.data.user);
+        userProfileCache.set(response.data.user); // Cache user data
         return response.data;
       }
 
-      // Se usar apenas cookies, simular resposta
       const user = await this.getCurrentUser();
+      userProfileCache.set(user); // Cache user data
       return {
         token: 'cookie-based-auth',
         user: user!
@@ -69,10 +79,12 @@ class AuthService {
 
       if (response.data.token) {
         this.setAuthData(response.data.token, response.data.user);
+        userProfileCache.set(response.data.user); // Cache user data
         return response.data;
       }
 
       const user = await this.getCurrentUser();
+      userProfileCache.set(user); // Cache user data
       return {
         token: 'cookie-based-auth',
         user: user!
@@ -88,20 +100,25 @@ class AuthService {
   // Logout
   async logout(): Promise<void> {
     try {
-      await api.post('/logout');
+      await api.get('/api/accounts/profile/logout');
     } catch (error) {
-      console.warn('Erro ao fazer logout:', error);
+      console.warn('Erro ao fazer logout no servidor:', error);
     } finally {
       this.clearAuthData();
+      userProfileCache.clear(); // Clear cache on logout
     }
   }
 
   // Obter usuário atual
   async getCurrentUser(): Promise<User | null> {
     try {
-      const response = await api.get('/api/users/profile-info');
+      console.log("🔍 [authService] Fazendo requisição para /api/accounts/profile");
+      const response = await api.get('/api/accounts/profile');
+      console.log("✅ [authService] Usuário obtido do servidor:", response.data);
+      userProfileCache.set(response.data); // Cache user data
       return response.data;
-    } catch {
+    } catch (error) {
+      console.log("❌ [authService] Erro ao obter usuário do servidor:", error);
       return null;
     }
   }

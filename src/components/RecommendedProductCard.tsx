@@ -2,6 +2,7 @@ import React from "react";
 import { Star, MapPin } from "lucide-react";
 import Tooltip from "./Tooltip";
 import { useSellerRatings } from "../hooks/useSellerRatings";
+import FavoriteButton from "./FavoriteButton";
 
 interface ProductCardProps {
   id: string;
@@ -24,6 +25,7 @@ interface ProductCardProps {
 }
 
 const RecommendedProductCard: React.FC<ProductCardProps> = ({
+  id,
   title,
   image,
   rating,
@@ -144,9 +146,19 @@ const RecommendedProductCard: React.FC<ProductCardProps> = ({
       className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 cursor-pointer transform hover:scale-105 transition-transform relative"
       onClick={onClick}
     >
-      {/* ✅ NOVO: Layout responsivo - Horizontal no mobile, Vertical no desktop */}
+      {/* ✅ Botão de favorito no canto superior direito */}
+      <div
+        className="absolute top-2 right-2 z-10"
+        onClick={(e) => e.stopPropagation()} // ✅ Prevenir propagação do clique
+      >
+        <FavoriteButton
+          advertisementId={parseInt(id)}
+          size="sm"
+          className="bg-white/80 backdrop-blur-sm hover:bg-white"
+        />
+      </div>
 
-     
+      {/* ✅ NOVO: Layout responsivo - Horizontal no mobile, Vertical no desktop */}
 
       {/* Desktop: Layout vertical */}
       <div className="block">
