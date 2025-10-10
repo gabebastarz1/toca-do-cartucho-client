@@ -3112,8 +3112,8 @@ export const UserApiAxiosParamCreator = function (configuration?: Configuration)
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        apiUsersProfileInfoGet: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            const localVarPath = `/api/users/profile-info`;
+        apiUsersProfileGet: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/api/accounts/profile`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -3280,10 +3280,10 @@ export const UserApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async apiUsersProfileInfoGet(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.apiUsersProfileInfoGet(options);
+        async apiUsersProfileGet(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.apiUsersProfileGet(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['UserApi.apiUsersProfileInfoGet']?.[localVarOperationServerIndex]?.url;
+            const localVarOperationServerBasePath = operationServerMap['UserApi.apiUsersProfileGet']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -3388,8 +3388,8 @@ export const UserApiFactory = function (configuration?: Configuration, basePath?
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        apiUsersProfileInfoGet(options?: RawAxiosRequestConfig): AxiosPromise<void> {
-            return localVarFp.apiUsersProfileInfoGet(options).then((request) => request(axios, basePath));
+        apiUsersProfileGet(options?: RawAxiosRequestConfig): AxiosPromise<void> {
+            return localVarFp.apiUsersProfileGet(options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -3507,8 +3507,8 @@ export class UserApi extends BaseAPI {
      * @throws {RequiredError}
      * @memberof UserApi
      */
-    public apiUsersProfileInfoGet(options?: RawAxiosRequestConfig) {
-        return UserApiFp(this.configuration).apiUsersProfileInfoGet(options).then((request) => request(this.axios, this.basePath));
+    public apiUsersProfileGet(options?: RawAxiosRequestConfig) {
+        return UserApiFp(this.configuration).apiUsersProfileGet(options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

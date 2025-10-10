@@ -9,3 +9,5 @@ export { default as CadastroParaAnunciar } from './CreateAccount';
 export { default as CreateAdvertisementSaleAndTrade } from './CreateAdvertisementSaleAndTrade';
 export { default as CreateAdvertisementSaleOnly } from './CreateAdvertisementSaleOnly';
 export { default as ProductListing } from './ProductListing';
+export { default as Login } from './Login';
+export { default as Register } from './Register';

@@ -12,7 +12,7 @@ interface ProductImageGalleryProps {
 
 const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
   images = [],
-  fallbackImage = "/logo.svg",
+  fallbackImage = "/Logos/logo.svg",
 }) => {
   const isMobile = useIsMobile();
   const location = useLocation();
@@ -24,11 +24,9 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
     advertisementImageService.getDisplayUrl(image)
   );
 
-  // Se não há imagens, usar fallback
   const allImages = imageUrls.length > 0 ? imageUrls : [fallbackImage];
   const selectedImage = allImages[currentIndex];
 
-  // ✅ NOVO: Função para encontrar qual variação uma imagem pertence
   const findVariationForImage = (imageIndex: number) => {
     if (!images || images.length === 0) return null;
 
@@ -60,7 +58,6 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
     return null;
   };
 
-  // ✅ NOVO: Função para atualizar URL quando imagem é clicada
   const handleImageClick = (imageIndex: number) => {
     setCurrentIndex(imageIndex);
 
@@ -70,11 +67,9 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
     if (variationId) {
       // Se é imagem de uma variação, adicionar/atualizar parâmetro variation
       urlParams.set("variation", variationId);
-
     } else {
       // Se é imagem do anúncio principal, remover parâmetro variation
       urlParams.delete("variation");
-     
     }
 
     const newUrl = `${location.pathname}${

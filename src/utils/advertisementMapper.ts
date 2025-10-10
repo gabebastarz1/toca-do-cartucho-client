@@ -21,8 +21,8 @@ export interface Product {
   subtitleLanguage: string;
   interfaceLanguage: string;
   region: string;
-  sellerId?: string; // ✅ NOVO: ID do vendedor para buscar ratings
-  parentAdvertisementId?: number; // ✅ NOVO: ID do anúncio pai para variações
+  sellerId?: string;
+  parentAdvertisementId?: number;
 }
 
 // Mapeamentos removidos - agora extraímos essas informações diretamente do título
@@ -58,7 +58,6 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
     saleType = "sale";
   }
 
-  // Usar dados reais do backend em vez de extrair do título
   const type = advertisement.cartridgeType?.name?.toLowerCase()?.includes('repro') ? "repro" : "retro";
   const condition = mapPreservationState(advertisement.preservationState?.name);
   
@@ -66,7 +65,7 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
   function mapPreservationState(stateName?: string): "new" | "semi-new" | "good" | "normal" | "damaged" {
     if (!stateName) return "normal";
     const state = stateName.toLowerCase();
-    if (state.includes('novo')) return "new";
+    if (state.includes('novo') && !state.includes('seminovo')) return "new";
     if (state.includes('seminovo')) return "semi-new";
     if (state.includes('bom')) return "good";
     if (state.includes('normal')) return "normal";
@@ -80,7 +79,6 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
     regionMapping[advertisement.gameLocalization.region.name] || "north-america" : 
     "north-america";
   
-  // Usar dados de idioma do backend (por enquanto usar padrões já que advertisementLanguageSupports está vazio)
   const audioLanguage = "English";
   const subtitleLanguage = "English";
   const interfaceLanguage = "English";
@@ -90,15 +88,12 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
   const mappedSubtitleLanguage = languageMapping[subtitleLanguage] || "english";
   const mappedInterfaceLanguage = languageMapping[interfaceLanguage] || "english";
 
-  // Usar dados reais do jogo para gênero e tema
   const gameGenres = advertisement.game?.genres || [];
   const gameThemes = advertisement.game?.themes || [];
   
-  // Pegar o primeiro gênero disponível ou usar padrão
   const genre = gameGenres.length > 0 && gameGenres[0].name ? 
     gameGenres[0].name.toLowerCase() : "action";
   
-  // Pegar o primeiro tema disponível ou usar padrão
   const theme = gameThemes.length > 0 && gameThemes[0].name ? 
     gameThemes[0].name.toLowerCase() : "fantasia";
   
@@ -118,12 +113,9 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
   // Converter desconto de string para número (remover % e converter)
   const discount = discountPercentage && originalPrice ? parseInt(discountPercentage.replace('%', '')) : undefined;
 
-  // ✅ Usar ratings do vendedor em vez do jogo
-  // Por enquanto, usar valores padrão até que os ratings sejam carregados
-  const rating = 0; // Será atualizado pelo componente ProductCard usando useSellerRatings
-  const reviewCount = 0; // Será atualizado pelo componente ProductCard usando useSellerRatings
+  const rating = 0;
+  const reviewCount = 0;
 
-  // ✅ NOVO: Extrair cidade e estado do endereço primário do seller
   const getSellerLocation = () => {
     if (advertisement.seller?.addresses && advertisement.seller.addresses.length > 0) {
       // Encontrar o endereço primário
@@ -142,30 +134,15 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
 
   const sellerLocation = getSellerLocation();
 
-  // ✅ Debug: Log da localização do seller
-  {/*console.log(`=== SELLER LOCATION DEBUG ===`);
-  console.log(`Advertisement ${advertisement.id}:`);
-  console.log(`Seller:`, advertisement.seller?.nickName || "N/A");
-  console.log(`Addresses count:`, advertisement.seller?.addresses?.length || 0);
-  console.log(`Primary address:`, advertisement.seller?.addresses?.find(addr => addr.isPrimary)?.address);
-  console.log(`Final location:`, sellerLocation);
-  console.log(`=============================`);*/}
-
-  // Usar a primeira imagem disponível ou placeholder
   const getImageUrl = () => {
-    //console.log(`Advertisement ${advertisement.id} images:`, advertisement.images); // Debug log
-    
     if (advertisement.images && advertisement.images.length > 0) {
       const firstImage = advertisement.images[0];
-      // Usar preSignedUrl se disponível, senão usar url
       const imageUrl = firstImage?.preSignedUrl || firstImage?.url;
       if (imageUrl) {
-        //(`Using image for ad ${advertisement.id}:`, imageUrl); // Debug log
         return imageUrl;
       }
     }
-    //console.log(`No image found for ad ${advertisement.id}, using fallback`); // Debug log
-; // Fallback para logo
+    return "/Logos/logo.svg";
   };
 
   return {
@@ -179,7 +156,7 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
     discount: discount,
     condition: condition,
     type: type,
-    location: sellerLocation, // ✅ NOVO: Cidade e estado do seller
+    location: sellerLocation,
     genre: genre,
     theme: theme,
     saleType: saleType,
@@ -188,8 +165,8 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
     subtitleLanguage: mappedSubtitleLanguage,
     interfaceLanguage: mappedInterfaceLanguage,
     region: region,
-    sellerId: advertisement.seller?.id, // ✅ NOVO: ID do vendedor
-    parentAdvertisementId: advertisement.parentAdvertisementId, // ✅ NOVO: ID do anúncio pai
+    sellerId: advertisement.seller?.id,
+    parentAdvertisementId: advertisement.parentAdvertisementId,
   };
 };
 

@@ -16,35 +16,31 @@ export const usePWA = () => {
     useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
-    // Verificar se o app já está instalado
     const checkIfInstalled = () => {
       if (window.matchMedia("(display-mode: standalone)").matches) {
         setIsInstalled(true);
       }
     };
 
-    // Escutar o evento beforeinstallprompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setIsInstallable(true);
     };
 
-    // Escutar o evento appinstalled
+
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setIsInstallable(false);
       setDeferredPrompt(null);
     };
 
-    // Registrar listeners
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     window.addEventListener("appinstalled", handleAppInstalled);
 
-    // Verificar se já está instalado
     checkIfInstalled();
 
-    // Cleanup
+
     return () => {
       window.removeEventListener(
         "beforeinstallprompt",
@@ -70,7 +66,7 @@ export const usePWA = () => {
       setDeferredPrompt(null);
       setIsInstallable(false);
     } catch (error) {
-      console.error("Erro ao instalar PWA:", error);
+      console.error("Erro ao instalar:", error);
     }
   };
 
@@ -80,4 +76,6 @@ export const usePWA = () => {
     installApp,
   };
 };
+
+
 

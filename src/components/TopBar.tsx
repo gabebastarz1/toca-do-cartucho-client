@@ -5,6 +5,21 @@ import { useAuth } from "../hooks/useAuth";
 import { useUserProfile } from "../hooks/useUserProfile";
 import SideBar from "./SideBar";
 import UserDropdown from "./UserDropdown";
+import { useIsMobile } from "../hooks/useIsMobile";
+import { UserDTO } from "../api/types";
+import { User } from "../services/authService";
+
+// Tipo union para incluir profileImage
+type UserWithProfileImage = (User | UserDTO) & {
+  profileImage?: {
+    id: number;
+    originalFileName: string;
+    userId: string;
+    preSignedUrl: string;
+    urlExpiresIn: string;
+    createdAt: string;
+  };
+};
 
 interface TopBarProps {
   rightButtonText?: string;
@@ -37,6 +52,7 @@ const TopBar: React.FC<TopBarProps> = ({
 }) => {
   const { user } = useAuth();
   const { userProfile } = useUserProfile();
+  const isMobile = useIsMobile();
   const [showSecondaryHeader, setShowSecondaryHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isSideBarOpen, setIsSideBarOpen] = useState(false);
@@ -52,6 +68,11 @@ const TopBar: React.FC<TopBarProps> = ({
           ? `${user.firstName} ${user.lastName}`.trim()
           : user?.nickName || "Usuário"));
 
+  // Usar foto do perfil se disponível, senão usar userAvatar prop
+  const profileImageUrl =
+    (userProfile as UserWithProfileImage)?.profileImage?.preSignedUrl ||
+    userAvatar;
+
   let justifyLogo: string;
   switch (logoPosition) {
     case "center":
@@ -65,7 +86,6 @@ const TopBar: React.FC<TopBarProps> = ({
   }
 
   const displayUser = userProfile || user;
-
 
   const displayInitial =
     displayUser?.firstName?.charAt(0) ||
@@ -143,51 +163,54 @@ const TopBar: React.FC<TopBarProps> = ({
   }, [isUserDropdownOpen]);
 
   return (
-    <header className="sticky top-0 z-50 w-full">
-      <div className="w-full bg-[#211C49] flex items-center justify-between px-2 sm:px-14 py-3 relative z-10">
+    <header className="sticky top-0 z-50 w-full bg-[#211C49]">
+      <div
+        className={`w-full bg-[#211C49] flex items-center justify-between py-3 relative z-10 max-w-7xl mx-auto ${
+          isMobile ? "px-4" : ""
+        }`}
+      >
         <div className="hidden md:flex w-full items-center justify-between">
-          <div className="flex items-center gap-2 w-2/3">  
-          <div className={`flex items-center gap-2 ${justifyLogo}`}>
-            <button
-              type="button"
-              onClick={() => navigate("/")}
-              className="focus:outline-none"
-              aria-label="Ir para Home"
-            >
-              <img
-                src="../public/logo.svg"
-                alt="Logo"
-                className="h-8 w-auto max-w-32"
-              />
-            </button>
-          </div>
-
-          {/* Barra de pesquisa - Desktop*/}
-          {showSearchBar && (
-            <div
-              className={`flex-1 mx-4 ease-in-out overflow-hidden max-w-2xl w-full opacity-100}`}
-            >
-              <form onSubmit={handleSearchSubmit} className="w-full">
-                <div className="flex rounded-md overflow-hidden w-full">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={handleSearchInputChange}
-                    placeholder={searchPlaceholder}
-                    className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 placeholder-gray-400 focus:outline-none"
-                  />
-                  <button
-                    type="submit"
-                    className="bg-[#B5B6E4] flex items-center justify-center px-6 z-50"
-                  >
-                    <Search className="h-4 w-4 text-[#1D1B20]" />
-                  </button>
-                </div>
-              </form>
+          <div className="flex items-center gap-2 w-2/3">
+            <div className={`flex items-center gap-2 ${justifyLogo}`}>
+              <button
+                type="button"
+                onClick={() => navigate("/")}
+                className="focus:outline-none"
+                aria-label="Ir para Home"
+              >
+                <img
+                  src="/Logos/logo.svg"
+                  alt="Logo"
+                  className="h-8 w-auto max-w-32"
+                />
+              </button>
             </div>
-          )}
 
-      </div> 
+            {/* Barra de pesquisa - Desktop*/}
+            {showSearchBar && (
+              <div
+                className={`flex-1 mx-4 ease-in-out overflow-hidden max-w-2xl w-full opacity-100}`}
+              >
+                <form onSubmit={handleSearchSubmit} className="w-full">
+                  <div className="flex rounded-md overflow-hidden w-full">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={handleSearchInputChange}
+                      placeholder={searchPlaceholder}
+                      className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 placeholder-gray-400 focus:outline-none"
+                    />
+                    <button
+                      type="submit"
+                      className="bg-[#B5B6E4] flex items-center justify-center px-6 z-50"
+                    >
+                      <Search className="h-4 w-4 text-[#1D1B20]" />
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
           <div className="flex-none flex items-center space-x-4">
             {rightButtonText && (
               <button
@@ -207,17 +230,31 @@ const TopBar: React.FC<TopBarProps> = ({
                   onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                   className="focus:outline-none"
                 >
-                  {userAvatar && userAvatar.trim() !== "" ? (
+                  {profileImageUrl && profileImageUrl.trim() !== "" ? (
                     <img
-                      src={userAvatar }
+                      src={profileImageUrl}
                       alt={displayUserName}
                       className="w-10 h-10 rounded-full object-cover"
+                      onError={(e) => {
+                        // Fallback para inicial se a imagem falhar
+                        e.currentTarget.style.display = "none";
+                        e.currentTarget.nextElementSibling?.classList.remove(
+                          "hidden"
+                        );
+                      }}
                     />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-                      <span className="text-gray-600 text-lg font-semibold">{displayInitial}</span>
-                    </div>
-                  )}
+                  ) : null}
+                  <div
+                    className={`w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center ${
+                      profileImageUrl && profileImageUrl.trim() !== ""
+                        ? "hidden"
+                        : ""
+                    }`}
+                  >
+                    <span className="text-gray-600 text-lg font-semibold">
+                      {displayInitial}
+                    </span>
+                  </div>
                 </button>
                 <UserDropdown
                   isOpen={isUserDropdownOpen}
@@ -245,7 +282,7 @@ const TopBar: React.FC<TopBarProps> = ({
               className="focus:outline-none flex items-start gap-2"
               aria-label="Ir para Home"
             >
-              <img src="../public/logo.svg" alt="Logo" className="h-6" />
+              <img src="/Logos/logo.svg" alt="Logo" className="h-6" />
             </button>
           </div>
           <div className="flex items-center gap-2 relative">
@@ -255,17 +292,31 @@ const TopBar: React.FC<TopBarProps> = ({
                 onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                 className="focus:outline-none"
               >
-                {userAvatar && userAvatar.trim() !== "" ? (
+                {profileImageUrl && profileImageUrl.trim() !== "" ? (
                   <img
-                    src={userAvatar}
+                    src={profileImageUrl}
                     alt={displayUserName}
                     className="w-8 h-8 rounded-full object-cover"
+                    onError={(e) => {
+                      // Fallback para inicial se a imagem falhar
+                      e.currentTarget.style.display = "none";
+                      e.currentTarget.nextElementSibling?.classList.remove(
+                        "hidden"
+                      );
+                    }}
                   />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                    <span className="text-gray-600 text-sm font-semibold">{displayInitial}</span>
-                  </div>
-                )}
+                ) : null}
+                <div
+                  className={`w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center ${
+                    profileImageUrl && profileImageUrl.trim() !== ""
+                      ? "hidden"
+                      : ""
+                  }`}
+                >
+                  <span className="text-gray-600 text-sm font-semibold">
+                    {displayInitial}
+                  </span>
+                </div>
               </button>
               <UserDropdown
                 isOpen={isUserDropdownOpen}

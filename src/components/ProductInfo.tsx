@@ -1,7 +1,8 @@
 import React from "react";
-import { Heart, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { AdvertisementDTO } from "../api/types";
 import { useSellerRatings } from "../hooks/useSellerRatings";
+import FavoriteButton from "./FavoriteButton";
 
 interface ProductInfoProps {
   advertisement?: AdvertisementDTO;
@@ -194,7 +195,13 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ advertisement }) => {
         <h1 className="text-2xl font-semibold text-gray-800">
           {productData.title}
         </h1>
-        <Heart className="h-6 w-6 text-gray-500 cursor-pointer hover:text-red-500 transition-colors" />
+        {advertisement?.id && (
+          <FavoriteButton
+            advertisementId={advertisement.id}
+            size="lg"
+            className="hover:scale-105 transition-transform"
+          />
+        )}
       </div>
       <div className="flex items-center text-sm text-gray-600 mb-4">
         <div className="flex items-center mr-2">

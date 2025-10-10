@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import NavigationHistoryBar from "./NavigationHistoryBar";
 import ProductImageGallery from "./ProductImageGallery";
 import ProductInfo from "./ProductInfo";
@@ -79,6 +79,17 @@ Produto sem garantia.`,
 const AdDetails: React.FC<AdDetailsProps> = ({ advertisement }) => {
   // Usar dados reais se disponíveis, senão usar mock compatível
   const adData = advertisement;
+
+  // ✅ NOVO: Estado para a variação selecionada
+  const [selectedVariation, setSelectedVariation] = useState<
+    AdvertisementDTO | undefined
+  >(undefined);
+
+  // ✅ NOVO: Callback para quando uma variação for selecionada
+  const handleVariationChange = (variation: AdvertisementDTO | undefined) => {
+    console.log("🔄 [AdDetails] Variação selecionada:", variation);
+    setSelectedVariation(variation);
+  };
 
   // ✅ NOVO: Coletar todas as imagens do anúncio principal e suas variações
   const allImages = useMemo(() => {
@@ -226,7 +237,6 @@ const AdDetails: React.FC<AdDetailsProps> = ({ advertisement }) => {
     <>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="hidden md:block">
-
           <NavigationHistoryBar data={navigationData} />
         </div>
 
@@ -241,7 +251,7 @@ const AdDetails: React.FC<AdDetailsProps> = ({ advertisement }) => {
                 <div className="w-full md:w-2/3">
                   <ProductImageGallery
                     images={allImages}
-                    fallbackImage="/logo.svg"
+                    fallbackImage="/Logos/logo.svg"
                   />
                 </div>
 
@@ -264,6 +274,7 @@ const AdDetails: React.FC<AdDetailsProps> = ({ advertisement }) => {
                   Array.isArray(adData.variations) ? adData.variations : []
                 }
                 mainAdvertisement={adData}
+                onVariationChange={handleVariationChange}
               />
             </div>
           </div>
@@ -271,7 +282,10 @@ const AdDetails: React.FC<AdDetailsProps> = ({ advertisement }) => {
         {/* Descrição do Produto */}
         <div className="w-full">
           <ProductDescription advertisement={adData} />
-          <ProductCharacteristics advertisement={adData} />
+          <ProductCharacteristics
+            advertisement={adData}
+            selectedVariation={selectedVariation}
+          />
         </div>
       </div>
     </>
