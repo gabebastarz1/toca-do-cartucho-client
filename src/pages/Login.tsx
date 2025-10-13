@@ -1,49 +1,55 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import GoogleSymbol from "../../public/Icons/google_symbol.svg";
+import { FaGoogle } from "react-icons/fa";
+import { Eye, EyeOff } from "lucide-react";
 import GameControllerImage from "../assets/controller.png";
 import CustomCheckbox from "../components/ui/CustomCheckbox";
 import { authService } from "../services/authService";
 import { useAuth } from "../hooks/useAuth";
+import { useCustomAlert } from "../hooks/useCustomAlert";
+import { CustomAlert } from "../components/ui/CustomAlert";
+import { handleGoogleLogin } from "../services/authService";
 
 const Login: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
   const navigate = useNavigate();
   const { login: loginContext } = useAuth();
+  const { alertState, showError, hideAlert } = useCustomAlert();
+
+  const toggleShowPassword = () => setShowPassword(!showPassword);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
-    setError(null);
 
     try {
       const { user, token } = await authService.login({ email, password });
       loginContext(user, token); // Atualiza o contexto de autenticação
       navigate("/"); // Redireciona para a home page
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Ocorreu um erro desconhecido."
-      );
+    } catch (err: any) {
+      if (err.status === 401 && err.data?.detail === "NotAllowed") {
+        showError("Confirme seu email antes de continuar.");
+      } else {
+        showError("Email ou senha inválidos. Tente novamente.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleLogin = () => {
-    const frontendRedirectUrl = window.location.origin;
-    const googleLoginUrl = `http://localhost:5236/api/accounts/login/google?finalRedirectUrl=${encodeURIComponent(
-      frontendRedirectUrl
-    )}`;
-    window.location.href = googleLoginUrl;
-  };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#2B2560] p-4 font-sans">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#211C49] p-4 font-sans">
+      <CustomAlert
+        type={alertState.type}
+        message={alertState.message}
+        isVisible={alertState.isVisible}
+        onClose={hideAlert}
+      />
       {/* Game controller is now hidden on mobile and appears on medium screens and up */}
       <img
         src={GameControllerImage}
@@ -51,12 +57,8 @@ const Login: React.FC = () => {
         className="absolute bottom-16 left-[calc(53%-480px)] z-50 hidden w-80 transform md:block"
       />
 
-      {/* The <main> element now has padding for mobile, 
-        and the card styles (background, shadow, more padding) are applied only on medium screens and up.
-      */}
       <main className="relative z-10 w-full max-w-md rounded-lg p-6 md:bg-[#E8E6F1] md:p-10 md:shadow-lg">
         <div className="text-center">
-          {/* Text colors change based on screen size for readability */}
           <h1 className="text-3xl font-bold text-white md:text-[#2B2560]">
             Seja Bem Vindo de Volta!
           </h1>
@@ -99,16 +101,25 @@ const Login: React.FC = () => {
             >
               Senha
             </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              placeholder="Digite sua senha"
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-400 shadow-sm focus:border-[#31295F] focus:outline-none focus:ring-1 focus:ring-[#31295F]"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                required
+                placeholder="Digite sua senha"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-400 shadow-sm focus:border-[#31295F] focus:outline-none focus:ring-1 focus:ring-[#31295F]"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={toggleShowPassword}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center justify-between text-sm">
@@ -127,8 +138,6 @@ const Login: React.FC = () => {
             </a>
           </div>
 
-          {error && <p className="text-sm text-red-500 text-center">{error}</p>}
-
           <button
             type="submit"
             className="w-full justify-center rounded-md bg-[#31295F] py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#292250] disabled:opacity-50"
@@ -139,18 +148,19 @@ const Login: React.FC = () => {
         </form>
 
         <div className="my-6 flex items-center">
-          {/* Separator line color adjusted for dark background */}
           <hr className="flex-grow border-t border-gray-500 md:border-gray-300" />
-          <span className="mx-4 text-xs text-gray-400 md:text-gray-500">Ou</span>
+          <span className="mx-4 text-xs text-gray-400 md:text-gray-500">
+            Ou
+          </span>
           <hr className="flex-grow border-t border-gray-500 md:border-gray-300" />
         </div>
 
         <button
           type="button"
           onClick={handleGoogleLogin}
-          className="flex w-full items-center justify-center gap-3 rounded-md border border-gray-300 bg-white py-3 text-sm font-medium text-[#2B2560] shadow-sm transition-colors hover:bg-gray-50"
+          className="flex w-full items-center justify-center gap-3 rounded-md border border-gray-300 bg-white md:bg-transparent py-3 text-md text-white md:text-[#2B2560] font-bold shadow-sm transition-colors hover:bg-gray-50"
         >
-          <img src={GoogleSymbol} alt="Google Symbol" className="h-5 w-5" />
+          <FaGoogle size={20} />
           Entrar com o Google
         </button>
       </main>

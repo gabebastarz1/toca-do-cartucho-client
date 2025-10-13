@@ -18,12 +18,39 @@ export default defineConfig({
                 orientation: 'portrait',
                 scope: '/',
                 start_url: '/',
+                id: '/?source=pwa',
+                categories: ['games', 'shopping', 'entertainment'],
                 icons: [
                     {
                         src: 'logo-icon-pwa.png',
                         sizes: 'any',
                         type: 'image/svg+xml',
                         purpose: 'any maskable'
+                    }
+                ],
+                screenshots: [
+                    {
+                        src: '/Logos/logo final.png', // Caminho para uma imagem de screenshot
+                        sizes: '1280x720',
+                        type: 'image/png',
+                        form_factor: 'wide',
+                        label: 'Tela Inicial da Toca do Cartucho'
+                    }
+                ],
+                shortcuts: [
+                    {
+                        name: 'Meus Favoritos',
+                        short_name: 'Favoritos',
+                        description: 'Ver os produtos que você favoritou',
+                        url: '/favoritos',
+                        icons: [{ src: '/Logos/logo-icon.svg', sizes: '192x192' }]
+                    },
+                    {
+                        name: 'Vender um Item',
+                        short_name: 'Vender',
+                        description: 'Criar um novo anúncio de venda ou troca',
+                        url: '/criar-anuncio',
+                        icons: [{ src: '/Logos/logo-icon.svg', sizes: '192x192' }]
                     }
                 ]
             },

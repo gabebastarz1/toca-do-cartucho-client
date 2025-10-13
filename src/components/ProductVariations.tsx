@@ -1,10 +1,30 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { useReferenceData } from "../hooks/useReferenceData";
-import { AdvertisementDTO } from "../api/types";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useReferenceData } from "../hooks/useReferenceData"; // Removed to use mock
 import { useLocation } from "react-router-dom";
-import WhatsAppLink from "./WhatsAppLink";
+import WhatsAppLink from "./WhatsAppLink"; // Removed to use mock
 
-// --- Componente de Botão de Opção Estilizado (Sem alterações) ---
+type AdvertisementDTO = {
+  id: number | string;
+  preservationState?: { name: string };
+  cartridgeType?: { name: string };
+  gameLocalization?: { region?: { name: string } };
+  advertisementLanguageSupports?: {
+    languageSupport?: {
+      language?: { name: string };
+      languageSupportType?: { id: number };
+    };
+  }[];
+  availableStock?: number;
+  game?: {
+    title?: string;
+    igdbUrl?: string;
+  };
+  
+};
+
+
+
+
 interface OptionButtonProps {
   label: string;
   value: string;
@@ -57,10 +77,10 @@ type ExpandedSections = {
   interfaceLanguages: boolean;
 };
 
-// Componente para renderizar opções com botão de expansão (Sem alterações)
+// Componente para renderizar opções com botão de expansão (LÓGICA ATUALIZADA)
 interface OptionsSectionProps {
   title: string;
-  options: string[];
+  options: string[]; // Recebe apenas as opções que devem ser exibidas
   selectedValue: string;
   onSelect: (value: string) => void;
   disabledOptions: string[];
@@ -81,21 +101,14 @@ const OptionsSection: React.FC<OptionsSectionProps> = ({
   onToggleExpansion,
   gridCols = "grid-cols-3",
 }) => {
-  // Filtrar apenas as opções disponíveis (não desabilitadas)
-  const availableOptions = options.filter(
-    (option) => !disabledOptions.includes(option)
-  );
-
-  const isExpanded = expandedSections[sectionKey];
-  const limitedOptions = isExpanded
-    ? availableOptions
-    : availableOptions.slice(0, 6);
-  const hasMore = availableOptions.length > 6;
-
-  // Se não há opções disponíveis, não renderizar a seção
-  if (availableOptions.length === 0) {
+  // Se não há opções para esta seção, não renderiza nada.
+  if (options.length === 0) {
     return null;
   }
+
+  const isExpanded = expandedSections[sectionKey];
+  const limitedOptions = isExpanded ? options : options.slice(0, 6);
+  const hasMore = options.length > 6;
 
   return (
     <div className="mb-4">
@@ -108,7 +121,7 @@ const OptionsSection: React.FC<OptionsSectionProps> = ({
             value={option}
             selectedValue={selectedValue}
             onClick={onSelect}
-            disabled={false} // Todas as opções renderizadas são disponíveis
+            disabled={disabledOptions.includes(option)}
           />
         ))}
       </div>
@@ -117,32 +130,28 @@ const OptionsSection: React.FC<OptionsSectionProps> = ({
           onClick={() => onToggleExpansion(sectionKey)}
           className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
         >
-          {isExpanded
-            ? "Ver menos"
-            : `Ver mais (${availableOptions.length - 6} opções)`}
+          {isExpanded ? "Ver menos" : `Ver mais (${options.length - 6} opções)`}
         </button>
       )}
     </div>
   );
 };
 
-// Interface para os dados das variações
 interface ProductVariationsData {
-  preservation: string[];
-  cartridgeType: string[];
-  region: string[];
-  audioLanguages: string[];
-  interfaceLanguages: string[];
-  stock: number;
+  preservation: string[];
+  cartridgeType: string[];
+  region: string[];
+  audioLanguages: string[];
+  interfaceLanguages: string[];
+  stock: number;
 }
 
-// --- Componente Principal de Variações do Produto (COM AS MODIFICAÇÕES) ---
 interface ProductVariationsProps {
-  data?: ProductVariationsData;
-  variations?: AdvertisementDTO[];
-  mainAdvertisement?: AdvertisementDTO;
-  onVariationChange?: (variation: AdvertisementDTO | undefined) => void; // ✅ NOVO: Callback para mudança de variação
-}
+    data?: ProductVariationsData;
+    variations?: AdvertisementDTO[];
+    mainAdvertisement?: AdvertisementDTO;
+    onVariationChange?: (variation: AdvertisementDTO | undefined) => void;
+  }
 
 const ProductVariations: React.FC<ProductVariationsProps> = ({
   variations = [],
@@ -151,297 +160,48 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
 }) => {
   const location = useLocation();
   const {
-    preservationStates,
-    cartridgeTypes,
-    regions,
-    languages,
     loading,
     error,
   } = useReferenceData();
 
-  // Mapeamento para acessar os nomes corretos dentro do objeto de variação.
-  // AQUI ESTÁ A CORREÇÃO PRINCIPAL
   const variationKeyMap = useMemo(
     () => ({
       preservation: (v: AdvertisementDTO) => v.preservationState?.name,
       cartridgeType: (v: AdvertisementDTO) => v.cartridgeType?.name,
       region: (v: AdvertisementDTO) => v.gameLocalization?.region?.name,
-      // CORREÇÃO: Mapear diretamente para o nome do idioma (string)
       audioLanguages: (v: AdvertisementDTO) => {
         if (!v.advertisementLanguageSupports) return [];
         return v.advertisementLanguageSupports
-          .filter((als: any) => {
-            const typeName =
-              als.languageSupport?.languageSupportType?.name?.toLowerCase() ||
-              "";
-            const typeId = als.languageSupport?.languageSupportType?.id;
-            return typeId === 1 || typeName.includes("audio");
-          })
-          .map((als: any) => als.languageSupport?.language?.name) // <-- Extrai o .name aqui
-          .filter(Boolean); // Remove quaisquer nomes nulos/undefined
+          .filter((als: any) => als.languageSupport?.languageSupportType?.id === 1)
+          .map((als: any) => als.languageSupport?.language?.name)
+          .filter(Boolean);
       },
       subtitleLanguages: (v: AdvertisementDTO) => {
         if (!v.advertisementLanguageSupports) return [];
         return v.advertisementLanguageSupports
-          .filter((als: any) => {
-            const typeName =
-              als.languageSupport?.languageSupportType?.name?.toLowerCase() ||
-              "";
-            const typeId = als.languageSupport?.languageSupportType?.id;
-            return (
-              typeId === 2 ||
-              typeName.includes("subtitle") ||
-              typeName.includes("legenda")
-            );
-          })
-          .map((als: any) => als.languageSupport?.language?.name) // <-- Extrai o .name aqui
+          .filter((als: any) => als.languageSupport?.languageSupportType?.id === 2)
+          .map((als: any) => als.languageSupport?.language?.name)
           .filter(Boolean);
       },
       interfaceLanguages: (v: AdvertisementDTO) => {
         if (!v.advertisementLanguageSupports) return [];
         return v.advertisementLanguageSupports
-          .filter((als: any) => {
-            const typeName =
-              als.languageSupport?.languageSupportType?.name?.toLowerCase() ||
-              "";
-            const typeId = als.languageSupport?.languageSupportType?.id;
-            return typeId === 3 || typeName.includes("interface");
-          })
-          .map((als: any) => als.languageSupport?.language?.name) // <-- Extrai o .name aqui
+          .filter((als: any) => als.languageSupport?.languageSupportType?.id === 3)
+          .map((als: any) => als.languageSupport?.language?.name)
           .filter(Boolean);
       },
     }),
     []
   );
 
-  // Estado centralizado para guardar as seleções do usuário
-  const [selection, setSelection] = useState<{ [key: string]: string }>(() => {
-    // ✅ CORREÇÃO: Pré-selecionar características do anúncio principal
-    if (!mainAdvertisement) return {};
-
-    const initialSelection: { [key: string]: string } = {};
-
-    Object.keys(variationKeyMap).forEach((key) => {
-      const getValue = variationKeyMap[key as keyof typeof variationKeyMap];
-      if (getValue) {
-        const value = getValue(mainAdvertisement);
-        if (value) {
-          if (Array.isArray(value)) {
-            if (value.length > 0) {
-              // Para arrays, pegar o primeiro valor
-              initialSelection[key] = value[0];
-            }
-          } else {
-            // Para valores únicos
-            initialSelection[key] = value;
-          }
-        }
-      }
-    });
-
-    console.log("=== INITIAL SELECTION FROM MAIN AD ===");
-    console.log("mainAdvertisement:", mainAdvertisement);
-    console.log("initialSelection:", initialSelection);
-    console.log("=====================================");
-
-    return initialSelection;
-  });
-
-  // ✅ NOVO: Ler query parameter 'variation' para pré-seleção
+  const [selection, setSelection] = useState<{ [key: string]: string }>({});
+  const [activeVariationId, setActiveVariationId] = useState<string | number | null>(null);
+  const [dynamicOptions, setDynamicOptions] = useState<{[key: string]: string[]}>({});
+  
   const urlParams = new URLSearchParams(location.search);
   const variationId = urlParams.get("variation");
 
-  // Estado para guardar as opções que estão dinamicamente disponíveis
-  const [dynamicOptions, setDynamicOptions] = useState<{
-    [key: string]: string[];
-  }>({});
-
-  // ✅ CORREÇÃO: Reativado para atualizar seleção quando mainAdvertisement mudar
-  useEffect(() => {
-    if (mainAdvertisement) {
-      const newSelection: { [key: string]: string } = {};
-
-      // ✅ NOVO: Se há variationId na URL, usar essa variação para pré-seleção
-      if (variationId) {
-        const targetVariation = variations.find(
-          (v) => v.id.toString() === variationId
-        );
-        if (targetVariation) {
-          console.log("=== PRESELECTING VARIATION FROM URL ===");
-          console.log("variationId:", variationId);
-          console.log("targetVariation:", targetVariation);
-
-          // Usar as características da variação selecionada
-          Object.keys(variationKeyMap).forEach((key) => {
-            const getValue =
-              variationKeyMap[key as keyof typeof variationKeyMap];
-            if (getValue) {
-              const value = getValue(targetVariation);
-              if (value) {
-                if (Array.isArray(value)) {
-                  if (value.length > 0) {
-                    newSelection[key] = value[0];
-                  }
-                } else {
-                  newSelection[key] = value;
-                }
-              }
-            }
-          });
-          console.log("newSelection from variation:", newSelection);
-        }
-      } else {
-        // ✅ Usar características do anúncio principal se não há variação específica
-        console.log("=== USING MAIN ADVERTISEMENT CHARACTERISTICS ===");
-        console.log("mainAdvertisement:", mainAdvertisement);
-
-        // Usar as características do anúncio principal
-        Object.keys(variationKeyMap).forEach((key) => {
-          const getValue = variationKeyMap[key as keyof typeof variationKeyMap];
-          if (getValue) {
-            const value = getValue(mainAdvertisement);
-            if (value) {
-              if (Array.isArray(value)) {
-                if (value.length > 0) {
-                  newSelection[key] = value[0];
-                }
-              } else {
-                newSelection[key] = value;
-              }
-            }
-          }
-        });
-        console.log("newSelection from main ad:", newSelection);
-      }
-
-      console.log("=== UPDATING SELECTION FROM MAIN AD ===");
-      console.log("mainAdvertisement:", mainAdvertisement);
-      console.log("newSelection:", newSelection);
-      console.log("=====================================");
-
-      setSelection(newSelection);
-    }
-  }, [mainAdvertisement, variationId, variations, variationKeyMap]);
-
-  // Armazena todas as opções possíveis vindas da API (calculado apenas uma vez)
-  const allPossibleOptions = useMemo(
-    () => ({
-      preservation: preservationStates.map((state) => state.name),
-      cartridgeType: cartridgeTypes.map((type) => type.name),
-      region: regions.map((region) => region.name),
-      audioLanguages: languages.map((lang) => lang.name),
-      subtitleLanguages: languages.map((lang) => lang.name),
-      interfaceLanguages: languages.map((lang) => lang.name),
-    }),
-    [preservationStates, cartridgeTypes, regions, languages]
-  );
-
-  // EFEITO PRINCIPAL: Recalcula as opções disponíveis sempre que uma seleção é feita
-  useEffect(() => {
-    console.log("=== PRODUCT VARIATIONS DEBUG ===");
-    console.log("variations:", variations);
-    console.log("mainAdvertisement:", mainAdvertisement);
-    console.log("current selection:", selection);
-    console.log("selection keys:", Object.keys(selection));
-    console.log("selection values:", Object.values(selection));
-
-    // ✅ Log detalhado para comparar estruturas
-    console.log("=== VARIATIONS STRUCTURE ANALYSIS ===");
-    variations.forEach((variation, index) => {
-      console.log(`--- VARIATION ${index} (ID: ${variation.id}) ---`);
-      console.log("preservationState:", variation.preservationState);
-      console.log("cartridgeType:", variation.cartridgeType);
-      console.log("gameLocalization:", variation.gameLocalization);
-      console.log(
-        "advertisementLanguageSupports:",
-        variation.advertisementLanguageSupports
-      );
-
-      // ✅ Testar cada mapeamento
-      Object.keys(variationKeyMap).forEach((key) => {
-        const getValue = variationKeyMap[key as keyof typeof variationKeyMap];
-        const value = getValue?.(variation);
-        console.log(`${key}:`, value);
-      });
-      console.log("--------------------------------");
-    });
-
-    const available: { [key: string]: Set<string> } = {};
-    const variationKeys = Object.keys(variationKeyMap);
-    const allAdvertisements = [
-      ...(mainAdvertisement ? [mainAdvertisement] : []),
-      ...variations,
-    ];
-
-    console.log("allAdvertisements:", allAdvertisements);
-
-    variationKeys.forEach((key) => {
-      available[key] = new Set<string>();
-
-      // ✅ SIMPLIFICAÇÃO: Sempre mostrar todas as opções disponíveis
-      const relevantAdvertisements = allAdvertisements;
-      console.log(`Showing all options for ${key}`);
-
-      console.log(`relevantAdvertisements for ${key}:`, relevantAdvertisements);
-
-      relevantAdvertisements.forEach((ad) => {
-        const value =
-          variationKeyMap[key as keyof typeof variationKeyMap]?.(ad);
-        console.log(`value for ${key} from ad ${ad.id}:`, value);
-        if (value) {
-          if (Array.isArray(value)) {
-            value.forEach((item) => available[key].add(item));
-          } else {
-            available[key].add(value);
-          }
-        }
-      });
-    });
-
-    const finalOptions: { [key: string]: string[] } = {};
-    Object.keys(available).forEach((key) => {
-      finalOptions[key] = Array.from(available[key]);
-    });
-
-    console.log("finalOptions:", finalOptions);
-    console.log("================================");
-
-    setDynamicOptions(finalOptions);
-  }, [selection, variations, mainAdvertisement, variationKeyMap]);
-
-  // Função para encontrar uma variação que contenha uma opção específica
-  const findVariationWithOption = (group: string, value: string) => {
-    return variations.find((variation) => {
-      const getValue = variationKeyMap[group as keyof typeof variationKeyMap];
-      if (getValue) {
-        const variationValue = getValue(variation);
-        if (Array.isArray(variationValue)) {
-          return variationValue.includes(value);
-        } else {
-          return variationValue === value;
-        }
-      }
-      return false;
-    });
-  };
-
-  // Função para verificar se uma opção pertence ao anúncio principal
-  const isMainAdvertisementOption = (group: string, value: string) => {
-    if (!mainAdvertisement) return false;
-    const getValue = variationKeyMap[group as keyof typeof variationKeyMap];
-    if (getValue) {
-      const mainAdValue = getValue(mainAdvertisement);
-      if (Array.isArray(mainAdValue)) {
-        return mainAdValue.includes(value);
-      } else {
-        return mainAdValue === value;
-      }
-    }
-    return false;
-  };
-
-  // Função para obter todas as opções de uma variação específica
-  const getVariationOptions = (variation: AdvertisementDTO) => {
+  const getVariationOptions = useCallback((variation: AdvertisementDTO) => {
     const options: { [key: string]: string } = {};
     Object.keys(variationKeyMap).forEach((key) => {
       const getValue = variationKeyMap[key as keyof typeof variationKeyMap];
@@ -449,9 +209,7 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
         const value = getValue(variation);
         if (value) {
           if (Array.isArray(value)) {
-            if (value.length > 0) {
-              options[key] = value[0];
-            }
+            if (value.length > 0) options[key] = value[0];
           } else {
             options[key] = value;
           }
@@ -459,32 +217,115 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
       }
     });
     return options;
+  }, [variationKeyMap]);
+
+  useEffect(() => {
+    if (!mainAdvertisement) return;
+    
+    let initialAd = mainAdvertisement;
+    
+    if (variationId) {
+        const targetVariation = variations.find(v => v.id.toString() === variationId);
+        if (targetVariation) {
+            initialAd = targetVariation;
+        }
+    }
+
+    if (initialAd) {
+      setActiveVariationId(initialAd.id);
+      setSelection(getVariationOptions(initialAd));
+    }
+  }, [mainAdvertisement, variationId, variations, getVariationOptions]);
+  
+   useEffect(() => {
+    const allAdvertisements = [
+      ...(mainAdvertisement ? [mainAdvertisement] : []),
+      ...variations,
+    ];
+
+    const allExistingOptions: { [key: string]: Set<string> } = {};
+    const variationKeys = Object.keys(variationKeyMap);
+
+    variationKeys.forEach((key) => {
+      allExistingOptions[key] = new Set<string>();
+      allAdvertisements.forEach((ad) => {
+        const value = variationKeyMap[key as keyof typeof variationKeyMap]?.(ad);
+        if (value) {
+          if (Array.isArray(value)) {
+            value.forEach((item) => item && allExistingOptions[key].add(item));
+          } else {
+             allExistingOptions[key].add(value);
+          }
+        }
+      });
+    });
+
+    const finalOptions: { [key: string]: string[] } = {};
+    Object.keys(allExistingOptions).forEach((key) => {
+      finalOptions[key] = Array.from(allExistingOptions[key]);
+    });
+
+    setDynamicOptions(finalOptions);
+  }, [variations, mainAdvertisement, variationKeyMap]);
+
+  const findAdForOption = useCallback((group: string, value: string): AdvertisementDTO | null => {
+      const allAds = [
+          ...(mainAdvertisement ? [mainAdvertisement] : []),
+          ...variations,
+      ];
+      return allAds.find(ad => {
+          const getValue = variationKeyMap[group as keyof typeof variationKeyMap];
+          if (getValue) {
+              const adValue = getValue(ad);
+              return Array.isArray(adValue) ? adValue.includes(value) : adValue === value;
+          }
+          return false;
+      }) || null;
+  }, [mainAdvertisement, variations, variationKeyMap]);
+
+  const handleSelect = (group: string, value: string) => {
+    // Se clicar na opção já selecionada, desmarca tudo.
+    if (selection[group] === value) {
+      setSelection({});
+      setActiveVariationId(null);
+      return;
+    }
+
+    // Cria a nova seleção potencial com base na seleção atual e na nova opção clicada.
+    const newSelection = { ...selection, [group]: value };
+
+    const allAds = [
+      ...(mainAdvertisement ? [mainAdvertisement] : []),
+      ...variations,
+    ];
+
+    // Procura por um anúncio que corresponda perfeitamente à nova combinação.
+    const perfectlyMatchingAd = allAds.find(ad => {
+      return Object.keys(newSelection).every(key => {
+        const adValue = variationKeyMap[key as keyof typeof variationKeyMap]?.(ad);
+        const selectedValue = newSelection[key];
+        if (Array.isArray(adValue)) {
+          return adValue.includes(selectedValue);
+        }
+        return adValue === selectedValue;
+      });
+    });
+    
+    // Se encontrar uma variação que corresponda perfeitamente, usa-a.
+    if (perfectlyMatchingAd) {
+      const finalSelection = getVariationOptions(perfectlyMatchingAd);
+      setSelection(finalSelection);
+      setActiveVariationId(perfectlyMatchingAd.id);
+    } else {
+      // Se for o primeiro clique (selection estava vazio), encontra a primeira variação com a opção clicada.
+      const targetAd = findAdForOption(group, value);
+      if (targetAd) {
+        setActiveVariationId(targetAd.id);
+        setSelection(getVariationOptions(targetAd));
+      }
+    }
   };
 
-  // Handler unificado para lidar com cliques nos botões de opção
-  const handleSelect = (group: string, value: string) => {
-    setSelection((prev) => {
-      const newSelection = { ...prev };
-      if (newSelection[group] === value) {
-        delete newSelection[group];
-      } else {
-        const targetVariation = findVariationWithOption(group, value);
-        if (targetVariation) {
-          const variationOptions = getVariationOptions(targetVariation);
-          Object.assign(newSelection, variationOptions);
-        } else if (
-          isMainAdvertisementOption(group, value) &&
-          mainAdvertisement
-        ) {
-          const mainAdOptions = getVariationOptions(mainAdvertisement);
-          Object.assign(newSelection, mainAdOptions);
-        } else {
-          newSelection[group] = value;
-        }
-      }
-      return newSelection;
-    });
-  };
 
   const [quantity, setQuantity] = useState<number>(1);
   const [expandedSections, setExpandedSections] = useState<ExpandedSections>({
@@ -500,111 +341,77 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const handleQuantityChange = (
-    event: React.ChangeEvent<HTMLSelectElement>
-  ) => {
+  const handleQuantityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setQuantity(Number(event.target.value));
   };
+  
+  const selectedVariation = useMemo(() => {
+    if (!activeVariationId) {
+        return mainAdvertisement; 
+    }
+    const allAds = [
+        ...(mainAdvertisement ? [mainAdvertisement] : []),
+        ...variations,
+    ];
+    return allAds.find(ad => ad.id === activeVariationId) || mainAdvertisement;
+  }, [activeVariationId, mainAdvertisement, variations]);
 
-  // Função para encontrar a variação atual baseada na seleção
-  const findCurrentVariation = () => {
-    if (!variations.length) return mainAdvertisement;
-
-    // Procurar por uma variação que corresponda exatamente à seleção atual
-    const matchingVariation = variations.find((variation) => {
-      const variationOptions = getVariationOptions(variation);
-
-      // Verificar se todas as opções selecionadas correspondem às opções da variação
-      return Object.keys(selection).every((key) => {
-        const selectedValue = selection[key];
-        const variationValue = variationOptions[key];
-
-        if (Array.isArray(variationValue)) {
-          return variationValue.includes(selectedValue);
-        } else {
-          return variationValue === selectedValue;
-        }
-      });
-    });
-
-    return matchingVariation || mainAdvertisement;
-  };
-
-  const selectedVariation = findCurrentVariation();
-
-  // ✅ NOVO: Notificar quando a variação selecionada mudar
-  React.useEffect(() => {
-    console.log("🔄 [ProductVariations] Variação atual:", selectedVariation);
+  useEffect(() => {
     if (onVariationChange) {
       onVariationChange(selectedVariation);
     }
   }, [selectedVariation, onVariationChange]);
 
-  if (loading) {
-    return (
-      <div className="p-6 bg-white rounded-xl border border-gray-200 max-w-sm mx-auto">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded mb-4"></div>
-          <div className="space-y-4">
-            <div className="h-4 bg-gray-200 rounded"></div>
-            <div className="grid grid-cols-3 gap-2">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-10 bg-gray-200 rounded"></div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6 bg-white rounded-xl border border-gray-200 max-w-sm mx-auto">
-        <div className="text-center">
-          <p className="text-red-600 mb-2">Erro ao carregar dados</p>
-          <p className="text-sm text-gray-600">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Função helper para calcular as opções desabilitadas para um grupo
-  const getDisabledOptionsFor = (group: keyof typeof allPossibleOptions) => {
-    const availableOptions = dynamicOptions[group] || [];
-    return allPossibleOptions[group].filter(
-      (opt) => !availableOptions.includes(opt)
-    );
-  };
-
-  // Função para determinar qual anúncio está atualmente selecionado
-  const getCurrentSelectedAdvertisement = () => {
-    if (Object.keys(selection).length === 0 && mainAdvertisement) {
-      return mainAdvertisement;
+  if (loading) { return <div>Carregando...</div>; }
+  if (error) { return <div>Erro: {error}</div>; }
+  
+  const getDisabledOptionsFor = (group: keyof typeof dynamicOptions) => {
+    // Se nenhuma variação estiver selecionada, todas as opções existentes são válidas.
+    if (activeVariationId === null) {
+      return [];
     }
-    const allAdvertisements = [
+
+    const allAds = [
       ...(mainAdvertisement ? [mainAdvertisement] : []),
       ...variations,
     ];
-    return (
-      allAdvertisements.find((ad) => {
-        return Object.entries(selection).every(([key, selectedValue]) => {
-          const getValue = variationKeyMap[key as keyof typeof variationKeyMap];
-          if (getValue) {
-            const adValue = getValue(ad);
-            if (Array.isArray(adValue)) {
-              return adValue.includes(selectedValue);
-            } else {
-              return adValue === selectedValue;
-            }
-          }
-          return false;
-        });
-      }) || null
-    );
+
+    // Encontra variações "compatíveis", que correspondem à seleção atual em todas as outras características.
+    const compatibleAds = allAds.filter(ad => {
+      return Object.keys(selection).every(key => {
+        if (key === group) {
+          return true; // Ignora a verificação para o grupo atual
+        }
+        const adValue = variationKeyMap[key as keyof typeof variationKeyMap]?.(ad);
+        const selectedValue = selection[key];
+        if(Array.isArray(adValue)) {
+            return adValue.includes(selectedValue);
+        }
+        return adValue === selectedValue;
+      });
+    });
+
+    // A partir das variações compatíveis, coleta todas as opções possíveis para o grupo atual.
+    const enabledOptions = new Set<string>();
+    compatibleAds.forEach(ad => {
+      const value = variationKeyMap[group as keyof typeof variationKeyMap]?.(ad);
+      if (value) {
+        if (Array.isArray(value)) {
+            value.forEach(item => item && enabledOptions.add(item));
+        } else {
+            enabledOptions.add(value);
+        }
+      }
+    });
+    
+    const availableInAnyVar = dynamicOptions[group] || [];
+    
+    // As opções desabilitadas são todas as que existem, exceto as que foram habilitadas.
+    return availableInAnyVar.filter(opt => !enabledOptions.has(opt));
   };
 
-  const currentAd = getCurrentSelectedAdvertisement();
+
+  const currentAd = selectedVariation;
 
   return (
     <div className="p-6 bg-white rounded-xl border border-gray-200 max-w-sm mx-auto">
@@ -612,27 +419,9 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
         Cartuchos disponíveis:
       </h2>
 
-      {/* 
-      {currentAd && (
-        <div className="mb-4 p-3 bg-gray-50 rounded-lg border">
-          <p className="text-sm font-medium text-gray-700">📦 Seleção atual:</p>
-          <p className="text-xs text-gray-600 mt-1">
-            {currentAd === mainAdvertisement
-              ? "Anúncio Principal"
-              : `Variação ID: ${currentAd.id}`}
-          </p>
-          {currentAd.availableStock && (
-            <p className="text-xs text-green-600 mt-1">
-              ✅ {currentAd.availableStock} unidade(s) em estoque
-            </p>
-          )}
-        </div>
-      )}
-      */}
-
       <OptionsSection
         title="Estado de Preservação"
-        options={allPossibleOptions.preservation}
+        options={dynamicOptions.preservation || []}
         selectedValue={selection.preservation || ""}
         onSelect={(value) => handleSelect("preservation", value)}
         disabledOptions={getDisabledOptionsFor("preservation")}
@@ -643,7 +432,7 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
 
       <OptionsSection
         title="Tipo de cartucho"
-        options={allPossibleOptions.cartridgeType}
+        options={dynamicOptions.cartridgeType || []}
         selectedValue={selection.cartridgeType || ""}
         onSelect={(value) => handleSelect("cartridgeType", value)}
         disabledOptions={getDisabledOptionsFor("cartridgeType")}
@@ -655,7 +444,7 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
 
       <OptionsSection
         title="Região"
-        options={allPossibleOptions.region}
+        options={dynamicOptions.region || []}
         selectedValue={selection.region || ""}
         onSelect={(value) => handleSelect("region", value)}
         disabledOptions={getDisabledOptionsFor("region")}
@@ -666,7 +455,7 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
 
       <OptionsSection
         title="Idiomas do Áudio"
-        options={allPossibleOptions.audioLanguages}
+        options={dynamicOptions.audioLanguages || []}
         selectedValue={selection.audioLanguages || ""}
         onSelect={(value) => handleSelect("audioLanguages", value)}
         disabledOptions={getDisabledOptionsFor("audioLanguages")}
@@ -677,7 +466,7 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
 
       <OptionsSection
         title="Idiomas da Legenda"
-        options={allPossibleOptions.subtitleLanguages}
+        options={dynamicOptions.subtitleLanguages || []}
         selectedValue={selection.subtitleLanguages || ""}
         onSelect={(value) => handleSelect("subtitleLanguages", value)}
         disabledOptions={getDisabledOptionsFor("subtitleLanguages")}
@@ -688,7 +477,7 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
 
       <OptionsSection
         title="Idiomas da Interface"
-        options={allPossibleOptions.interfaceLanguages}
+        options={dynamicOptions.interfaceLanguages || []}
         selectedValue={selection.interfaceLanguages || ""}
         onSelect={(value) => handleSelect("interfaceLanguages", value)}
         disabledOptions={getDisabledOptionsFor("interfaceLanguages")}
@@ -707,19 +496,20 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
             className="block w-full px-3 py-2.5 border border-gray-300 bg-white rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none"
             value={quantity}
             onChange={handleQuantityChange}
+            disabled={!currentAd || currentAd.availableStock === 0}
           >
-            {Array.from({ length: currentAd?.availableStock || 0 }, (_, i) => (
-              <option key={i + 1} value={i + 1}>
-                Quantidade: {i + 1}
-              </option>
-            ))}
+            {currentAd && currentAd.availableStock && currentAd.availableStock > 0 ? (
+                 Array.from({ length: currentAd.availableStock }, (_, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      Quantidade: {i + 1}
+                    </option>
+                  ))
+            ) : (
+                <option>Sem estoque</option>
+            )}
           </select>
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-700">
-            <svg
-              className="fill-current h-4 w-4"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-            >
+            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
               <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
             </svg>
           </div>
@@ -736,13 +526,7 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
         <button
           onClick={() => {
             if (mainAdvertisement?.game?.igdbUrl) {
-              window.open(
-                mainAdvertisement.game.igdbUrl,
-                "_blank",
-                "noopener,noreferrer"
-              );
-            } else {
-              console.warn("IGDB URL não disponível para este jogo");
+              window.open(mainAdvertisement.game.igdbUrl, "_blank", "noopener,noreferrer");
             }
           }}
           disabled={!mainAdvertisement?.game?.igdbUrl}
@@ -759,4 +543,10 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
   );
 };
 
-export default ProductVariations;
+const ProductVariationsWrapper: React.FC<ProductVariationsProps> = (props) => {
+  return <ProductVariations {...props} />;
+};
+
+
+export default ProductVariationsWrapper;
+
