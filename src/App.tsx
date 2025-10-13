@@ -34,7 +34,7 @@ function App() {
               <Route path="/sobre" element={<About />} />
               <Route path="/favoritos" element={<Favorites />} />
               {/* <Route path="/auth" element={<Auth />} /> */}
-              <Route path="/auth" element={<Login />} />
+              <Route path="/login" element={<Login />} />
               <Route path="/cadastro" element={<Register />} />
               <Route path="/anuncio/:id" element={<Advertisement />} />
               <Route path="/criar-anuncio" element={<CreateAdvertisement />} />

@@ -1,6 +1,6 @@
 import { api } from './api';
 import { userProfileCache } from './userProfileCache';
-
+import axios from 'axios';
 export interface User {
   id: string;
   email: string;
@@ -28,9 +28,11 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
+  confirmPassword?: string;
   firstName: string;
   lastName: string;
   nickName: string;
+  cpf?: string | null;
 }
 
 export interface AuthResponse {
@@ -38,9 +40,24 @@ export interface AuthResponse {
   user: User;
 }
 
+const API_URL =  import.meta.env.VITE_API_URL;
+
+export const handleGoogleLogin = () => {
+  const finalRedirectUrl = window.location.origin;
+
+  const googleLoginUrl = `${API_URL}/api/accounts/login/google?finalRedirectUrl=${encodeURIComponent(
+    finalRedirectUrl
+  )}`;
+  window.location.href = googleLoginUrl;
+};
+
 class AuthService {
   private readonly AUTH_TOKEN_KEY = 'authToken';
   private readonly USER_KEY = 'user';
+
+
+
+
 
   // Login usando endpoint do Identity API
   async login(credentials: LoginRequest): Promise<AuthResponse> {
@@ -65,17 +82,17 @@ class AuthService {
         user: user!
       };
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error && 'response' in error 
-        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Erro ao fazer login'
-        : 'Erro ao fazer login';
-      throw new Error(errorMessage);
+      if (axios.isAxiosError(error) && error.response) {
+        throw error.response;
+      }
+      throw new Error("Erro ao fazer login");
     }
   }
 
   // Registro usando endpoint do Identity API
   async register(userData: RegisterRequest): Promise<AuthResponse> {
     try {
-      const response = await api.post('/register', userData);
+      const response = await api.post('/api/accounts/signup', userData);
 
       if (response.data.token) {
         this.setAuthData(response.data.token, response.data.user);
@@ -90,10 +107,41 @@ class AuthService {
         user: user!
       };
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error && 'response' in error 
-        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Erro ao registrar usuário'
-        : 'Erro ao registrar usuário';
-      throw new Error(errorMessage);
+      // Lança o erro com detalhes para ser tratado no componente
+      if (axios.isAxiosError(error) && error.response) {
+        throw error.response;
+      }
+      throw new Error('Erro ao registrar usuário');
+    }
+  }
+
+  // Verifica se o nome de usuário já existe
+  async checkNicknameExists(nickName: string): Promise<boolean> {
+    try {
+      const response = await api.get("/api/accounts/signup/nickname-exists", {
+        params: { nickName },
+      });
+      return response.data; // A API deve retornar true se existir, false se não
+    } catch (error) {
+      console.error("Erro ao verificar o nome de usuário:", error);
+      // Em caso de erro na verificação, assume que pode prosseguir para não bloquear o usuário
+      // mas loga o erro. A validação final do backend ainda vai pegar.
+      return false;
+    }
+  }
+
+  // Confirmação de e-mail
+  async confirmEmail(userId: string, code: string): Promise<void> {
+    try {
+      await api.get('/api/accounts/confirmEmail', {
+        params: { userId, code },
+      });
+    } catch (error) {
+      console.error("Erro ao confirmar e-mail:", error);
+      if (axios.isAxiosError(error) && error.response) {
+        throw error.response;
+      }
+      throw new Error('Erro ao confirmar e-mail');
     }
   }
 
@@ -143,7 +191,6 @@ class AuthService {
   getIdentityCookie(): string | null {
     const cookies = document.cookie.split(';');
     
-    // Tentar diferentes nomes de cookies
     const cookieNames = [
       'Identity.Application',
       '.AspNetCore.Identity.Application',
@@ -164,187 +211,159 @@ class AuthService {
     return null;
   }
 
-  // Verificar se está autenticado (melhorado para incluir verificação de cookies)
   isAuthenticated(): boolean {
-    // Primeiro verifica se há dados no localStorage
     const token = localStorage.getItem(this.AUTH_TOKEN_KEY);
     const user = localStorage.getItem(this.USER_KEY);
     
-    // Se há dados no localStorage, considera autenticado
     if (token && user) {
       return true;
     }
     
-    // Se não há dados no localStorage, verifica se há cookie de sessão
     return this.hasSessionCookie();
   }
 
-  // Obter token atual
   getToken(): string | null {
     return localStorage.getItem(this.AUTH_TOKEN_KEY);
   }
 
-  // Obter usuário atual do localStorage
   getUser(): User | null {
     const userStr = localStorage.getItem(this.USER_KEY);
     return userStr ? JSON.parse(userStr) : null;
   }
 
-  // Definir dados de autenticação
   setAuthData(token: string, user: User): void {
     localStorage.setItem(this.AUTH_TOKEN_KEY, token);
     localStorage.setItem(this.USER_KEY, JSON.stringify(user));
   }
 
-  // Limpar dados de autenticação
   private clearAuthData(): void {
     localStorage.removeItem(this.AUTH_TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
   }
 
-  // Definir cookie manualmente (para o cookie fornecido)
-  setCookieAuth(cookieValue: string): void {
-    // Definir o cookie no navegador
-    document.cookie = `Identity.Application=${cookieValue}; path=/; domain=localhost; secure=false; samesite=lax`;
-    
-    // Simular dados de usuário para desenvolvimento
-    const mockUser: User = {
-      id: 'mock-user-id',
-      email: 'tocadocartucho.contato@gmail.com',
-      firstName: 'Toca',
-      lastName: 'Do Cartucho',
-      nickName: 'admin_tocadocartucho',
-      roles: ['Administrator']
-    };
-
-    this.setAuthData('cookie-based-auth', mockUser);
-  }
-
-  // Verificar se tem permissão específica
   hasRole(role: string): boolean {
     const user = this.getUser();
     return user?.roles.includes(role) || false;
   }
 
-  // Verificar se é admin
   isAdmin(): boolean {
     return this.hasRole('Administrator');
   }
 
-  // Função para debug dos cookies
-  debugCookies(): void {
-    console.log("=== DEBUG COOKIES ===");
-    console.log("document.cookie:", document.cookie);
+  // debugCookies(): void {
+  //   console.log("=== DEBUG COOKIES ===");
+  //   console.log("document.cookie:", document.cookie);
     
-    const cookies = document.cookie.split(';');
-    console.log("Cookies encontrados:");
-    cookies.forEach((cookie, index) => {
-      const [name, value] = cookie.trim().split('=');
-      console.log(`${index + 1}. ${name}: ${value ? '***' : 'vazio'}`);
-    });
+  //   const cookies = document.cookie.split(';');
+  //   console.log("Cookies encontrados:");
+  //   cookies.forEach((cookie, index) => {
+  //     const [name, value] = cookie.trim().split('=');
+  //     console.log(`${index + 1}. ${name}: ${value ? '***' : 'vazio'}`);
+  //   });
     
-    const identityCookie = this.getIdentityCookie();
-    console.log("Identity.Application cookie:", identityCookie ? 'existe' : 'não existe');
-    console.log("hasSessionCookie():", this.hasSessionCookie());
-    console.log("isAuthenticated():", this.isAuthenticated());
-    console.log("localStorage authToken:", localStorage.getItem(this.AUTH_TOKEN_KEY) ? 'existe' : 'não existe');
-    console.log("localStorage user:", localStorage.getItem(this.USER_KEY) ? 'existe' : 'não existe');
+  //   const identityCookie = this.getIdentityCookie();
+  //   console.log("Identity.Application cookie:", identityCookie ? 'existe' : 'não existe');
+  //   console.log("hasSessionCookie():", this.hasSessionCookie());
+  //   console.log("isAuthenticated():", this.isAuthenticated());
+  //   console.log("localStorage authToken:", localStorage.getItem(this.AUTH_TOKEN_KEY) ? 'existe' : 'não existe');
+  //   console.log("localStorage user:", localStorage.getItem(this.USER_KEY) ? 'existe' : 'não existe');
     
-    // Debug adicional para cookies específicos
-    console.log("=== COOKIES ESPECÍFICOS ===");
-    const specificCookies = [
-      'Identity.Application',
-      '.AspNetCore.Identity.Application', 
-      '__RequestVerificationToken',
-      'ASP.NET_SessionId'
-    ];
+  //   // Debug adicional para cookies específicos
+  //   console.log("=== COOKIES ESPECÍFICOS ===");
+  //   const specificCookies = [
+  //     'Identity.Application',
+  //     '.AspNetCore.Identity.Application', 
+  //     '__RequestVerificationToken',
+  //     'ASP.NET_SessionId'
+  //   ];
     
-    specificCookies.forEach(cookieName => {
-      const cookie = cookies.find(c => c.trim().startsWith(`${cookieName}=`));
-      console.log(`${cookieName}:`, cookie ? 'existe' : 'não existe');
-    });
+  //   specificCookies.forEach(cookieName => {
+  //     const cookie = cookies.find(c => c.trim().startsWith(`${cookieName}=`));
+  //     console.log(`${cookieName}:`, cookie ? 'existe' : 'não existe');
+  //   });
     
-    console.log("===================");
-  }
+  //   console.log("===================");
+  // }
 
-  // Função para listar todos os cookies com detalhes
-  listAllCookies(): void {
-    console.log("=== TODOS OS COOKIES DETALHADOS ===");
-    console.log("document.cookie completo:", document.cookie);
+  //==================================================== listar todos os cookies com detalhes
+  
+  // listAllCookies(): void {
+  //   console.log("=== TODOS OS COOKIES DETALHADOS ===");
+  //   console.log("document.cookie completo:", document.cookie);
     
-    const cookies = document.cookie.split(';');
-    if (cookies.length === 1 && cookies[0].trim() === '') {
-      console.log("❌ Nenhum cookie encontrado");
-      return;
-    }
+  //   const cookies = document.cookie.split(';');
+  //   if (cookies.length === 1 && cookies[0].trim() === '') {
+  //     console.log("❌ Nenhum cookie encontrado");
+  //     return;
+  //   }
     
-    cookies.forEach((cookie, index) => {
-      const trimmedCookie = cookie.trim();
-      if (trimmedCookie) {
-        const [name, ...valueParts] = trimmedCookie.split('=');
-        const value = valueParts.join('=');
-        console.log(`${index + 1}. Nome: "${name}"`);
-        console.log(`   Valor: ${value ? `"${value.substring(0, 20)}${value.length > 20 ? '...' : ''}"` : 'vazio'}`);
-        console.log(`   Tamanho: ${value ? value.length : 0} caracteres`);
-        console.log('---');
-      }
-    });
+  //   cookies.forEach((cookie, index) => {
+  //     const trimmedCookie = cookie.trim();
+  //     if (trimmedCookie) {
+  //       const [name, ...valueParts] = trimmedCookie.split('=');
+  //       const value = valueParts.join('=');
+  //       console.log(`${index + 1}. Nome: "${name}"`);
+  //       console.log(`   Valor: ${value ? `"${value.substring(0, 20)}${value.length > 20 ? '...' : ''}"` : 'vazio'}`);
+  //       console.log(`   Tamanho: ${value ? value.length : 0} caracteres`);
+  //       console.log('---');
+  //     }
+  //   });
     
-    console.log("=====================================");
-  }
+  //   console.log("=====================================");
+  // }
 
-  // Função para testar autenticação manualmente
-  async testAuthentication(): Promise<void> {
-    console.log("=== TESTE DE AUTENTICAÇÃO ===");
-    this.debugCookies();
+  // ================================================ testar autenticação manualmente
+  // async testAuthentication(): Promise<void> {
+  //   console.log("=== TESTE DE AUTENTICAÇÃO ===");
+  //   this.debugCookies();
     
-    try {
-      console.log("Tentando obter usuário do servidor...");
-      const user = await this.getCurrentUser();
-      if (user) {
-        console.log("✅ Usuário obtido com sucesso:", user);
-        console.log("Nome completo:", `${user.firstName} ${user.lastName}`.trim());
-        console.log("Nickname:", user.nickName);
-        console.log("Email:", user.email);
-        console.log("Roles:", user.roles);
-      } else {
-        console.log("❌ Falha ao obter usuário do servidor");
-      }
-    } catch (error) {
-      console.log("❌ Erro ao testar autenticação:", error);
-    }
+  //   try {
+  //     console.log("Tentando obter usuário do servidor...");
+  //     const user = await this.getCurrentUser();
+  //     if (user) {
+  //       console.log("✅ Usuário obtido com sucesso:", user);
+  //       console.log("Nome completo:", `${user.firstName} ${user.lastName}`.trim());
+  //       console.log("Nickname:", user.nickName);
+  //       console.log("Email:", user.email);
+  //       console.log("Roles:", user.roles);
+  //     } else {
+  //       console.log("❌ Falha ao obter usuário do servidor");
+  //     }
+  //   } catch (error) {
+  //     console.log("❌ Erro ao testar autenticação:", error);
+  //   }
     
-    console.log("=============================");
-  }
+  //   console.log("=============================");
+  // }
 
-  // Função para testar login com credenciais padrão
-  async testLogin(): Promise<void> {
-    console.log("=== TESTE DE LOGIN ===");
+  // testar login com credenciais padrão
+  // async testLogin(): Promise<void> {
+  //   console.log("=== TESTE DE LOGIN ===");
     
-    const credentials = {
-      email: "tocadocartucho.contato@gmail.com",
-      password: "Admin@123"
-    };
+  //   const credentials = {
+  //     email: "tocadocartucho.contato@gmail.com",
+  //     password: "Admin@123"
+  //   };
     
-    try {
-      console.log("Tentando fazer login com:", credentials.email);
-      const response = await this.login(credentials);
-      console.log("✅ Login realizado com sucesso!");
-      console.log("Usuário:", response.user);
-      console.log("Token:", response.token);
+  //   try {
+  //     console.log("Tentando fazer login com:", credentials.email);
+  //     const response = await this.login(credentials);
+  //     console.log("✅ Login realizado com sucesso!");
+  //     console.log("Usuário:", response.user);
+  //     console.log("Token:", response.token);
       
-      // Verificar cookies após login
-      console.log("Verificando cookies após login:");
-      this.debugCookies();
+  //     // Verificar cookies após login
+  //     console.log("Verificando cookies após login:");
+  //     this.debugCookies();
       
-    } catch (error) {
-      console.log("❌ Erro no login:", error);
-    }
+  //   } catch (error) {
+  //     console.log("❌ Erro no login:", error);
+  //   }
     
-    console.log("=====================");
-  }
+  //   console.log("=====================");
+  // }
 
-  // Função para verificar se o cookie está sendo bloqueado por políticas de segurança
+  // verificar se o cookie está sendo bloqueado por políticas de segurança
   checkCookieAccessibility(): void {
     console.log("=== VERIFICAÇÃO DE ACESSIBILIDADE DE COOKIES ===");
     

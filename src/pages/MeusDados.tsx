@@ -18,9 +18,11 @@ import Footer from "../components/Footer";
 import BottomBar from "../components/BottomBar";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { api } from "../services/api";
+import { authService } from "../services/authService"; // ✅ Importar o authService
 import { UserForUpdateDTO } from "../api/types";
 import { useCustomAlert } from "../hooks/useCustomAlert";
 import { CustomAlert } from "../components/ui/CustomAlert";
+import useDebounce from "../hooks/useDebounce"; // ✅ Importar o hook
 
 const MeusDados: React.FC = () => {
   const navigate = useNavigate();
@@ -51,6 +53,10 @@ const MeusDados: React.FC = () => {
 
   const [isSaving, setIsSaving] = useState(false);
   const [cpfError, setCpfError] = useState<string | null>(null);
+  const [nicknameError, setNicknameError] = useState<string | null>(null); // ✅ Novo estado para erro de nickname
+
+  // ✅ Debounce para o campo de nome de usuário
+  const debouncedNickname = useDebounce(formData.nomeUsuario, 500);
 
   // Carregar dados do usuário quando o perfil for carregado
   useEffect(() => {
@@ -109,6 +115,31 @@ const MeusDados: React.FC = () => {
       setFormData(formDataToSet);
     }
   }, [userProfile]);
+
+  // ✅ useEffect para validação em tempo real do nome de usuário
+  useEffect(() => {
+    const checkNickname = async () => {
+      // Só verifica se o campo não está vazio e se é diferente do original
+      if (
+        debouncedNickname &&
+        userProfile &&
+        debouncedNickname !== userProfile.nickName
+      ) {
+        const nicknameExists = await authService.checkNicknameExists(
+          debouncedNickname
+        );
+        if (nicknameExists) {
+          setNicknameError("Este nome de usuário já está em uso.");
+        } else {
+          setNicknameError(null); // Limpa o erro se o nome estiver disponível
+        }
+      } else {
+        setNicknameError(null); // Limpa o erro se o campo estiver vazio ou igual ao original
+      }
+    };
+
+    checkNickname();
+  }, [debouncedNickname, userProfile]);
 
   // Funções de formatação melhoradas com limite de caracteres
   const formatCEP = (value: string) => {
@@ -209,9 +240,12 @@ const MeusDados: React.FC = () => {
   const handleInputChange = (field: string, value: string | boolean) => {
     console.log(`🔧 [MeusDados] Campo: ${field}, Valor recebido:`, value);
 
-    // Limpar erro de CPF quando o usuário começar a digitar novamente
+    // Limpar erros quando o usuário começar a digitar novamente
     if (field === "cpf" && cpfError) {
       setCpfError(null);
+    }
+    if (field === "nomeUsuario" && nicknameError) {
+      setNicknameError(null);
     }
 
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -221,6 +255,12 @@ const MeusDados: React.FC = () => {
     if (!userProfile?.id) {
       console.log("❌ [MeusDados] Usuário não encontrado para salvar");
       showError("Usuário não encontrado");
+      return;
+    }
+
+    // Impede o salvamento se houver um erro de nickname
+    if (nicknameError) {
+      showError("O nome de usuário já está em uso.");
       return;
     }
 
@@ -252,6 +292,7 @@ const MeusDados: React.FC = () => {
 
     setIsSaving(true);
     setCpfError(null);
+    setNicknameError(null); // Limpar erro de nickname ao salvar
 
     try {
       // Preparar dados para atualização
@@ -281,6 +322,7 @@ const MeusDados: React.FC = () => {
       const updateData: UserForUpdateDTO = {
         firstName: firstName || null,
         lastName: lastName || null,
+        nickName: formData.nomeUsuario || null, // ✅ CAMPO ADICIONADO
         email: formData.email || null,
         cpf: cleanCPF || null, // Campo CPF limpo (pode ser enviado, mas não retornado)
         phoneNumber: formData.whatsapp || null, // ✅ Campo disponível na API
@@ -456,6 +498,7 @@ const MeusDados: React.FC = () => {
                 value={formData.nomeUsuario}
                 onChange={handleInputChange}
                 required={true}
+                error={nicknameError} // ✅ Exibir erro no campo
               />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField

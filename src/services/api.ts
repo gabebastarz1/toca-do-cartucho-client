@@ -1,8 +1,10 @@
 import axios from "axios";
 
+const API_URL =  import.meta.env.VITE_API_URL;
+
 export const api = axios.create({
-  baseURL: "http://localhost:5236",
-  withCredentials: true, // Inclui cookies automaticamente
+  baseURL: API_URL,
+  withCredentials: true, 
   headers: {
     'Content-Type': 'application/json',
   }
@@ -32,8 +34,8 @@ api.interceptors.response.use(
       localStorage.removeItem('user');
       
       // Só redirecionar se não estiver já na página de auth
-      if (window.location.pathname !== '/auth') {
-        window.location.href = '/auth';
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
       }
     }
     return Promise.reject(error);
