@@ -142,7 +142,6 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
         return imageUrl;
       }
     }
-    return "/Logos/logo.svg";
   };
 
   return {

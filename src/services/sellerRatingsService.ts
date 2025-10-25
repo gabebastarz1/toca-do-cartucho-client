@@ -18,8 +18,15 @@ export interface SellerRatingsResponse {
   totalRatings: number;
 }
 
+export interface SellerRatingForCreationDTO {
+  sellerId: string;
+  title?: string;
+  description?: string;
+  rating: number;
+}
+
 class SellerRatingsService {
-  private baseUrl = '/api/seller_ratings';
+  private baseUrl = '/api/users/ratings';
 
   async getSellerRatings(sellerId: string): Promise<SellerRatingsResponse> {
     try {
@@ -66,9 +73,19 @@ class SellerRatingsService {
     try {
       const response = await this.getSellerRatings(sellerId);
       return response.averageRating || 0;
-    } catch (error) {
+    } catch {
      // console.error('Erro ao buscar média de ratings do vendedor:', error);
       return 0; // Retorna 0 se houver erro
+    }
+  }
+
+  async createSellerRating(ratingData: SellerRatingForCreationDTO): Promise<SellerRatingDTO> {
+    try {
+      const response = await api.post(this.baseUrl, ratingData);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao criar avaliação do vendedor:', error);
+      throw error;
     }
   }
 }

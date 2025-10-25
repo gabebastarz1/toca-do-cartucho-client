@@ -685,6 +685,12 @@ export interface UserForUpdateDTO {
     'cpf'?: string | null;
     /**
      * 
+     * @type {string}
+     * @memberof UserForUpdateDTO
+     */
+    'birthdayDate'?: string | null;
+    /**
+     * 
      * @type {Array<string>}
      * @memberof UserForUpdateDTO
      */

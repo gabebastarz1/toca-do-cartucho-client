@@ -6,15 +6,24 @@ import {
   ReactNode,
 } from "react";
 import { authService, User } from "../services/authService";
+import { twoFactorAuthService } from "../services/twoFactorAuthService";
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  show2FAAlert: boolean;
+  login: (
+    email: string,
+    password: string,
+    twoFactorCode?: string,
+    twoFactorRecoveryCode?: string
+  ) => Promise<void>;
   register: (userData: any) => Promise<void>;
   logout: () => Promise<void>;
   setCookieAuth: (cookieValue: string) => void;
+  hide2FAAlert: () => void;
+  check2FAStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,6 +43,10 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [show2FAAlert, setShow2FAAlert] = useState(false);
+
+  // Chave para controlar se o usuário já foi notificado nesta sessão
+  const ALERT_SHOWN_KEY = "2fa_alert_shown";
 
   useEffect(() => {
     const initAuth = async () => {
@@ -76,9 +89,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initAuth();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const response = await authService.login({ email, password });
+  const check2FAStatus = async () => {
+    try {
+      // Verificar se já mostrou o alerta nesta sessão
+      const alreadyShown = sessionStorage.getItem(ALERT_SHOWN_KEY);
+      if (alreadyShown) {
+        return;
+      }
+
+      const info = await twoFactorAuthService.get2FAInfo();
+
+      // Se 2FA não está habilitado, mostrar alerta
+      if (!info.isTwoFactorEnabled) {
+        setShow2FAAlert(true);
+        sessionStorage.setItem(ALERT_SHOWN_KEY, "true");
+      }
+    } catch (error) {
+      console.error("Erro ao verificar status de 2FA:", error);
+    }
+  };
+
+  const hide2FAAlert = () => {
+    setShow2FAAlert(false);
+  };
+
+  const login = async (
+    email: string,
+    password: string,
+    twoFactorCode?: string,
+    twoFactorRecoveryCode?: string
+  ) => {
+    const response = await authService.login({
+      email,
+      password,
+      twoFactorCode,
+      twoFactorRecoveryCode,
+    });
     setUser(response.user);
+
+    // Verificar status de 2FA após login bem-sucedido
+    await check2FAStatus();
   };
 
   const register = async (userData: any) => {
@@ -89,6 +139,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     await authService.logout();
     setUser(null);
+    setShow2FAAlert(false);
+    sessionStorage.removeItem(ALERT_SHOWN_KEY);
   };
 
   const setCookieAuth = (cookieValue: string) => {
@@ -101,10 +153,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     isAuthenticated: !!user,
     isLoading,
+    show2FAAlert,
     login,
     register,
     logout,
     setCookieAuth,
+    hide2FAAlert,
+    check2FAStatus,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

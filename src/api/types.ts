@@ -176,12 +176,15 @@ export interface UserDTO {
   email: string;
   firstName?: string;
   lastName?: string;
-  slug: string;
+  slug?: string;
   phoneNumber?: string;
-  cpf?: string;
+  cpf?: string | null;
+  emailConfirmed?: boolean;
+  birthdayDate?: string | null;
+  age?: number;
   createdAt?: string;
   addresses?: UserAddressDTO[]; 
-  roles?: RoleDTO[];
+  roles?: string[];
   favoriteAdvertisements?: AdvertisementDTO[];
   profileImage?: UserProfileImageDTO;
 }
@@ -203,6 +206,7 @@ export interface UserForUpdateDTO {
   firstName?: string;
   lastName?: string;
   cpf?: string;
+  birthdayDate?: string;
   roles?: string[];
   email?: string;
   phoneNumber?: string;

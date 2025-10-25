@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { api } from "../services/api";
 import { AdvertisementDTO } from "../api/types";
 
@@ -26,16 +26,27 @@ export const useFavorites = (): UseFavoritesReturn => {
     try {
       console.log("🔄 [useFavorites] Recarregando favoritos...");
 
-      const response = await api.get("/api/accounts/profile");
-      const userProfile = response.data;
-
-      console.log("✅ [useFavorites] Perfil do usuário:", userProfile);
-      console.log(
-        "✅ [useFavorites] Favoritos do usuário:",
-        userProfile.favoriteAdvertisements
+      const response = await api.get(
+        "/api/accounts/profile/advertisements/favorites"
       );
 
-      setFavorites(userProfile.favoriteAdvertisements || []);
+      console.log("✅ [useFavorites] Resposta completa da API:", response);
+      console.log("✅ [useFavorites] response.data:", response.data);
+
+      // ✅ A API retorna um objeto com a propriedade 'advertisements'
+      const favoriteAds = response.data?.advertisements || response.data;
+
+      console.log("✅ [useFavorites] Tipo de favoriteAds:", typeof favoriteAds);
+      console.log("✅ [useFavorites] É array?:", Array.isArray(favoriteAds));
+      console.log("✅ [useFavorites] Favoritos carregados:", favoriteAds);
+
+      // ✅ Garantir que sempre seja um array
+      const favoritesArray = Array.isArray(favoriteAds) ? favoriteAds : [];
+      console.log(
+        "✅ [useFavorites] Total de favoritos:",
+        favoritesArray.length
+      );
+      setFavorites(favoritesArray);
     } catch (err: unknown) {
       console.error("❌ [useFavorites] Erro ao recarregar favoritos:", err);
       setError("Erro ao carregar favoritos");
@@ -147,6 +158,11 @@ export const useFavorites = (): UseFavoritesReturn => {
     },
     [isFavorite, addToFavorites, removeFromFavorites]
   );
+
+  // ✅ Carregar favoritos automaticamente ao montar o componente
+  useEffect(() => {
+    refreshFavorites();
+  }, [refreshFavorites]);
 
   return {
     favorites,

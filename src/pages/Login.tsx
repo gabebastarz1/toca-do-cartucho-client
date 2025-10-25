@@ -4,7 +4,6 @@ import { FaGoogle } from "react-icons/fa";
 import { Eye, EyeOff } from "lucide-react";
 import GameControllerImage from "../assets/controller.png";
 import CustomCheckbox from "../components/ui/CustomCheckbox";
-import { authService } from "../services/authService";
 import { useAuth } from "../hooks/useAuth";
 import { useCustomAlert } from "../hooks/useCustomAlert";
 import { CustomAlert } from "../components/ui/CustomAlert";
@@ -16,6 +15,9 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [useRecoveryCode, setUseRecoveryCode] = useState(false);
   const navigate = useNavigate();
   const { login: loginContext } = useAuth();
   const { alertState, showError, hideAlert } = useCustomAlert();
@@ -27,12 +29,42 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const { user, token } = await authService.login({ email, password });
-      loginContext(user, token); // Atualiza o contexto de autenticação
+      // Chamar login com os códigos 2FA se necessário
+      await loginContext(
+        email,
+        password,
+        !useRecoveryCode ? twoFactorCode : undefined,
+        useRecoveryCode ? twoFactorCode : undefined
+      );
       navigate("/"); // Redireciona para a home page
-    } catch (err: any) {
-      if (err.status === 401 && err.data?.detail === "NotAllowed") {
+    } catch (err: unknown) {
+      const error = err as {
+        status?: number;
+        data?: { detail?: string } | string;
+      };
+
+      // Se o erro indicar que necessita de 2FA
+      if (
+        error.status === 401 &&
+        error.data &&
+        typeof error.data === "string" &&
+        error.data.includes("RequiresTwoFactor")
+      ) {
+        setRequires2FA(true);
+        showError(
+          "Por favor, insira seu código de autenticação de dois fatores."
+        );
+      } else if (
+        error.status === 401 &&
+        typeof error.data === "object" &&
+        error.data !== null &&
+        "detail" in error.data &&
+        error.data.detail === "NotAllowed"
+      ) {
         showError("Confirme seu email antes de continuar.");
+      } else if (requires2FA) {
+        showError("Código de verificação inválido. Tente novamente.");
+        setTwoFactorCode("");
       } else {
         showError("Email ou senha inválidos. Tente novamente.");
       }
@@ -40,7 +72,6 @@ const Login: React.FC = () => {
       setIsLoading(false);
     }
   };
-
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#211C49] p-4 font-sans">
@@ -111,16 +142,63 @@ const Login: React.FC = () => {
                 className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-400 shadow-sm focus:border-[#31295F] focus:outline-none focus:ring-1 focus:ring-[#31295F]"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={requires2FA}
               />
               <button
                 type="button"
                 onClick={toggleShowPassword}
                 className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                disabled={requires2FA}
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
           </div>
+
+          {/* Campo de Código 2FA */}
+          {requires2FA && (
+            <div>
+              <label
+                htmlFor="twoFactorCode"
+                className="mb-1 block text-sm font-medium text-white md:text-gray-700"
+              >
+                {useRecoveryCode
+                  ? "Código de Recuperação"
+                  : "Código de Autenticação"}
+              </label>
+              <input
+                id="twoFactorCode"
+                name="twoFactorCode"
+                type="text"
+                required
+                placeholder={
+                  useRecoveryCode ? "Digite o código de recuperação" : "000000"
+                }
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-center text-2xl font-mono tracking-widest text-gray-900 placeholder-gray-400 shadow-sm focus:border-[#31295F] focus:outline-none focus:ring-1 focus:ring-[#31295F]"
+                value={twoFactorCode}
+                onChange={(e) => {
+                  const value = useRecoveryCode
+                    ? e.target.value
+                    : e.target.value.replace(/\D/g, "").slice(0, 6);
+                  setTwoFactorCode(value);
+                }}
+                maxLength={useRecoveryCode ? undefined : 6}
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setUseRecoveryCode(!useRecoveryCode);
+                  setTwoFactorCode("");
+                }}
+                className="mt-2 text-xs text-white md:text-[#31295F] hover:underline"
+              >
+                {useRecoveryCode
+                  ? "Usar código do aplicativo"
+                  : "Usar código de recuperação"}
+              </button>
+            </div>
+          )}
 
           <div className="flex items-center justify-between text-sm">
             <CustomCheckbox
