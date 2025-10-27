@@ -207,7 +207,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {/* Preços */}
           {currentPrice > 0 && (
             <div className="mb-2">
-              {originalPrice && (
+              {originalPrice && originalPrice > 0 && (
                 <span className="text-xs text-gray-400 line-through mr-2">
                   {formatPrice(originalPrice)}
                 </span>
@@ -296,7 +296,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {/* Preços */}
           {currentPrice > 0 && (
             <div className="mb-3">
-              {originalPrice && (
+              {originalPrice && originalPrice > 0 && (
                 <span className="text-xs text-gray-400 line-through mr-2">
                   {formatPrice(originalPrice)}
                 </span>

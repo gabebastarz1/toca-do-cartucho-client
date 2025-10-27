@@ -3,6 +3,7 @@ export { default as Home } from './Home';
 export { default as Advertisement } from './Advertisement';
 export { default as CreateAdvertisement } from './CreateAdvertisement';
 export { default as Profile } from './Profile';
+export { default as PublicProfile } from './PublicProfile';
 export { default as NotFound } from './NotFound';
 export { default as CreateAdvertisementOnlyTrade } from './CreateAdvertisementOnlyTrade';
 export { default as CadastroParaAnunciar } from './CreateAccount';
@@ -11,3 +12,7 @@ export { default as CreateAdvertisementSaleOnly } from './CreateAdvertisementSal
 export { default as ProductListing } from './ProductListing';
 export { default as Login } from './Login';
 export { default as Register } from './Register';
+export { default as EditarAnuncio } from './EditarAnuncio';
+export { default as TwoFactor } from './TwoFactor';
+export { default as Security } from './Security';
+export { default as CancelAccount } from './CancelAccount';

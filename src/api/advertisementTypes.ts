@@ -106,10 +106,25 @@ export interface AdvertisementImageDTO {
 
 export interface UserDTO {
   id: string;
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
-  cpf?: string;
+  nickName?: string;
+  cpf?: string | null;
+  phoneNumber?: string;
+  slug?: string;
+  emailConfirmed?: boolean;
+  birthdayDate?: string | null;
+  age?: number;
+  roles?: string[];
+  profileImage?: {
+    id: number;
+    originalFileName: string;
+    userId: string;
+    preSignedUrl: string;
+    urlExpiresIn: string;
+    createdAt: string;
+  };
 }
 
 export interface GameDTO {

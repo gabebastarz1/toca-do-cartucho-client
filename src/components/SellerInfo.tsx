@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { AdvertisementDTO } from "../api/types";
 import { useSellerRatings } from "../hooks/useSellerRatings";
 
@@ -14,6 +15,8 @@ interface SellerInfoProps {
 }
 
 const SellerInfo: React.FC<SellerInfoProps> = ({ advertisement }) => {
+  const navigate = useNavigate();
+
   // Buscar ratings do vendedor
   const sellerId = advertisement?.seller?.id;
   const { averageRating, totalRatings, loading } = useSellerRatings(sellerId);
@@ -36,22 +39,36 @@ const SellerInfo: React.FC<SellerInfoProps> = ({ advertisement }) => {
         return ""; // Fallback se não houver createdAt
       };
 
+      // ✅ Obter foto do perfil se disponível
+      const profileImageUrl = seller.profileImage?.preSignedUrl;
+
       return {
         name: seller.nickName || seller.email || "Vendedor",
-        avatar: "👤", // Pode ser implementado com foto do perfil
+        avatar: profileImageUrl || null, // ✅ Usar foto do perfil ou null
         rating: averageRating || 0, // ✅ Usar rating real da API
         memberSince: getMemberSinceYear(), // ✅ Usar ano real do createdAt
+        slug: seller.slug,
+        id: seller.id,
       };
     }
     return {
       name: "Vendedor",
-      avatar: "👤",
+      avatar: null,
       rating: 0,
       memberSince: "2023",
+      slug: undefined,
+      id: undefined,
     };
   };
 
   const sellerData = getSellerData();
+
+  // ✅ Função para navegar ao perfil do vendedor
+  const handleSellerClick = () => {
+    if (sellerData.id) {
+      navigate(`/usuario/${sellerData.id}`);
+    }
+  };
 
   // Mostrar loading se estiver carregando os ratings
   if (loading && sellerId) {
@@ -61,7 +78,7 @@ const SellerInfo: React.FC<SellerInfoProps> = ({ advertisement }) => {
           Conheça o vendedor
         </h2>
         <div className="flex items-center bg-white p-4 rounded-lg">
-          <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center mr-4 animate-pulse">
+          <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center mr-4 animate-pulse overflow-hidden">
             <span className="text-gray-600 text-lg">👤</span>
           </div>
           <div className="flex-1">
@@ -79,16 +96,35 @@ const SellerInfo: React.FC<SellerInfoProps> = ({ advertisement }) => {
         Conheça o vendedor
       </h2>
       <div className="flex items-center bg-white p-4 rounded-lg">
-        <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center mr-4">
-          <span className="text-gray-600 text-lg">{sellerData.avatar}</span>
-        </div>
+        {/* ✅ Foto do vendedor clicável */}
+        <button
+          onClick={handleSellerClick}
+          className="w-16 h-16 rounded-full flex items-center justify-center mr-4 overflow-hidden flex-shrink-0 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#4f43ae] focus:ring-offset-2"
+          aria-label={`Ver perfil de ${sellerData.name}`}
+        >
+          {sellerData.avatar ? (
+            <img
+              src={sellerData.avatar}
+              alt={sellerData.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gray-300 flex items-center justify-center">
+              <span className="text-gray-600 text-2xl">👤</span>
+            </div>
+          )}
+        </button>
+
+        {/* Informações do vendedor */}
         <div className="flex-1">
-          <span className="text-gray-700 font-medium block">
+          <button
+            onClick={handleSellerClick}
+            className="text-gray-700 font-medium block hover:text-[#4f43ae] transition-colors text-left focus:outline-none focus:underline"
+          >
             {sellerData.name}
-          </span>
+          </button>
           <span className="text-sm text-gray-500">
             ⭐ {sellerData.rating.toFixed(1)}/5 • {totalRatings} avaliações
-            
           </span>
         </div>
       </div>

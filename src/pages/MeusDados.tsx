@@ -1,10 +1,7 @@
-// src/pages/MeusDados.tsx
-
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronRight, Check, HelpCircle, Loader2 } from "lucide-react";
 
-// Importe os componentes que você acabou de criar
 import {
   FormField,
   SelectField,
@@ -12,20 +9,24 @@ import {
 } from "../components/FormFields";
 
 import TopBar from "../components/TopBar";
+import EnderecoButton from "../components/EnderecoButton";
 import Head from "../components/Head";
 import FilterTopBar from "../components/FilterTopBar";
 import Footer from "../components/Footer";
 import BottomBar from "../components/BottomBar";
+
 import { useUserProfile } from "../hooks/useUserProfile";
 import { api } from "../services/api";
-import { authService } from "../services/authService"; // ✅ Importar o authService
+import { authService } from "../services/authService";
 import { UserForUpdateDTO } from "../api/types";
 import { useCustomAlert } from "../hooks/useCustomAlert";
 import { CustomAlert } from "../components/ui/CustomAlert";
-import useDebounce from "../hooks/useDebounce"; // ✅ Importar o hook
+import useDebounce from "../hooks/useDebounce";
+
 
 const MeusDados: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { alertState, showSuccess, showError, hideAlert } = useCustomAlert();
   const {
     userProfile,
@@ -51,12 +52,112 @@ const MeusDados: React.FC = () => {
     ocultarLocalizacao: false,
   });
 
+
+
+  const [originalData, setOriginalData] = useState({
+    nomeCompleto: "",
+    nomeUsuario: "",
+    dataNascimento: "",
+    cep: "",
+    rua: "",
+    numero: "",
+    bairro: "",
+    cidade: "",
+    estado: "",
+    whatsapp: "",
+    email: "",
+    cpf: "",
+  });
+
   const [isSaving, setIsSaving] = useState(false);
   const [cpfError, setCpfError] = useState<string | null>(null);
   const [nicknameError, setNicknameError] = useState<string | null>(null); // ✅ Novo estado para erro de nickname
+  const [birthdayError, setBirthdayError] = useState<string | null>(null); // ✅ Novo estado para erro de data de nascimento
 
-  // ✅ Debounce para o campo de nome de usuário
   const debouncedNickname = useDebounce(formData.nomeUsuario, 500);
+
+  // detecta alterações nos campos
+  const getChangedFields = () => {
+    const changes: Partial<UserForUpdateDTO> & {
+      birthdayDate?: string | null;
+    } = {};
+    let hasAddressChanges = false;
+    const addressChanges: {
+      zipCode: string;
+      street: string;
+      number: string;
+      complement: string;
+      neighborhood: string;
+      city: string;
+      state: string;
+    } = {
+      zipCode: "",
+      street: "",
+      number: "",
+      complement: "",
+      neighborhood: "",
+      city: "",
+      state: "",
+    };
+
+    if (formData.nomeCompleto !== originalData.nomeCompleto) {
+      const [firstName, ...lastNameParts] = formData.nomeCompleto.split(" ");
+      const lastName = lastNameParts.join(" ");
+      changes.firstName = firstName || null;
+      changes.lastName = lastName || null;
+    }
+
+    if (formData.nomeUsuario !== originalData.nomeUsuario) {
+      changes.nickName = formData.nomeUsuario || null;
+    }
+
+    if (formData.email !== originalData.email) {
+      changes.email = formData.email || null;
+    }
+
+    if (formData.whatsapp !== originalData.whatsapp) {
+      changes.phoneNumber = formData.whatsapp || null;
+    }
+
+    if (formData.cpf !== originalData.cpf) {
+      changes.cpf = formData.cpf.replace(/\D/g, "") || null;
+    }
+
+    if (formData.dataNascimento !== originalData.dataNascimento) {
+      changes.birthdayDate = parseDate(formData.dataNascimento);
+    }
+
+    // Verificar mudanças no endereço
+    if (
+      formData.cep !== originalData.cep ||
+      formData.rua !== originalData.rua ||
+      formData.numero !== originalData.numero ||
+      formData.bairro !== originalData.bairro ||
+      formData.cidade !== originalData.cidade ||
+      formData.estado !== originalData.estado
+    ) {
+      hasAddressChanges = true;
+      addressChanges.zipCode = formData.cep.replace(/\D/g, "");
+      addressChanges.street = formData.rua;
+      addressChanges.number = formData.numero;
+      addressChanges.complement = "";
+      addressChanges.neighborhood = formData.bairro;
+      addressChanges.city = formData.cidade;
+      addressChanges.state = formData.estado;
+    }
+
+    // Se houve mudanças no endereço, incluir no objeto de mudanças
+    if (hasAddressChanges) {
+      changes.addresses = [
+        {
+          address: addressChanges,
+          isPrimary: true,
+        },
+      ];
+    }
+
+    return changes;
+  };
 
   // Carregar dados do usuário quando o perfil for carregado
   useEffect(() => {
@@ -97,7 +198,9 @@ const MeusDados: React.FC = () => {
           userProfile.lastName || ""
         }`.trim(),
         nomeUsuario: userProfile.nickName || "",
-        dataNascimento: "", // Campo não disponível na API atual
+        dataNascimento: userProfile.birthdayDate
+          ? formatDate(userProfile.birthdayDate)
+          : "",
         genero: "", // Campo não disponível na API atual
         cep: formattedCEP, // ✅ CEP formatado do backend
         rua: userProfile.addresses?.[0]?.address?.street || "",
@@ -111,8 +214,33 @@ const MeusDados: React.FC = () => {
         ocultarLocalizacao: false,
       };
 
+      // ✅ Armazenar dados originais para comparação posterior
+      const originalDataToSet = {
+        nomeCompleto: `${userProfile.firstName || ""} ${
+          userProfile.lastName || ""
+        }`.trim(),
+        nomeUsuario: userProfile.nickName || "",
+        dataNascimento: userProfile.birthdayDate
+          ? formatDate(userProfile.birthdayDate)
+          : "",
+        cep: formattedCEP,
+        rua: userProfile.addresses?.[0]?.address?.street || "",
+        numero: userProfile.addresses?.[0]?.address?.number || "",
+        bairro: userProfile.addresses?.[0]?.address?.neighborhood || "",
+        cidade: userProfile.addresses?.[0]?.address?.city || "",
+        estado: userProfile.addresses?.[0]?.address?.state || "",
+        whatsapp: userProfile.phoneNumber || "",
+        email: userProfile.email || "",
+        cpf: formattedCPF,
+      };
+
       console.log("📝 [MeusDados] Formulário preenchido com:", formDataToSet);
+      console.log(
+        "📋 [MeusDados] Dados originais armazenados:",
+        originalDataToSet
+      );
       setFormData(formDataToSet);
+      setOriginalData(originalDataToSet);
     }
   }, [userProfile]);
 
@@ -140,6 +268,10 @@ const MeusDados: React.FC = () => {
 
     checkNickname();
   }, [debouncedNickname, userProfile]);
+
+  
+
+
 
   // Funções de formatação melhoradas com limite de caracteres
   const formatCEP = (value: string) => {
@@ -237,6 +369,81 @@ const MeusDados: React.FC = () => {
     );
   };
 
+  // ✅ Função para formatar data de nascimento
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+
+    try {
+      // Converter de YYYY-MM-DD para DD/MM/YYYY
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        const [year, month, day] = dateString.split("-");
+        return `${day}/${month}/${year}`;
+      }
+      // fallback para Date caso venha em outro formato
+      const date = new Date(dateString);
+      const day = date.getDate().toString().padStart(2, "0");
+      const month = (date.getMonth() + 1).toString().padStart(2, "0");
+      const year = date.getFullYear().toString();
+      return `${day}/${month}/${year}`;
+    } catch (error) {
+      console.error("Erro ao formatar data:", error);
+      return "";
+    }
+  };
+
+  // ✅ Função para converter data do formato brasileiro para ISO
+  const parseDate = (dateString: string) => {
+    if (!dateString) return null;
+
+    try {
+      // Converter de DD/MM/YYYY para YYYY-MM-DD (apenas string, sem usar Date)
+      const [day, month, year] = dateString.split("/");
+      if (day && month && year && year.length === 4) {
+        // Retorna a string diretamente, sem criar um objeto Date
+        return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+      }
+      return null;
+    } catch (error) {
+      console.error("Erro ao converter data:", error);
+      return null;
+    }
+  };
+
+  // ✅ Função para validar data de nascimento
+  const isValidBirthday = (dateString: string) => {
+    if (!dateString) return true; // Campo opcional
+
+    const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+    const match = dateString.match(dateRegex);
+
+    if (!match) return false;
+
+    const [, day, month, year] = match;
+    const dayNum = parseInt(day);
+    const monthNum = parseInt(month);
+    const yearNum = parseInt(year);
+
+    // Verificar se os valores estão dentro dos limites
+    if (dayNum < 1 || dayNum > 31) return false;
+    if (monthNum < 1 || monthNum > 12) return false;
+    if (yearNum < 1900 || yearNum > new Date().getFullYear()) return false;
+
+    // Verificar se a data é válida
+    const date = new Date(yearNum, monthNum - 1, dayNum);
+    if (
+      date.getDate() !== dayNum ||
+      date.getMonth() !== monthNum - 1 ||
+      date.getFullYear() !== yearNum
+    ) {
+      return false;
+    }
+
+    // Verificar se não é uma data futura
+    if (date > new Date()) return false;
+
+    return true;
+  };
+
   const handleInputChange = (field: string, value: string | boolean) => {
     console.log(`🔧 [MeusDados] Campo: ${field}, Valor recebido:`, value);
 
@@ -246,6 +453,9 @@ const MeusDados: React.FC = () => {
     }
     if (field === "nomeUsuario" && nicknameError) {
       setNicknameError(null);
+    }
+    if (field === "dataNascimento" && birthdayError) {
+      setBirthdayError(null);
     }
 
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -286,96 +496,119 @@ const MeusDados: React.FC = () => {
       }
     }
 
-    console.log("💾 [MeusDados] Iniciando salvamento dos dados...");
-    console.log("📊 [MeusDados] Dados do formulário:", formData);
-    console.log("👤 [MeusDados] ID do usuário:", userProfile.id);
+    // Validar data de nascimento antes de salvar
+    if (formData.dataNascimento && !isValidBirthday(formData.dataNascimento)) {
+      setBirthdayError(
+        "Data de nascimento inválida. Use o formato DD/MM/AAAA."
+      );
+      showError("Data de nascimento inválida. Corrija a data antes de salvar.");
+      console.log(
+        "❌ [MeusDados] Tentativa de salvar com data inválida:",
+        formData.dataNascimento
+      );
+      return;
+    }
+
+    //console.log("💾 [MeusDados] Iniciando salvamento dos dados...");
+    //console.log("📊 [MeusDados] Dados do formulário:", formData);
+    //console.log("👤 [MeusDados] ID do usuário:", userProfile.id);
 
     setIsSaving(true);
     setCpfError(null);
     setNicknameError(null); // Limpar erro de nickname ao salvar
+    setBirthdayError(null); // Limpar erro de data de nascimento ao salvar
 
     try {
-      // Preparar dados para atualização
-      const [firstName, ...lastNameParts] = formData.nomeCompleto.split(" ");
-      const lastName = lastNameParts.join(" ");
+ 
+      const changedFields = getChangedFields();
 
-      // Remover formatação dos campos antes de enviar
-      const cleanCPF = formData.cpf.replace(/\D/g, ""); // Remove pontos e hífens
-      const cleanCEP = formData.cep.replace(/\D/g, ""); // Remove hífen
+      if (Object.keys(changedFields).length === 0) {
+        console.log(
+          " [MeusDados] Nenhum campo foi alterado, não é necessário salvar"
+        );
 
-      // Preparar endereço para envio
-      const addressData = {
-        zipCode: cleanCEP,
-        street: formData.rua,
-        number: formData.numero,
-        complement: "", // Campo não disponível no formulário atual
-        neighborhood: formData.bairro,
-        city: formData.cidade,
-        state: formData.estado,
-      };
+        setIsSaving(false);
+        return;
+      }
 
-      const userAddressData = {
-        address: addressData,
-        isPrimary: true, // Sempre marcado como endereço principal
-      };
-
-      const updateData: UserForUpdateDTO = {
-        firstName: firstName || null,
-        lastName: lastName || null,
-        nickName: formData.nomeUsuario || null, // ✅ CAMPO ADICIONADO
-        email: formData.email || null,
-        cpf: cleanCPF || null, // Campo CPF limpo (pode ser enviado, mas não retornado)
-        phoneNumber: formData.whatsapp || null, // ✅ Campo disponível na API
-        addresses: [userAddressData], // ✅ Array de endereços
-      };
-
-      console.log("📤 [MeusDados] Dados para atualização:", updateData);
-      console.log("🏠 [MeusDados] Dados do endereço:", addressData);
-      console.log("🏠 [MeusDados] UserAddress completo:", userAddressData);
-      console.log("🆔 [MeusDados] CPF formatado:", formData.cpf);
-      console.log("🆔 [MeusDados] CPF limpo enviado:", cleanCPF);
-      console.log("📮 [MeusDados] CEP formatado:", formData.cep);
-      console.log("📮 [MeusDados] CEP limpo:", cleanCEP);
-      console.log("👤 [MeusDados] Nome completo:", formData.nomeCompleto);
-      console.log("👤 [MeusDados] Primeiro nome:", firstName);
-      console.log("👤 [MeusDados] Último nome:", lastName);
-      console.log("📧 [MeusDados] Email:", formData.email);
-      console.log("📞 [MeusDados] WhatsApp:", formData.whatsapp);
+      console.log("📤 [MeusDados] Campos alterados detectados:", changedFields);
       console.log(
-        "🌐 [MeusDados] Fazendo PATCH para:",
+        "[MeusDados] Total de campos alterados:",
+        Object.keys(changedFields).length
+      );
+      console.log(
+        "[MeusDados] Fazendo PATCH para:",
         `/api/accounts/profile`
       );
 
       // Atualizar dados do usuário
-      await api.patch(`/api/accounts/profile`, updateData);
-      console.log("✅ [MeusDados] Dados atualizados com sucesso!");
+      await api.patch(`/api/accounts/profile`, changedFields);
+      console.log("[MeusDados] Dados atualizados com sucesso!");
 
       // Recarregar dados do perfil
-      console.log("🔄 [MeusDados] Recarregando dados do perfil...");
+      console.log("[MeusDados] Recarregando dados do perfil...");
       await refetch();
-      console.log("✅ [MeusDados] Dados do perfil recarregados!");
+      console.log("[MeusDados] Dados do perfil recarregados!");
+
+      //  Atualizar dados originais com os novos dados salvos
+      const newOriginalData = {
+        nomeCompleto: formData.nomeCompleto,
+        nomeUsuario: formData.nomeUsuario,
+        dataNascimento: formData.dataNascimento,
+        cep: formData.cep,
+        rua: formData.rua,
+        numero: formData.numero,
+        bairro: formData.bairro,
+        cidade: formData.cidade,
+        estado: formData.estado,
+        whatsapp: formData.whatsapp,
+        email: formData.email,
+        cpf: formData.cpf,
+      };
+      setOriginalData(newOriginalData);
+      console.log(
+        "[MeusDados] Dados originais atualizados:",
+        newOriginalData
+      );
 
       // Mostrar alert de sucesso
       showSuccess("Dados salvos com sucesso!");
     } catch (error) {
-      console.error("❌ [MeusDados] Erro ao salvar dados:", error);
+      console.error("[MeusDados] Erro ao salvar dados:", error);
 
       // Log detalhado do erro para debug
       if (error.response) {
-        console.error("📊 [MeusDados] Status:", error.response.status);
-        console.error("📊 [MeusDados] Status Text:", error.response.statusText);
-        console.error("📊 [MeusDados] Response Data:", error.response.data);
-        console.error("📊 [MeusDados] Headers:", error.response.headers);
+        console.error(" [MeusDados] Status:", error.response.status);
+        console.error("[MeusDados] Status Text:", error.response.statusText);
+        console.error("[MeusDados] Response Data:", error.response.data);
+        console.error("[MeusDados] Headers:", error.response.headers);
       } else if (error.request) {
-        console.error("📊 [MeusDados] Request:", error.request);
+        console.error("[MeusDados] Request:", error.request);
       } else {
-        console.error("📊 [MeusDados] Error Message:", error.message);
+        console.error("[MeusDados] Error Message:", error.message);
       }
 
       // Mostrar alert de erro
       showError("Erro ao salvar dados. Tente novamente.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Função para excluir endereço
+  const handleDeleteAddress = async (index: number) => {
+    if (!userProfile?.addresses || !userProfile?.id) return;
+    try {
+      // Remove o endereço do array
+      const newAddresses = userProfile.addresses.filter((_, i) => i !== index);
+      await api.patch(`/api/accounts/profile`, {
+        addresses: newAddresses,
+      });
+      await refetch();
+      showSuccess("Endereço excluído com sucesso!");
+    } catch (error) {
+      showError("Erro ao excluir endereço.");
+      console.error("Erro ao excluir endereço:", error);
     }
   };
 
@@ -409,9 +642,6 @@ const MeusDados: React.FC = () => {
     "Distrito Federal",
   ];
 
-  const generos = ["Masculino", "Feminino", "Outro", "Prefiro não informar"];
-
-  // Mostrar loading enquanto carrega os dados
   if (profileLoading) {
     return (
       <>
@@ -462,7 +692,7 @@ const MeusDados: React.FC = () => {
       <TopBar logoPosition="left" showSearchBar={true} showUserMenu={true} />
       <FilterTopBar />
 
-      {/* 1. CONTAINER PRINCIPAL: Usa flex para centralizar todo o conteúdo */}
+
       <main className="bg-[#f4f3f5] flex flex-col items-center py-12 px-4 font-lexend">
         <div className="w-full max-w-6xl">
           {/* Breadcrumb */}
@@ -498,8 +728,10 @@ const MeusDados: React.FC = () => {
                 value={formData.nomeUsuario}
                 onChange={handleInputChange}
                 required={true}
-                error={nicknameError} // ✅ Exibir erro no campo
               />
+              {nicknameError && (
+                <div className="text-red-500 text-sm mt-1">{nicknameError}</div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   label="Data de nascimento"
@@ -508,13 +740,11 @@ const MeusDados: React.FC = () => {
                   onChange={handleInputChange}
                   placeholder="DD/MM/AAAA"
                 />
-                <SelectField
-                  label="Gênero"
-                  name="genero"
-                  value={formData.genero}
-                  onChange={handleInputChange}
-                  options={generos}
-                />
+                {birthdayError && (
+                  <div className="text-red-500 text-sm mt-1">
+                    {birthdayError}
+                  </div>
+                )}
               </div>
             </section>
 
@@ -594,7 +824,10 @@ const MeusDados: React.FC = () => {
                 />
               </div>
             </section>
-
+            <EnderecoButton
+              userProfile={userProfile}
+              onDeleteAddress={handleDeleteAddress}
+            />
             <hr className="my-8 border-gray-200" />
 
             <section>
@@ -645,7 +878,9 @@ const MeusDados: React.FC = () => {
               </div>
             </section>
 
-            {/* Feedback de Sucesso/Erro removido - usando alerts */}
+            <hr className="my-8 border-gray-200" />
+
+            
 
             {/* Botão Salvar */}
             <div className="flex justify-end mt-10">

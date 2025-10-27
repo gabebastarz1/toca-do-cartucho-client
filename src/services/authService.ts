@@ -1,5 +1,6 @@
 import { api } from './api';
 import { userProfileCache } from './userProfileCache';
+import { UserDTO } from '../api/types';
 import axios from 'axios';
 export interface User {
   id: string;
@@ -10,6 +11,10 @@ export interface User {
   roles: string[];
   phoneNumber?: string;
   slug?: string;
+  cpf?: string | null;
+  emailConfirmed?: boolean;
+  birthdayDate?: string | null;
+  age?: number;
   profileImage?: {
     id: number;
     originalFileName: string;
@@ -18,11 +23,30 @@ export interface User {
     urlExpiresIn: string;
     createdAt: string;
   };
+  addresses?: Array<{
+    id: number;
+    isPrimary: boolean;
+    userId: string;
+    address: {
+      id: number;
+      zipCode: string;
+      street: string;
+      number: string;
+      complement?: string | null;
+      neighborhood: string;
+      city: string;
+      state: string;
+      createdAt: string;
+    };
+    createdAt: string;
+  }>;
 }
 
 export interface LoginRequest {
   email: string;
   password: string;
+  twoFactorCode?: string;
+  twoFactorRecoveryCode?: string;
 }
 
 export interface RegisterRequest {
@@ -41,6 +65,26 @@ export interface AuthResponse {
 }
 
 const API_URL =  import.meta.env.VITE_API_URL;
+
+// Helper function to convert User to UserDTO
+const convertUserToUserDTO = (user: User): UserDTO => {
+  return {
+    id: user.id,
+    nickName: user.nickName,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    slug: user.slug,
+    phoneNumber: user.phoneNumber,
+    cpf: user.cpf,
+    emailConfirmed: user.emailConfirmed,
+    birthdayDate: user.birthdayDate,
+    age: user.age,
+    addresses: user.addresses,
+    roles: user.roles,
+    profileImage: user.profileImage
+  };
+};
 
 export const handleGoogleLogin = () => {
   const finalRedirectUrl = window.location.origin;
@@ -71,12 +115,12 @@ class AuthService {
       // Se o backend retornar um token JWT
       if (response.data.token) {
         this.setAuthData(response.data.token, response.data.user);
-        userProfileCache.set(response.data.user); // Cache user data
+        userProfileCache.set(convertUserToUserDTO(response.data.user)); // Cache user data
         return response.data;
       }
 
       const user = await this.getCurrentUser();
-      userProfileCache.set(user); // Cache user data
+      userProfileCache.set(user ? convertUserToUserDTO(user) : null); // Cache user data
       return {
         token: 'cookie-based-auth',
         user: user!
@@ -96,12 +140,12 @@ class AuthService {
 
       if (response.data.token) {
         this.setAuthData(response.data.token, response.data.user);
-        userProfileCache.set(response.data.user); // Cache user data
+        userProfileCache.set(convertUserToUserDTO(response.data.user)); // Cache user data
         return response.data;
       }
 
       const user = await this.getCurrentUser();
-      userProfileCache.set(user); // Cache user data
+      userProfileCache.set(user ? convertUserToUserDTO(user) : null); // Cache user data
       return {
         token: 'cookie-based-auth',
         user: user!
@@ -145,15 +189,48 @@ class AuthService {
     }
   }
 
-  // Logout
+  // Verificar se a sessão no servidor ainda está ativa
+  async isServerSessionValid(): Promise<boolean> {
+    try {
+      console.log("🔍 [authService] Verificando se sessão do servidor está ativa...");
+      const response = await api.get('/api/accounts/profile');
+      console.log("✅ [authService] Sessão do servidor está ativa");
+      return response.status === 200;
+    } catch (error) {
+      console.log("❌ [authService] Sessão do servidor não está ativa ou erro:", error);
+      return false;
+    }
+  }
+
+  // Logout com verificação de sessão
   async logout(): Promise<void> {
     try {
+      console.log("🚪 [authService] Iniciando logout...");
       await api.get('/api/accounts/profile/logout');
+      console.log("✅ [authService] Logout no servidor bem-sucedido");
     } catch (error) {
-      console.warn('Erro ao fazer logout no servidor:', error);
+      console.warn('⚠️ [authService] Erro ao fazer logout no servidor:', error);
     } finally {
       this.clearAuthData();
       userProfileCache.clear(); // Clear cache on logout
+      console.log("🧹 [authService] Dados locais limpos");
+    }
+  }
+
+  // Logout seguro - só limpa se a sessão realmente expirou
+  async safeLogout(): Promise<void> {
+    const hasValidCookie = this.hasSessionCookie();
+    const isServerValid = await this.isServerSessionValid();
+
+    console.log("🔐 [authService] safeLogout - Cookie válido?:", hasValidCookie);
+    console.log("🔐 [authService] safeLogout - Servidor válido?:", isServerValid);
+
+    if (!hasValidCookie && !isServerValid) {
+      // Realmente expirou - fazer logout
+      console.log("❌ [authService] Sessão expirou - fazendo logout");
+      await this.logout();
+    } else {
+      console.log("✅ [authService] Sessão ainda válida - não fazer logout");
     }
   }
 
@@ -171,7 +248,7 @@ class AuthService {
     }
   }
 
-  // Verificar se existe cookie de sessão válido (melhorado)
+  // Verificar se existe cookie de sessão válido 
   hasSessionCookie(): boolean {
     const cookies = document.cookie.split(';');
     return cookies.some(cookie => {
@@ -399,11 +476,7 @@ export const authService = new AuthService();
 
 // Interface para debug no console
 interface DebugAuth {
-  debugCookies: () => void;
-  listAllCookies: () => void;
   checkCookieAccessibility: () => void;
-  testAuthentication: () => Promise<void>;
-  testLogin: () => Promise<void>;
   hasSessionCookie: () => boolean;
   isAuthenticated: () => boolean;
   getCurrentUser: () => Promise<User | null>;
@@ -413,11 +486,7 @@ interface DebugAuth {
 // Expor funções de debug globalmente para facilitar testes no console
 if (typeof window !== 'undefined') {
   (window as { debugAuth?: DebugAuth }).debugAuth = {
-    debugCookies: () => authService.debugCookies(),
-    listAllCookies: () => authService.listAllCookies(),
     checkCookieAccessibility: () => authService.checkCookieAccessibility(),
-    testAuthentication: () => authService.testAuthentication(),
-    testLogin: () => authService.testLogin(),
     hasSessionCookie: () => authService.hasSessionCookie(),
     isAuthenticated: () => authService.isAuthenticated(),
     getCurrentUser: () => authService.getCurrentUser(),

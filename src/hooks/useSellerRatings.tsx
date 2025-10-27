@@ -3,6 +3,7 @@ import {
   sellerRatingsService,
   SellerRatingsResponse,
   SellerRatingDTO,
+  SellerRatingForCreationDTO,
 } from "../services/sellerRatingsService";
 
 interface UseSellerRatingsReturn {
@@ -12,6 +13,7 @@ interface UseSellerRatingsReturn {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
+  createRating: (ratingData: SellerRatingForCreationDTO) => Promise<void>;
 }
 
 export const useSellerRatings = (sellerId?: string): UseSellerRatingsReturn => {
@@ -58,6 +60,25 @@ export const useSellerRatings = (sellerId?: string): UseSellerRatingsReturn => {
     }
   }, [sellerId]);
 
+  const createRating = useCallback(
+    async (ratingData: SellerRatingForCreationDTO) => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        await sellerRatingsService.createSellerRating(ratingData);
+        // Refresh ratings after creating a new one
+        await fetchRatings();
+      } catch (err) {
+        console.error("Erro ao criar avaliação:", err);
+        setError("Erro ao criar avaliação do vendedor");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchRatings]
+  );
+
   useEffect(() => {
     fetchRatings();
   }, [fetchRatings]);
@@ -69,6 +90,7 @@ export const useSellerRatings = (sellerId?: string): UseSellerRatingsReturn => {
     loading,
     error,
     refetch: fetchRatings,
+    createRating,
   };
 };
 
