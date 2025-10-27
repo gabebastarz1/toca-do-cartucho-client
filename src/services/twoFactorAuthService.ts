@@ -48,6 +48,7 @@ class TwoFactorAuthService {
       const payload = {
         enable: true,
         twoFactorCode: twoFactorCode, // camelCase
+        resetRecoveryCodes: true, // Forçar geração de novos códigos
       } as TwoFactorRequest;
       
       console.log("📤 [twoFactorAuthService] Payload camelCase:", JSON.stringify(payload));
@@ -64,15 +65,13 @@ class TwoFactorAuthService {
       );
       
       console.log("📥 [twoFactorAuthService] Resposta recebida:", response.data);
+      console.log("📥 [twoFactorAuthService] Recovery codes na resposta:", response.data.recoveryCodes);
       console.log("📥 [twoFactorAuthService] Status:", response.status);
-      console.log("📥 [twoFactorAuthService] Headers:", response.headers);
       return response.data;
     } catch (error: any) {
       console.error("❌ [twoFactorAuthService] Erro completo:", error);
       console.error("❌ [twoFactorAuthService] Status:", error.response?.status);
       console.error("❌ [twoFactorAuthService] Data:", error.response?.data);
-      console.error("❌ [twoFactorAuthService] Headers:", error.response?.headers);
-      console.error("❌ [twoFactorAuthService] Config:", error.config);
       
       // Se o erro foi 400, tentar novamente com PascalCase
       if (error.response?.status === 400) {
@@ -81,6 +80,7 @@ class TwoFactorAuthService {
           const payloadPascal = {
             Enable: true,
             TwoFactorCode: twoFactorCode, // PascalCase
+            ResetRecoveryCodes: true, // Forçar geração de novos códigos
           };
           
           console.log("📤 [twoFactorAuthService] Payload PascalCase:", JSON.stringify(payloadPascal));
@@ -91,6 +91,7 @@ class TwoFactorAuthService {
           );
           
           console.log("✅ [twoFactorAuthService] Sucesso com PascalCase!");
+          console.log("📥 [twoFactorAuthService] Recovery codes (PascalCase):", retryResponse.data.recoveryCodes);
           return retryResponse.data;
         } catch (retryError: any) {
           console.error("❌ [twoFactorAuthService] Falha também com PascalCase:", retryError.response?.data);

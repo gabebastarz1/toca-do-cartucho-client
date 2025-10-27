@@ -4,6 +4,7 @@ import {
   Advertisement,
   CreateAdvertisement,
   Profile,
+  PublicProfile,
   NotFound,
   CadastroParaAnunciar,
   CreateAdvertisementOnlyTrade,
@@ -12,6 +13,10 @@ import {
   ProductListing,
   Login,
   Register,
+  EditarAnuncio,
+  TwoFactor,
+  Security,
+  CancelAccount,
 } from "./pages";
 import MeusDados from "./pages/MeusDados";
 import About from "./pages/About";
@@ -20,16 +25,16 @@ import MyAds from "./pages/MyAds";
 import { CategoryDataProvider } from "./components/CategoryDataProvider";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import PWAInstallBanner from "./components/PWAInstallBanner";
-import TwoFactorAlert from "./components/TwoFactorAlert";
+//import TwoFactorAlert from "./components/TwoFactorAlert";
 
 import "./App.css";
 
 function AppContent() {
-  const { show2FAAlert, hide2FAAlert } = useAuth();
+  //const { show2FAAlert, hide2FAAlert } = useAuth();
 
   return (
     <>
-      {show2FAAlert && <TwoFactorAlert onClose={hide2FAAlert} />}
+      {/*show2FAAlert && <TwoFactorAlert onClose={hide2FAAlert} />*/}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/sobre" element={<About />} />
@@ -38,11 +43,16 @@ function AppContent() {
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Register />} />
         <Route path="/anuncio/:id" element={<Advertisement />} />
+        <Route path="/anuncio/:id/editar" element={<EditarAnuncio />} />
         <Route path="/criar-anuncio" element={<CreateAdvertisement />} />
         <Route path="/perfil" element={<Profile />} />
+        <Route path="/usuario/:identifier" element={<PublicProfile />} />
         <Route path="/meus-dados" element={<MeusDados />} />
         <Route path="/meus-anuncios" element={<MyAds />} />
         <Route path="/criar-conta" element={<CadastroParaAnunciar />} />
+        <Route path="/autenticacao-2fa" element={<TwoFactor />} />
+        <Route path="/seguranca" element={<Security />} />
+        <Route path="/cancelar-conta" element={<CancelAccount />} />
         <Route
           path="/criar-anuncio/apenas-troca"
           element={<CreateAdvertisementOnlyTrade />}

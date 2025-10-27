@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import { useReferenceData } from "../hooks/useReferenceData"; // Removed to use mock
 import WhatsAppLink from "./WhatsAppLink"; // Removed to use mock
 
@@ -154,6 +155,7 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
   onVariationChange,
 }) => {
   const { loading, error } = useReferenceData();
+  const location = useLocation();
 
   const variationKeyMap = useMemo(
     () => ({
@@ -200,6 +202,38 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
   }>({});
 
   // Seleção automática desativada - usuário deve escolher manualmente as características
+
+  // ✅ Pré-selecionar variação da URL se houver parâmetro ?variation=
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const variationIdFromUrl = urlParams.get("variation");
+
+    if (variationIdFromUrl && variations.length > 0) {
+      const targetVariation = variations.find(
+        (v) => v.id.toString() === variationIdFromUrl
+      );
+
+      if (targetVariation) {
+        // Preencher seleção com as características da variação
+        const options: { [key: string]: string } = {};
+        Object.keys(variationKeyMap).forEach((key) => {
+          const getValue = variationKeyMap[key as keyof typeof variationKeyMap];
+          if (getValue) {
+            const value = getValue(targetVariation);
+            if (value) {
+              if (Array.isArray(value)) {
+                if (value.length > 0) options[key] = value[0];
+              } else {
+                options[key] = value;
+              }
+            }
+          }
+        });
+        setSelection(options);
+        setActiveVariationId(targetVariation.id);
+      }
+    }
+  }, [location.search, variations, variationKeyMap]);
 
   useEffect(() => {
     const allAdvertisements = [

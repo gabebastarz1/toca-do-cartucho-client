@@ -51,36 +51,55 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // Debug dos cookies para diagnóstico
-        authService.debugCookies();
-
         if (authService.isAuthenticated()) {
           const currentUser = authService.getUser();
           if (currentUser) {
-            console.log("Usuário encontrado no localStorage:", currentUser);
+            console.log(
+              "✅ [useAuth] Usuário encontrado no localStorage:",
+              currentUser.email
+            );
             setUser(currentUser);
           } else {
             // Tentar obter usuário do servidor (pode haver cookie de sessão válido)
-            console.log("Tentando obter usuário do servidor...");
-            const serverUser = await authService.getCurrentUser();
-            if (serverUser) {
-              console.log("Usuário obtido do servidor:", serverUser);
-              setUser(serverUser);
-              // Salvar dados do usuário no localStorage para próximas verificações
-              authService.setAuthData("cookie-based-auth", serverUser);
-            } else {
-              console.log(
-                "Nenhum usuário encontrado no servidor, fazendo logout"
+            console.log("🔍 [useAuth] Tentando obter usuário do servidor...");
+            try {
+              const serverUser = await authService.getCurrentUser();
+              if (serverUser) {
+                console.log(
+                  "✅ [useAuth] Usuário obtido do servidor:",
+                  serverUser.email
+                );
+                setUser(serverUser);
+                // Salvar dados do usuário no localStorage para próximas verificações
+                authService.setAuthData("cookie-based-auth", serverUser);
+              } else {
+                console.log(
+                  "⚠️ [useAuth] Nenhum usuário retornado pelo servidor"
+                );
+                // Não fazer logout automaticamente - pode ser erro temporário
+                // Apenas não definir o usuário
+              }
+            } catch (serverError) {
+              console.error(
+                "❌ [useAuth] Erro ao buscar usuário do servidor:",
+                serverError
               );
-              authService.logout();
+              // Não fazer logout em erro de rede - deixar o cookie válido
+              // O usuário pode estar offline temporariamente
             }
           }
         } else {
-          console.log("Usuário não autenticado");
+          console.log(
+            "ℹ️ [useAuth] Usuário não autenticado (sem cookie ou localStorage)"
+          );
         }
       } catch (error) {
-        console.error("Erro ao inicializar autenticação:", error);
-        authService.logout();
+        console.error("❌ [useAuth] Erro ao inicializar autenticação:", error);
+        // Não fazer logout automático em erro genérico
+        // Pode ser erro de rede ou temporário
+        console.log(
+          "⚠️ [useAuth] Mantendo estado atual - não fazer logout automático"
+        );
       } finally {
         setIsLoading(false);
       }

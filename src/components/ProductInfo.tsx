@@ -6,6 +6,7 @@ import FavoriteButton from "./FavoriteButton";
 
 interface ProductInfoProps {
   advertisement?: AdvertisementDTO;
+  selectedVariation?: AdvertisementDTO;
 
   data?: {
     title: string;
@@ -26,7 +27,10 @@ interface ProductInfoProps {
   };
 }
 
-const ProductInfo: React.FC<ProductInfoProps> = ({ advertisement }) => {
+const ProductInfo: React.FC<ProductInfoProps> = ({
+  advertisement,
+  selectedVariation,
+}) => {
   // Buscar ratings do vendedor
   const sellerId = advertisement?.seller?.id;
   const { averageRating, totalRatings } = useSellerRatings(sellerId);
@@ -34,12 +38,16 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ advertisement }) => {
   // Função para converter dados do advertisement para o formato esperado
   const getProductData = () => {
     if (advertisement) {
-      // Calcular preço com base em sale
-      const salePrice = advertisement.sale?.price || 0;
-      const originalPrice = advertisement.sale?.previousPrice || 0;
-      const discount = Math.round(
-        ((originalPrice - salePrice) / originalPrice) * 100
-      );
+      // ✅ Usar variação selecionada se disponível, senão usar anúncio principal
+      const currentAd = selectedVariation || advertisement;
+
+      // Calcular preço com base em sale (da variação ou do principal)
+      const salePrice = currentAd.sale?.price || 0;
+      const originalPrice = currentAd.sale?.previousPrice || 0;
+      const discount =
+        originalPrice > 0
+          ? Math.round(((originalPrice - salePrice) / originalPrice) * 100)
+          : 0;
 
       // Tentar diferentes estruturas para modos de jogo
       let gameModes = [];
@@ -96,15 +104,15 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ advertisement }) => {
         genres: genres,
         themes: themes,
         gameModes: gameModes,
-        preservationState: advertisement.preservationState?.name || "",
-        preservationDescription:
-          advertisement.preservationState?.description || "",
-        cartridgeType: advertisement.cartridgeType?.name || "",
-        region: advertisement.gameLocalization?.region?.name || "",
+        // ✅ Usar dados da variação selecionada quando disponível
+        preservationState: currentAd.preservationState?.name || "",
+        preservationDescription: currentAd.preservationState?.description || "",
+        cartridgeType: currentAd.cartridgeType?.name || "",
+        region: currentAd.gameLocalization?.region?.name || "",
       };
 
       return {
-        title: advertisement.title,
+        title: currentAd.title,
         price: salePrice,
         originalPrice: originalPrice,
         discount: discount,
@@ -215,11 +223,12 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ advertisement }) => {
       </div>
 
       <div className="mb-6">
-        {productData.originalPrice > productData.price && (
-          <p className="text-sm text-gray-500 line-through">
-            R$ {productData.originalPrice.toFixed(2).replace(".", ",")}
-          </p>
-        )}
+        {productData.originalPrice > 0 &&
+          productData.originalPrice > productData.price && (
+            <p className="text-sm text-gray-500 line-through">
+              R$ {productData.originalPrice.toFixed(2).replace(".", ",")}
+            </p>
+          )}
         <p className="text-3xl font-bold text-gray-900">
           R$ {productData.price.toFixed(2).replace(".", ",")}
           {productData.discount > 0 && (

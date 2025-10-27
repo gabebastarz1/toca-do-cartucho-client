@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ChevronRight, Check, HelpCircle, Loader2, Shield } from "lucide-react";
+import { ChevronRight, Check, HelpCircle, Loader2 } from "lucide-react";
 
 import {
   FormField,
@@ -14,7 +14,7 @@ import Head from "../components/Head";
 import FilterTopBar from "../components/FilterTopBar";
 import Footer from "../components/Footer";
 import BottomBar from "../components/BottomBar";
-import TwoFactorSetup from "../components/TwoFactorSetup";
+
 import { useUserProfile } from "../hooks/useUserProfile";
 import { api } from "../services/api";
 import { authService } from "../services/authService";
@@ -22,8 +22,7 @@ import { UserForUpdateDTO } from "../api/types";
 import { useCustomAlert } from "../hooks/useCustomAlert";
 import { CustomAlert } from "../components/ui/CustomAlert";
 import useDebounce from "../hooks/useDebounce";
-import { twoFactorAuthService } from "../services/twoFactorAuthService";
-import { TwoFactorResponse } from "../api/api";
+
 
 const MeusDados: React.FC = () => {
   const navigate = useNavigate();
@@ -54,11 +53,6 @@ const MeusDados: React.FC = () => {
   });
 
 
-  const [twoFactorInfo, setTwoFactorInfo] = useState<TwoFactorResponse | null>(
-    null
-  );
-  const [show2FASetup, setShow2FASetup] = useState(false);
-  const [is2FALoading, setIs2FALoading] = useState(false);
 
   const [originalData, setOriginalData] = useState({
     nomeCompleto: "",
@@ -275,66 +269,9 @@ const MeusDados: React.FC = () => {
     checkNickname();
   }, [debouncedNickname, userProfile]);
 
-  // ✅ useEffect para carregar informações de 2FA
-  useEffect(() => {
-    const load2FAInfo = async () => {
-      try {
-        const info = await twoFactorAuthService.get2FAInfo();
-        setTwoFactorInfo(info);
-      } catch (error) {
-        console.error("Erro ao carregar informações de 2FA:", error);
-      }
-    };
+  
 
-    if (userProfile) {
-      load2FAInfo();
-    }
 
-    // Verificar se deve abrir o modal de 2FA pela URL
-    const tab = searchParams.get("tab");
-    if (tab === "seguranca") {
-      setShow2FASetup(true);
-    }
-  }, [userProfile, searchParams]);
-
-  // Funções para gerenciar 2FA
-  const handle2FASuccess = async () => {
-    setShow2FASetup(false);
-    showSuccess("Autenticação de dois fatores ativada com sucesso!");
-
-    // Recarregar informações de 2FA
-    try {
-      const info = await twoFactorAuthService.get2FAInfo();
-      setTwoFactorInfo(info);
-    } catch (error) {
-      console.error("Erro ao recarregar informações de 2FA:", error);
-    }
-  };
-
-  const handleDisable2FA = async () => {
-    if (
-      !window.confirm(
-        "Tem certeza que deseja desativar a autenticação de dois fatores?"
-      )
-    ) {
-      return;
-    }
-
-    setIs2FALoading(true);
-    try {
-      await twoFactorAuthService.disable2FA();
-      const info = await twoFactorAuthService.get2FAInfo();
-      setTwoFactorInfo(info);
-      showSuccess("Autenticação de dois fatores desativada com sucesso!");
-    } catch (error) {
-      console.error("Erro ao desativar 2FA:", error);
-      showError(
-        "Erro ao desativar autenticação de dois fatores. Tente novamente."
-      );
-    } finally {
-      setIs2FALoading(false);
-    }
-  };
 
   // Funções de formatação melhoradas com limite de caracteres
   const formatCEP = (value: string) => {
@@ -943,96 +880,7 @@ const MeusDados: React.FC = () => {
 
             <hr className="my-8 border-gray-200" />
 
-            {/* Seção de Segurança - 2FA */}
-            <section>
-              <div className="flex items-center gap-2 mb-6">
-                <Shield className="w-6 h-6 text-[#483d9e]" />
-                <h2 className="text-2xl font-normal text-black">Segurança</h2>
-              </div>
-
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      Autenticação de Dois Fatores
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Adicione uma camada extra de segurança à sua conta. Você
-                      precisará fornecer um código de verificação além da sua
-                      senha ao fazer login.
-                    </p>
-
-                    {twoFactorInfo && (
-                      <div className="flex items-center gap-2 mb-4">
-                        <span
-                          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
-                            twoFactorInfo.isTwoFactorEnabled
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {twoFactorInfo.isTwoFactorEnabled ? (
-                            <>
-                              <Check className="w-4 h-4" />
-                              Ativo
-                            </>
-                          ) : (
-                            "Desativado"
-                          )}
-                        </span>
-
-                        {twoFactorInfo.isTwoFactorEnabled &&
-                          twoFactorInfo.recoveryCodesLeft !== undefined && (
-                            <span className="text-sm text-gray-600">
-                              {twoFactorInfo.recoveryCodesLeft} código
-                              {twoFactorInfo.recoveryCodesLeft !== 1
-                                ? "s"
-                                : ""}{" "}
-                              de recuperação restante
-                              {twoFactorInfo.recoveryCodesLeft !== 1 ? "s" : ""}
-                            </span>
-                          )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col gap-2 ml-4">
-                    {twoFactorInfo?.isTwoFactorEnabled ? (
-                      <button
-                        onClick={handleDisable2FA}
-                        disabled={is2FALoading}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
-                      >
-                        {is2FALoading && (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        )}
-                        {is2FALoading ? "Processando..." : "Desativar 2FA"}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setShow2FASetup(true)}
-                        className="px-4 py-2 bg-[#483d9e] text-white rounded-lg hover:bg-[#3a2f7a] transition-colors font-medium whitespace-nowrap"
-                      >
-                        Ativar 2FA
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Modal de Configuração de 2FA */}
-              {/*show2FASetup && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
-                    <TwoFactorSetup
-                      userEmail={userProfile?.email || undefined}
-                      onSuccess={handle2FASuccess}
-                      onCancel={() => setShow2FASetup(false)}
-                    />
-                  </div>
-                </div>
-              )*/}
-            </section>
+            
 
             {/* Botão Salvar */}
             <div className="flex justify-end mt-10">

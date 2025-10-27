@@ -60,3 +60,4 @@ const TwoFactorAlert: React.FC<TwoFactorAlertProps> = ({ onClose }) => {
 
 export default TwoFactorAlert;
 
+

@@ -6,6 +6,8 @@ import {
   Loader2,
   AlertCircle,
   Download,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { twoFactorAuthService } from "../services/twoFactorAuthService";
 import { useAuth } from "../hooks/useAuth";
@@ -36,54 +38,14 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedRecovery, setCopiedRecovery] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [showRecoveryCodes, setShowRecoveryCodes] = useState(false);
 
   const initialize2FA = useCallback(async () => {
     if (initialized) return; // Prevenir múltiplas chamadas
 
     try {
-      console.log("🔄 [TwoFactorSetup] Inicializando 2FA...");
-      console.log("🔄 [TwoFactorSetup] Email do usuário:", email);
-
-      // Verificar cookies manualmente
-      const cookies = document.cookie;
-      const cookieList = cookies.split(";").map((c) => c.trim());
-      console.log(
-        "🍪 [TwoFactorSetup] Cookies disponíveis:",
-        cookieList.length
-      );
-      console.log(
-        "🍪 [TwoFactorSetup] Lista de cookies:",
-        cookieList.map((c) => c.split("=")[0])
-      );
-
-      const identityCookie = cookieList.find(
-        (c) =>
-          c.startsWith("Identity.Application=") ||
-          c.startsWith(".AspNetCore.Identity.Application=")
-      );
-      console.log(
-        "🍪 [TwoFactorSetup] Cookie Identity.Application presente?:",
-        !!identityCookie
-      );
-
-      // Verificar localStorage
-      const token = localStorage.getItem("authToken");
-      const user = localStorage.getItem("user");
-      console.log("💾 [TwoFactorSetup] authToken no localStorage?:", !!token);
-      console.log("💾 [TwoFactorSetup] user no localStorage?:", !!user);
-
-      // ℹ️ NOTA: Cookies HttpOnly não aparecem em document.cookie mas são enviados automaticamente
-      // Se o usuário conseguiu chegar aqui, provavelmente está autenticado
-      // Vamos tentar fazer a requisição e deixar o backend validar
-      console.log(
-        "🔐 [TwoFactorSetup] Tentando inicializar 2FA (confiando nos cookies HttpOnly)..."
-      );
-
       setStep("loading");
       const response = await twoFactorAuthService.setup2FA();
-
-      console.log("✅ [TwoFactorSetup] Resposta do setup:", response);
-      console.log("✅ [TwoFactorSetup] SharedKey:", response.sharedKey);
 
       if (response.sharedKey && email) {
         setSharedKey(response.sharedKey);
@@ -92,8 +54,6 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
           response.sharedKey
         );
 
-        console.log("📱 [TwoFactorSetup] URL do QR Code:", url);
-
         // Gerar QR Code como imagem
         const dataUrl = await QRCode.toDataURL(url, {
           width: 300,
@@ -101,14 +61,9 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
         });
         setQrCodeDataUrl(dataUrl);
 
-        console.log("✅ [TwoFactorSetup] QR Code gerado com sucesso");
         setStep("setup");
         setInitialized(true);
       } else {
-        console.error("❌ [TwoFactorSetup] SharedKey ou email ausente:", {
-          sharedKey: response.sharedKey,
-          email: email,
-        });
         setError("Erro: Dados incompletos para configurar 2FA");
         setStep("setup");
       }
@@ -436,40 +391,59 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
           </div>
 
           {/* Códigos de Recuperação */}
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
-            <div className="flex items-start gap-3 mb-4">
-              <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="font-semibold text-amber-900 mb-1">
-                  Códigos de Recuperação
+          <div className=" border rounded-lg p-6">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="flex-1">
+                <h3 className="font-semibold text-black mb-1 text-center text-xl font-bold ">
+                  Salve seus Códigos de Recuperação
                 </h3>
-                <p className="text-sm text-amber-800">
-                  Guarde estes códigos em um local seguro. Você pode usar cada
-                  código uma vez para acessar sua conta caso perca o acesso ao
-                  aplicativo.
-                </p>
               </div>
+              
             </div>
 
-            <div className="bg-white rounded-lg p-4 border border-amber-200 mb-4">
+            <div className="bg-[#F8F8FC] rounded-lg p-4  mb-4">
+            <div className="flex justify-end">
+            <button
+                onClick={() => setShowRecoveryCodes(!showRecoveryCodes)}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 rounded-lg"
+              >
+                {showRecoveryCodes ? (
+                  <>
+                    <EyeOff className="w-4 h-4" />
+                    
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-4 h-4" />
+                    
+                  </>
+                )}
+              </button>
+            </div>
+
               <div className="grid grid-cols-2 gap-2 font-mono text-sm">
+                
                 {recoveryCodes.map((code, index) => (
-                  <div
-                    key={index}
-                    className="bg-gray-50 px-3 py-2 rounded border border-gray-200"
-                  >
-                    {code}
+                  <div key={index} className="px-3 py-2 rounded text-center">
+                    {showRecoveryCodes ? code : "••••••••••••"}
                   </div>
                 ))}
               </div>
+              <p className="text-sm text-gray-900 text-start mt-4">
+                Lembre-se de anotar e guardar seus códigos de backup em um local
+                seguro. Eles são gerados apenas uma vez e serão essenciais para
+                recuperar o acesso à sua conta caso você perca o acesso ao seu
+                dispositivo principal.
+              </p>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 justify-center">
               <button
                 onClick={() =>
                   copyToClipboard(recoveryCodes.join("\n"), "recovery")
                 }
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white text-amber-900 border border-amber-300 rounded-lg hover:bg-amber-50 transition-colors"
+                disabled={!showRecoveryCodes}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2  border border-[#483D9E] bg-white text-[#483D9E]  hover:bg-[#483D9E] hover:text-white transition-colors rounded-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-[#483D9E]"
               >
                 {copiedRecovery ? (
                   <>
@@ -479,16 +453,16 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
                 ) : (
                   <>
                     <Copy className="w-4 h-4" />
-                    Copiar Códigos
+                    Copiar
                   </>
                 )}
               </button>
               <button
                 onClick={downloadRecoveryCodes}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+                className="flex-1 flex items-center justify-center gap-2  px-4 py-2 rounded-lg border border-[#483D9E] bg-white text-[#483D9E]  hover:bg-[#483D9E] hover:text-white transition-colors"
               >
                 <Download className="w-4 h-4" />
-                Baixar Códigos
+                Download
               </button>
             </div>
           </div>

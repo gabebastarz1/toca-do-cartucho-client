@@ -189,15 +189,48 @@ class AuthService {
     }
   }
 
-  // Logout
+  // Verificar se a sessão no servidor ainda está ativa
+  async isServerSessionValid(): Promise<boolean> {
+    try {
+      console.log("🔍 [authService] Verificando se sessão do servidor está ativa...");
+      const response = await api.get('/api/accounts/profile');
+      console.log("✅ [authService] Sessão do servidor está ativa");
+      return response.status === 200;
+    } catch (error) {
+      console.log("❌ [authService] Sessão do servidor não está ativa ou erro:", error);
+      return false;
+    }
+  }
+
+  // Logout com verificação de sessão
   async logout(): Promise<void> {
     try {
+      console.log("🚪 [authService] Iniciando logout...");
       await api.get('/api/accounts/profile/logout');
+      console.log("✅ [authService] Logout no servidor bem-sucedido");
     } catch (error) {
-      console.warn('Erro ao fazer logout no servidor:', error);
+      console.warn('⚠️ [authService] Erro ao fazer logout no servidor:', error);
     } finally {
       this.clearAuthData();
       userProfileCache.clear(); // Clear cache on logout
+      console.log("🧹 [authService] Dados locais limpos");
+    }
+  }
+
+  // Logout seguro - só limpa se a sessão realmente expirou
+  async safeLogout(): Promise<void> {
+    const hasValidCookie = this.hasSessionCookie();
+    const isServerValid = await this.isServerSessionValid();
+
+    console.log("🔐 [authService] safeLogout - Cookie válido?:", hasValidCookie);
+    console.log("🔐 [authService] safeLogout - Servidor válido?:", isServerValid);
+
+    if (!hasValidCookie && !isServerValid) {
+      // Realmente expirou - fazer logout
+      console.log("❌ [authService] Sessão expirou - fazendo logout");
+      await this.logout();
+    } else {
+      console.log("✅ [authService] Sessão ainda válida - não fazer logout");
     }
   }
 

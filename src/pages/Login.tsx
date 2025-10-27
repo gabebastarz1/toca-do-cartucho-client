@@ -38,21 +38,38 @@ const Login: React.FC = () => {
       );
       navigate("/"); // Redireciona para a home page
     } catch (err: unknown) {
+      console.log("🔍 [Login] Erro capturado:", err);
+
       const error = err as {
         status?: number;
-        data?: { detail?: string } | string;
+        data?:
+          | { detail?: string; title?: string; [key: string]: unknown }
+          | string;
       };
 
-      // Se o erro indicar que necessita de 2FA
-      if (
+      console.log("🔍 [Login] Status:", error.status);
+      console.log("🔍 [Login] Data:", error.data);
+
+      // Detectar se necessita de 2FA - verificar múltiplos formatos de resposta
+      const dataString =
+        typeof error.data === "string"
+          ? error.data
+          : JSON.stringify(error.data);
+      const requires2FADetected =
         error.status === 401 &&
-        error.data &&
-        typeof error.data === "string" &&
-        error.data.includes("RequiresTwoFactor")
-      ) {
+        (dataString.includes("RequiresTwoFactor") ||
+          dataString.includes("requires") ||
+          (typeof error.data === "object" &&
+            error.data !== null &&
+            "title" in error.data &&
+            typeof error.data.title === "string" &&
+            error.data.title.includes("RequiresTwoFactor")));
+
+      if (requires2FADetected && !requires2FA) {
+        console.log("✅ [Login] 2FA detectado - mostrando campo");
         setRequires2FA(true);
         showError(
-          "Por favor, insira seu código de autenticação de dois fatores."
+          "Esta conta possui autenticação de dois fatores. Por favor, insira seu código."
         );
       } else if (
         error.status === 401 &&
@@ -157,15 +174,30 @@ const Login: React.FC = () => {
 
           {/* Campo de Código 2FA */}
           {requires2FA && (
-            <div>
-              <label
-                htmlFor="twoFactorCode"
-                className="mb-1 block text-sm font-medium text-white md:text-gray-700"
-              >
-                {useRecoveryCode
-                  ? "Código de Recuperação"
-                  : "Código de Autenticação"}
-              </label>
+            <div className="rounded-lg  p-4 animate-fadeIn">
+              <div className="flex items-center gap-2 mb-3">
+                <svg
+                  className="w-5 h-5 text-[#31295F]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+                <label
+                  htmlFor="twoFactorCode"
+                  className="block text-sm font-semibold text-[#31295F]"
+                >
+                  {useRecoveryCode
+                    ? "Código de Recuperação"
+                    : "Código de Autenticação"}
+                </label>
+              </div>
               <input
                 id="twoFactorCode"
                 name="twoFactorCode"
@@ -174,7 +206,7 @@ const Login: React.FC = () => {
                 placeholder={
                   useRecoveryCode ? "Digite o código de recuperação" : "000000"
                 }
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-center text-2xl font-mono tracking-widest text-gray-900 placeholder-gray-400 shadow-sm focus:border-[#31295F] focus:outline-none focus:ring-1 focus:ring-[#31295F]"
+                className="w-full rounded-md border-2 border-[#31295F] bg-white px-3 py-3 text-center text-2xl font-mono tracking-widest text-gray-900 placeholder-gray-400 shadow-sm focus:border-[#483d9e] focus:outline-none focus:ring-2 focus:ring-[#483d9e]"
                 value={twoFactorCode}
                 onChange={(e) => {
                   const value = useRecoveryCode
@@ -185,18 +217,23 @@ const Login: React.FC = () => {
                 maxLength={useRecoveryCode ? undefined : 6}
                 autoFocus
               />
-              <button
-                type="button"
-                onClick={() => {
-                  setUseRecoveryCode(!useRecoveryCode);
-                  setTwoFactorCode("");
-                }}
-                className="mt-2 text-xs text-white md:text-[#31295F] hover:underline"
-              >
-                {useRecoveryCode
-                  ? "Usar código do aplicativo"
-                  : "Usar código de recuperação"}
-              </button>
+              <div className="mt-3 flex items-center justify-between">
+                <p className="text-xs text-gray-600">
+                  {useRecoveryCode
+                    ? "Digite um dos seus códigos de recuperação"
+                    : "Digite o código do seu aplicativo autenticador"}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseRecoveryCode(!useRecoveryCode);
+                    setTwoFactorCode("");
+                  }}
+                  className="text-xs text-[#31295F] font-medium hover:underline whitespace-nowrap ml-2"
+                >
+                  {useRecoveryCode ? "Usar app" : "Usar recuperação"}
+                </button>
+              </div>
             </div>
           )}
 

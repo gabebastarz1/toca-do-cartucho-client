@@ -77,7 +77,11 @@ const Favorites: React.FC = () => {
       image: imageUrl,
       rating: 4.0, // Valor padrão, pode ser substituído quando tiver rating real
       reviewCount: 1, // Valor padrão, pode ser substituído quando tiver reviews reais
-      originalPrice: advertisement.sale?.previousPrice,
+      originalPrice:
+        advertisement.sale?.previousPrice &&
+        advertisement.sale.previousPrice > 0
+          ? advertisement.sale.previousPrice
+          : undefined,
       currentPrice: advertisement.sale?.price || 0,
       discount: advertisement.sale?.discountPercentage
         ? parseFloat(advertisement.sale.discountPercentage)

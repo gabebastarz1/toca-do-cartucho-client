@@ -257,7 +257,10 @@ const AdDetails: React.FC<AdDetailsProps> = ({ advertisement }) => {
 
                 {/* Informações do Produto (título, preço, etc.) */}
                 <div className="w-full md:w-1/3 mt-4 md:mt-0">
-                  <ProductInfo advertisement={adData} />
+                  <ProductInfo
+                    advertisement={adData}
+                    selectedVariation={selectedVariation}
+                  />
                 </div>
               </div>
 

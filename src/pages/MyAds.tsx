@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import {
   ChevronRight,
   Loader2,
-  Pencil,
   Trash2,
   ChevronDown,
   ToggleLeft,
@@ -16,6 +15,7 @@ import BottomBar from "../components/BottomBar";
 import Head from "../components/Head";
 import { useMyAdvertisements } from "../hooks/useMyAdvertisements";
 import { IoMdSettings } from "react-icons/io";
+import { AdvertisementDTO } from "../api/types";
 
 const MyAds: React.FC = () => {
   const navigate = useNavigate();
@@ -69,9 +69,16 @@ const MyAds: React.FC = () => {
   };
 
   const handleEdit = (id: number) => {
-    // TODO: Navegar para página de edição quando criada
-    console.log("Editar anúncio:", id);
-    navigate(`/editar-anuncio/${id}`);
+    // Encontrar o anúncio para verificar se é uma variação
+    const ad = advertisements.find((a) => a.id === id);
+
+    if (ad?.parentAdvertisementId) {
+      // Se é uma variação, redireciona para editar o anúncio principal com a variação selecionada
+      navigate(`/anuncio/${ad.parentAdvertisementId}/editar?variation=${id}`);
+    } else {
+      // Se é um anúncio principal, edita normalmente
+      navigate(`/anuncio/${id}/editar`);
+    }
   };
 
   const getStatusStyle = (status: string) => {
@@ -86,6 +93,21 @@ const MyAds: React.FC = () => {
       return "Ativo";
     }
     return "Inativo";
+  };
+
+  const getAdvertisementType = (ad: AdvertisementDTO) => {
+    const hasSale =
+      ad.sale && ad.sale.price !== null && ad.sale.price !== undefined;
+    const hasTrade = ad.trade !== null && ad.trade !== undefined;
+
+    if (hasSale && hasTrade) {
+      return "Venda e Troca";
+    } else if (hasSale) {
+      return "Venda";
+    } else if (hasTrade) {
+      return "Troca";
+    }
+    return null;
   };
 
   const configIcon = () => {
@@ -216,134 +238,146 @@ const MyAds: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-4 ">
-                {filteredAds.map((ad) => (
-                  <div
-                    key={ad.id}
-                    className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow justify-between"
-                  >
-                    <div className="flex items-center gap-4">
-                      {/* Imagem */}
-                      <div className="w-20 h-20 md:w-24 md:h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
-                        {ad.images?.[0]?.preSignedUrl || ad.images?.[0]?.url ? (
-                          <img
-                            src={ad.images[0].preSignedUrl || ad.images[0].url}
-                            alt={ad.title}
-                            className="max-w-full max-h-full object-contain"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                            <span className="text-gray-400 text-xs">
-                              Sem imagem
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      {/* Informações do Título*/}
-                      <div className="flex-1 min-w-0 max-w-96">
-                        <p className="text-xs text-gray-500 mb-1">Título</p>
-                        <h3 className="text-sm md:text-base font-medium text-gray-900 truncate">
-                          {ad.title}
-                        </h3>
-                      </div>
-                    </div>
+                {filteredAds.map((ad) => {
+                  const saleType = getAdvertisementType(ad);
+                  return (
+                    <div
+                      key={ad.id}
+                      className="relative flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow justify-between"
+                    >
+                      {/* Flag de tipo de anúncio - igual ao ProductCard */}
+                      {saleType && (
+                        <span className="absolute z-10 top-0 right-0 px-3 py-1 text-xs bg-[#38307C] text-white shadow-xl rounded-bl-lg">
+                          {saleType}
+                        </span>
+                      )}
 
-                    {/* Status */}
-                    <div className="flex-shrink-0">
-                      <p className="text-xs text-gray-500 mb-1">Status</p>
-                      <span
-                        className={`text-sm font-medium ${getStatusStyle(
-                          ad.status
-                        )}`}
-                      >
-                        {getStatusLabel(ad.status)}
-                      </span>
-                    </div>
-
-                    {/* Botões de Ação */}
-                    <div className="flex items-center gap-2 flex-shrink-0 justify-end">
-                      <button
-                        onClick={() => handleEdit(ad.id)}
-                        className="px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm bg-[#EDECF7] text-[#211C49] rounded-md hover:bg-[#C9C6E6] transition-colors"
-                      >
-                        Editar Anúncio
-                      </button>
-
-                      {/* Menu de Opções */}
-                      <div className="relative">
-                        <button
-                          onClick={() =>
-                            setOpenMenuId(openMenuId === ad.id ? null : ad.id)
-                          }
-                          className="p-2 hover:bg-[#C9C6E6] rounded-md transition-colors bg-[#EDECF7]"
-                          disabled={deletingId === ad.id}
-                        >
-                          {deletingId === ad.id ? (
-                            <Loader2 className="w-5 h-5 animate-spin text-gray-600" />
+                      <div className="flex items-center gap-4">
+                        {/* Imagem */}
+                        <div className="w-20 h-20 md:w-24 md:h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+                          {ad.images?.[0]?.preSignedUrl ||
+                          ad.images?.[0]?.url ? (
+                            <img
+                              src={
+                                ad.images[0].preSignedUrl || ad.images[0].url
+                              }
+                              alt={ad.title}
+                              className="max-w-full max-h-full object-contain"
+                            />
                           ) : (
-                            configIcon()
+                            <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                              <span className="text-gray-400 text-xs">
+                                Sem imagem
+                              </span>
+                            </div>
                           )}
+                        </div>
+                        {/* Informações do Título*/}
+                        <div className="flex-1 min-w-0 max-w-96">
+                          <p className="text-xs text-gray-500 mb-1">Título</p>
+                          <h3 className="text-sm md:text-base font-medium text-gray-900 truncate">
+                            {ad.title}
+                          </h3>
+                        </div>
+                      </div>
+
+                      {/* Status */}
+                      <div className="flex-shrink-0">
+                        <p className="text-xs text-gray-500 mb-1">Status</p>
+                        <span
+                          className={`text-sm font-medium ${getStatusStyle(
+                            ad.status
+                          )}`}
+                        >
+                          {getStatusLabel(ad.status)}
+                        </span>
+                      </div>
+
+                      {/* Botões de Ação */}
+                      <div className="flex items-center gap-2 flex-shrink-0 justify-end">
+                        <button
+                          onClick={() => handleEdit(ad.id)}
+                          className="px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm bg-[#EDECF7] text-[#211C49] rounded-md hover:bg-[#C9C6E6] transition-colors"
+                        >
+                          Editar Anúncio
                         </button>
 
-                        {/* Dropdown Menu */}
-                        {openMenuId === ad.id && (
-                          <>
-                            {/* Overlay para fechar o menu */}
-                            <div
-                              className="fixed inset-0 z-10"
-                              onClick={() => setOpenMenuId(null)}
-                            />
+                        {/* Menu de Opções */}
+                        <div className="relative">
+                          <button
+                            onClick={() =>
+                              setOpenMenuId(openMenuId === ad.id ? null : ad.id)
+                            }
+                            className="p-2 hover:bg-[#C9C6E6] rounded-md transition-colors bg-[#EDECF7]"
+                            disabled={deletingId === ad.id}
+                          >
+                            {deletingId === ad.id ? (
+                              <Loader2 className="w-5 h-5 animate-spin text-gray-600" />
+                            ) : (
+                              configIcon()
+                            )}
+                          </button>
 
-                            {/* Menu */}
-                            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                          {/* Dropdown Menu */}
+                          {openMenuId === ad.id && (
+                            <>
+                              {/* Overlay para fechar o menu */}
+                              <div
+                                className="fixed inset-0 z-10"
+                                onClick={() => setOpenMenuId(null)}
+                              />
 
-                              {/* Botão Ativar/Desativar baseado no status */}
-                              <button
-                                onClick={() =>
-                                  handleToggleStatus(ad.id, ad.status)
-                                }
-                                className={`w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors ${
-                                  ad.status === "Active"
-                                    ? "text-orange-600 hover:bg-orange-50"
-                                    : "text-green-600 hover:bg-green-50"
-                                }`}
-                                disabled={updatingStatusId === ad.id}
-                              >
-                                {updatingStatusId === ad.id ? (
-                                  <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    Processando...
-                                  </>
-                                ) : (
-                                  <>
-                                    {ad.status === "Active" ? (
-                                      <>
-                                        <ToggleLeft className="w-4 h-4" />
-                                        Desativar
-                                      </>
-                                    ) : (
-                                      <>
-                                        <ToggleRight className="w-4 h-4" />
-                                        Ativar
-                                      </>
-                                    )}
-                                  </>
-                                )}
-                              </button>
+                              {/* Menu */}
+                              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                                {/* Botão Ativar/Desativar baseado no status */}
+                                <button
+                                  onClick={() =>
+                                    handleToggleStatus(ad.id, ad.status)
+                                  }
+                                  className={`w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors ${
+                                    ad.status === "Active"
+                                      ? "text-orange-600 hover:bg-orange-50"
+                                      : "text-green-600 hover:bg-green-50"
+                                  }`}
+                                  disabled={updatingStatusId === ad.id}
+                                >
+                                  {updatingStatusId === ad.id ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                      Processando...
+                                    </>
+                                  ) : (
+                                    <>
+                                      {ad.status === "Active" ? (
+                                        <>
+                                          <ToggleLeft className="w-4 h-4" />
+                                          Desativar
+                                        </>
+                                      ) : (
+                                        <>
+                                          <ToggleRight className="w-4 h-4" />
+                                          Ativar
+                                        </>
+                                      )}
+                                    </>
+                                  )}
+                                </button>
 
-                              <button
-                                onClick={() => handleDelete(ad.id)}
-                                className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-b-lg"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                Excluir
-                              </button>
-                            </div>
-                          </>
-                        )}
+                                <button
+                                  onClick={() => handleDelete(ad.id)}
+                                  className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-b-lg"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  Excluir
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
