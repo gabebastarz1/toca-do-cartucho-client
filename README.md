@@ -12,8 +12,6 @@ Aplicação web frontend da plataforma Toca do Cartucho, desenvolvida em React c
 - [Estrutura do Projeto](#estrutura-do-projeto)
 - [Funcionalidades Principais](#funcionalidades-principais)
 - [Desenvolvimento](#desenvolvimento)
-- [Build de Produção](#build-de-produção)
-- [Troubleshooting](#troubleshooting)
 
 ## 🛠️ Tecnologias
 
