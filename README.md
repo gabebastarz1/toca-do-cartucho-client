@@ -56,8 +56,7 @@ Antes de começar, certifique-se de ter instalado:
    ```
 
 5. **Acesse a aplicação:**
-   - A aplicação estará disponível em `http://localhost:5173` (ou a porta indicada no terminal)
-   - O Vite está configurado para aceitar conexões de qualquer IP (`--host`)
+   - A aplicação estará disponível em `http://localhost:3000`
 
 ## ⚙️ Configuração
 
@@ -66,18 +65,18 @@ Antes de começar, certifique-se de ter instalado:
 Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis:
 
 ```env
-VITE_API_URL=http://localhost:5000
+VITE_API_URL= (URL DISPONÍVEL NO REPOSITÓRIO DO BACKEND)
 ```
 
 **Descrição das variáveis:**
-- `VITE_API_URL`: URL base da API backend (sem a barra no final)
+- `VITE_API_URL`: URL base da API backend
 
 **Nota:** Todas as variáveis de ambiente no Vite devem começar com `VITE_` para serem expostas ao código do cliente.
 
 ## 📜 Scripts Disponíveis
 
 ### `npm run dev`
-Inicia o servidor de desenvolvimento com hot-reload. A aplicação estará disponível em `http://localhost:5173` e acessível por qualquer IP na rede local.
+Inicia o servidor de desenvolvimento com hot-reload. A aplicação estará disponível em `http://localhost:3000`.
 
 ### `npm run build`
 Compila o projeto para produção. Os arquivos otimizados serão gerados na pasta `dist/`.
@@ -117,7 +116,7 @@ toca-do-cartucho-client/
 
 - 🔐 **Autenticação**
   - Login e cadastro de usuários
-  - Autenticação de dois fatores (2FA)
+  - Autenticação de dois fatores
   - Login com Google
   - Recuperação de senha
 
@@ -144,7 +143,7 @@ toca-do-cartucho-client/
   - Histórico de transações
 
 - 🎨 **UI/UX**
-  - Design responsivo (mobile-first)
+  - Design responsivo
   - Tema personalizado
   - Componentes reutilizáveis
   - Feedback visual (alerts, modals)
@@ -160,76 +159,3 @@ Execute o linter antes de commitar:
 npm run lint
 ```
 
-### Estrutura de Componentes
-- Use componentes funcionais com hooks
-- Prefira TypeScript para tipagem
-- Siga os padrões de estilo do projeto (Tailwind CSS)
-- Componentes devem ser reutilizáveis quando possível
-
-### Gerenciamento de Estado
-- React Context para estado global (autenticação, perfil)
-- Estado local com `useState` para componentes simples
-- Custom hooks para lógica reutilizável
-
-## 🏗️ Build de Produção
-
-1. **Execute o build:**
-   ```bash
-   npm run build
-   ```
-
-2. **Os arquivos otimizados estarão em `dist/`:**
-   - HTML, CSS e JavaScript minificados
-   - Assets otimizados
-   - Code splitting automático
-
-3. **Teste o build localmente:**
-   ```bash
-   npm run preview
-   ```
-
-4. **Deploy:**
-   - Os arquivos em `dist/` podem ser servidos por qualquer servidor web estático
-   - Recomendado: Nginx, Apache, ou serviços como Vercel, Netlify
-
-## 🔧 Troubleshooting
-
-### Problemas Comuns
-
-**Erro ao instalar dependências:**
-- Limpe o cache: `npm cache clean --force`
-- Delete `node_modules` e `package-lock.json` e reinstale: `npm install`
-
-**Erro de conexão com API:**
-- Verifique se a variável `VITE_API_URL` está configurada corretamente
-- Confirme que a API backend está rodando
-- Verifique CORS no backend
-
-**Porta já em uso:**
-- O Vite tentará usar outra porta automaticamente
-- Ou especifique uma porta: `npm run dev -- --port 3000`
-
-**Erros de TypeScript:**
-- Execute `npm run build` para ver erros de tipo
-- Certifique-se de que todos os tipos estão importados corretamente
-
-## 📝 Notas Adicionais
-
-- **Autenticação:** A aplicação usa cookies HTTP-only para autenticação segura
-- **Performance:** O Vite oferece build extremamente rápido graças ao uso de ESM nativo
-- **Compatibilidade:** Suporta navegadores modernos (ES2020+)
-
-## 👥 Contribuindo
-
-1. Crie uma branch para sua feature: `git checkout -b feature/nova-feature`
-2. Faça commit das mudanças: `git commit -m 'Adiciona nova feature'`
-3. Envie para o repositório: `git push origin feature/nova-feature`
-4. Abra um Pull Request
-
-## 📄 Licença
-
-[Adicione informações de licença se aplicável]
-
----
-
-Desenvolvido com ❤️ para a comunidade de gamers retrô
