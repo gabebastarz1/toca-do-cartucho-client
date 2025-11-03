@@ -44,6 +44,8 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
       // Calcular preço com base em sale (da variação ou do principal)
       const salePrice = currentAd.sale?.price || 0;
       const originalPrice = currentAd.sale?.previousPrice || 0;
+      const displayDiscount = (currentAd.sale as { displayDiscount?: boolean })
+        ?.displayDiscount;
       const discount =
         originalPrice > 0
           ? Math.round(((originalPrice - salePrice) / originalPrice) * 100)
@@ -116,6 +118,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
         price: salePrice,
         originalPrice: originalPrice,
         discount: discount,
+        displayDiscount: displayDiscount,
         rating: averageRating || 0, // ✅ Usar rating real do vendedor
         reviewCount: totalRatings || 0, // ✅ Usar contagem real de avaliações
         productInfo: productInfo,
@@ -127,6 +130,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
       price: 89.99,
       originalPrice: 120.0,
       discount: 25,
+      displayDiscount: true,
       rating: 4.2,
       reviewCount: 13,
       productInfo: {
@@ -231,12 +235,13 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
           )}
         <p className="text-3xl font-bold text-gray-900">
           R$ {productData.price.toFixed(2).replace(".", ",")}
-          {productData.discount > 0 && (
-            <span className="text-green-600 text-base font-normal">
-              {" "}
-              {productData.discount}% OFF
-            </span>
-          )}
+          {productData.discount > 0 &&
+            productData.displayDiscount !== false && (
+              <span className="text-green-600 text-base font-normal">
+                {" "}
+                {productData.discount}% OFF
+              </span>
+            )}
         </p>
       </div>
 

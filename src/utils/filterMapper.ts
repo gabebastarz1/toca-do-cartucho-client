@@ -42,6 +42,8 @@ export const mapFrontendFiltersToBackend = (
 
   // Sempre filtrar apenas anúncios ativos
   backendFilters.status = "Active";
+  // Sempre filtrar apenas vendedores ativos
+  backendFilters.sellerStatus = "Active";
 
   // Adicionar busca por título se houver query de pesquisa
   if (searchQuery && searchQuery.trim()) {
@@ -224,6 +226,9 @@ export const cleanBackendFilters = (filters: AdvertisementFilteringDTO): Adverti
   }
   if (filters.status && filters.status.trim()) {
     cleaned.status = filters.status.trim();
+  }
+  if (filters.sellerStatus && filters.sellerStatus.trim()) {
+    cleaned.sellerStatus = filters.sellerStatus.trim();
   }
   if (filters.minPrice !== undefined && filters.minPrice !== null && filters.minPrice > 0) {
     cleaned.minPrice = filters.minPrice;

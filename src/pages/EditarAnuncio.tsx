@@ -12,6 +12,7 @@ import Head from "../components/Head";
 import FilterTopBar from "../components/FilterTopBar";
 import Footer from "../components/Footer";
 import BottomBar from "../components/BottomBar";
+import { Camera, Check } from "lucide-react";
 
 interface TradeConditions {
   games: number[];
@@ -29,6 +30,7 @@ interface AdvertisementEditForm {
   availableStock: number;
   preservationStateId: number | null;
   description: string;
+  displayDiscount: boolean;
   tradeConditions: TradeConditions;
 }
 
@@ -54,6 +56,7 @@ const EditarAnuncio: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string>("");
 
   const [formData, setFormData] = useState<AdvertisementEditForm>({
     title: "",
@@ -61,6 +64,7 @@ const EditarAnuncio: React.FC = () => {
     availableStock: 1,
     preservationStateId: null,
     description: "",
+    displayDiscount: true,
     tradeConditions: {
       games: [],
       cartridgeTypes: [],
@@ -72,10 +76,16 @@ const EditarAnuncio: React.FC = () => {
     },
   });
 
-  const [newImages, setNewImages] = useState<File[]>([]);
+  // Estado para armazenar dados originais para comparação
+  const [originalFormData, setOriginalFormData] =
+    useState<AdvertisementEditForm | null>(null);
+
+  const [newImages, setNewImages] = useState<(File | null)[]>(
+    Array(5).fill(null)
+  );
   const [existingImages, setExistingImages] = useState<
-    { id: number; url: string }[]
-  >([]);
+    ({ id: number; url: string } | null)[]
+  >(Array(5).fill(null));
   // Para futuro uso quando backend tiver endpoint de delete de imagem
   const [, setImagesToDelete] = useState<number[]>([]);
   const [editingVariationId, setEditingVariationId] = useState<number | null>(
@@ -125,15 +135,12 @@ const EditarAnuncio: React.FC = () => {
           if (variation) {
             dataToEdit = variation;
             setEditingVariationId(parseInt(variationId));
-            setCurrentEditingAd(variation); // ✅ Guardar variação sendo editada
           }
         } else {
           // Se não há variationId, está editando o anúncio principal
           setEditingVariationId(null);
         }
 
-        // Preencher formulário com dados do anúncio ou da variação
-        // Type assertion para acessar propriedades do trade que podem não estar na interface base
         const tradeData = dataToEdit.trade as
           | {
               acceptedGameIds?: number[];
@@ -143,12 +150,21 @@ const EditarAnuncio: React.FC = () => {
             }
           | undefined;
 
-        setFormData({
+        // Type assertion para sale com displayDiscount
+        const saleData = dataToEdit.sale as
+          | {
+              price?: number;
+              displayDiscount?: boolean;
+            }
+          | undefined;
+
+        const loadedData = {
           title: dataToEdit.title || "",
-          price: dataToEdit.sale?.price || 0,
+          price: saleData?.price || 0,
           availableStock: dataToEdit.availableStock || 1,
           preservationStateId: dataToEdit.preservationState?.id || null,
           description: dataToEdit.description || "",
+          displayDiscount: saleData?.displayDiscount === false ? false : true,
           tradeConditions: {
             games: tradeData?.acceptedGameIds || [],
             cartridgeTypes: tradeData?.acceptedCartridgeTypeIds || [],
@@ -158,13 +174,22 @@ const EditarAnuncio: React.FC = () => {
             subtitleLanguages: [],
             interfaceLanguages: [],
           },
-        });
+        };
+
+        setFormData(loadedData);
+        // Armazenar dados originais para comparação
+        const originalData = JSON.parse(JSON.stringify(loadedData));
+        setOriginalFormData(originalData);
 
         // Carregar imagens existentes
         if (dataToEdit.images) {
-          setExistingImages(
-            dataToEdit.images.map((img) => ({ id: img.id, url: img.url }))
-          );
+          const images = Array(5).fill(null);
+          dataToEdit.images.forEach((img, index) => {
+            if (index < 5) {
+              images[index] = { id: img.id, url: img.url };
+            }
+          });
+          setExistingImages(images);
         }
       } catch (err) {
         console.error("Erro ao carregar anúncio:", err);
@@ -179,7 +204,7 @@ const EditarAnuncio: React.FC = () => {
 
   const handleInputChange = (
     field: keyof AdvertisementEditForm,
-    value: string | number | null
+    value: string | number | boolean | null
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -200,20 +225,126 @@ const EditarAnuncio: React.FC = () => {
     }));
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      setNewImages((prev) => [...prev, ...files]);
+  const handleImageSelect = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      const file = files[0]; // Pega apenas o primeiro arquivo
+
+      // Validação de tamanho (3MB = 3 * 1024 * 1024 bytes)
+      const maxSize = 3 * 1024 * 1024; // 3MB em bytes
+      if (file.size > maxSize) {
+        setImageError(
+          `A imagem ou vídeo "${file.name}" é muito grande. Tamanho máximo permitido: 3MB`
+        );
+        return; // Não adiciona o arquivo se for muito grande
+      }
+
+      // Limpa o erro se havia
+      setImageError("");
+
+      // Adiciona a nova imagem na posição específica
+      setNewImages((prev) => {
+        const newImagens = [...prev];
+        newImagens[index] = file;
+        return newImagens;
+      });
     }
   };
 
   const handleRemoveNewImage = (index: number) => {
-    setNewImages((prev) => prev.filter((_, i) => i !== index));
+    setNewImages((prev) => {
+      const newImages = [...prev];
+      newImages[index] = null;
+      return newImages;
+    });
   };
 
-  const handleRemoveExistingImage = (imageId: number) => {
-    setImagesToDelete((prev) => [...prev, imageId]);
-    setExistingImages((prev) => prev.filter((img) => img.id !== imageId));
+  const handleRemoveExistingImage = (index: number) => {
+    const imageToRemove = existingImages[index];
+    if (imageToRemove) {
+      setImagesToDelete((prev) => [...prev, imageToRemove.id]);
+    }
+    setExistingImages((prev) => {
+      const newImages = [...prev];
+      newImages[index] = null;
+      return newImages;
+    });
+  };
+
+  // Função para detectar campos alterados
+  const getChangedFields = () => {
+    if (!originalFormData) return null;
+
+    const changes: Record<string, string | number | boolean | number[] | null> =
+      {};
+
+    // Comparar campos simples
+    if (formData.title !== originalFormData.title) {
+      changes.title = formData.title;
+    }
+    if (formData.price !== originalFormData.price) {
+      changes.price = formData.price;
+    }
+    if (formData.availableStock !== originalFormData.availableStock) {
+      changes.availableStock = formData.availableStock;
+    }
+    if (formData.preservationStateId !== originalFormData.preservationStateId) {
+      changes.preservationStateId = formData.preservationStateId;
+    }
+    if (formData.description !== originalFormData.description) {
+      changes.description = formData.description;
+    }
+    if (formData.displayDiscount !== originalFormData.displayDiscount) {
+      changes.displayDiscount = formData.displayDiscount;
+    }
+
+    // Comparar arrays de condições de troca (compara se os IDs mudaram)
+    const arraysEqual = (a: number[], b: number[]) => {
+      if (a.length !== b.length) return false;
+      const sortedA = [...a].sort();
+      const sortedB = [...b].sort();
+      return sortedA.every((val, idx) => val === sortedB[idx]);
+    };
+
+    if (
+      !arraysEqual(
+        formData.tradeConditions.games,
+        originalFormData.tradeConditions.games
+      )
+    ) {
+      changes.acceptedTradeGameIds = formData.tradeConditions.games;
+    }
+    if (
+      !arraysEqual(
+        formData.tradeConditions.cartridgeTypes,
+        originalFormData.tradeConditions.cartridgeTypes
+      )
+    ) {
+      changes.acceptedTradeCartridgeTypeIds =
+        formData.tradeConditions.cartridgeTypes;
+    }
+    if (
+      !arraysEqual(
+        formData.tradeConditions.preservationStates,
+        originalFormData.tradeConditions.preservationStates
+      )
+    ) {
+      changes.acceptedTradePreservationStateIds =
+        formData.tradeConditions.preservationStates;
+    }
+    if (
+      !arraysEqual(
+        formData.tradeConditions.regions,
+        originalFormData.tradeConditions.regions
+      )
+    ) {
+      changes.acceptedTradeRegionIds = formData.tradeConditions.regions;
+    }
+
+    return Object.keys(changes).length > 0 ? changes : null;
   };
 
   const handleSave = async () => {
@@ -226,25 +357,28 @@ const EditarAnuncio: React.FC = () => {
       // Determinar qual ID usar (variação ou anúncio principal)
       const targetId = editingVariationId || parseInt(id);
 
-      // Atualizar dados do anúncio ou variação
-      const updateData = {
-        title: formData.title,
-        description: formData.description,
-        availableStock: formData.availableStock,
-        preservationStateId: formData.preservationStateId,
-        price: formData.price,
-        acceptedTradeGameIds: formData.tradeConditions.games,
-        acceptedTradeCartridgeTypeIds: formData.tradeConditions.cartridgeTypes,
-        acceptedTradePreservationStateIds:
-          formData.tradeConditions.preservationStates,
-        acceptedTradeRegionIds: formData.tradeConditions.regions,
-      };
+      // Detectar apenas os campos alterados
+      const changedFields = getChangedFields();
 
-      await advertisementService.update(targetId, updateData);
+      // Se não houver alterações nos dados do formulário e nem novas imagens, não fazer nada
+      const hasNewImages = newImages.some((img) => img !== null);
+      if (!changedFields && !hasNewImages) {
+        setSuccessMessage("Nenhuma alteração foi feita.");
+        setSaving(false);
+        return;
+      }
 
-      // Upload de novas imagens
-      if (newImages.length > 0) {
-        await advertisementImageService.uploadImages(targetId, newImages);
+      // Atualizar dados do anúncio ou variação (apenas campos alterados)
+      if (changedFields) {
+        await advertisementService.update(targetId, changedFields);
+      }
+
+      // Upload de novas imagens (filtra os nulls)
+      const imagesToUpload = newImages.filter(
+        (img): img is File => img !== null
+      );
+      if (imagesToUpload.length > 0) {
+        await advertisementImageService.uploadImages(targetId, imagesToUpload);
       }
 
       // Deletar imagens marcadas para exclusão
@@ -473,6 +607,33 @@ const EditarAnuncio: React.FC = () => {
                       ))}
                     </select>
                   </div>
+
+                  {/* Mostrar Desconto */}
+                  <div className="md:col-span-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleInputChange(
+                            "displayDiscount",
+                            !formData.displayDiscount
+                          )
+                        }
+                        className={`w-5 h-5 border-2 rounded flex items-center justify-center transition-all ${
+                          formData.displayDiscount
+                            ? "bg-[#483d9e] border-[#483d9e]"
+                            : "border-gray-400"
+                        }`}
+                      >
+                        {formData.displayDiscount && (
+                          <Check className="w-3 h-3 text-white" />
+                        )}
+                      </button>
+                      <span className="text-sm text-gray-700">
+                        Mostrar desconto no anúncio
+                      </span>
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -495,100 +656,78 @@ const EditarAnuncio: React.FC = () => {
               {/* Adicionar Imagens */}
               <div>
                 <label className="block text-sm text-gray-700 mb-2">
-                  Adicionar Imagens
+                  Imagens e Vídeos
                 </label>
+                <p className="text-xs text-gray-600 mb-3">
+                  Envie imagens de até 3MB cada, com boa iluminação.
+                </p>
 
-                {/* Imagens existentes */}
-                {existingImages.length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-sm text-gray-600 mb-2">
-                      Imagens atuais:
-                    </p>
-                    <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                      {existingImages.map((img) => (
-                        <div key={img.id} className="relative group">
-                          <img
-                            src={img.url}
-                            alt="Preview"
-                            className="w-full h-24 object-cover rounded border border-gray-300"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveExistingImage(img.id)}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* Grid de upload com imagens existentes e novas */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4">
+                  {[...Array(5)].map((_, i) => {
+                    // Verificar se há imagem existente nesta posição
+                    const existingImage = existingImages[i];
+                    // Verificar se há nova imagem nesta posição
+                    const newImage = newImages[i];
+                    const hasImage = existingImage || newImage;
 
-                {/* Novas imagens */}
-                {newImages.length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-sm text-gray-600 mb-2">Novas imagens:</p>
-                    <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                      {newImages.map((file, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt="Preview"
-                            className="w-full h-24 object-cover rounded border border-gray-300"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveNewImage(index)}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageSelect}
-                    className="hidden"
-                    id="image-upload"
-                  />
-                  <label
-                    htmlFor="image-upload"
-                    className="cursor-pointer text-[#4f43ae] hover:text-[#3d3487]"
-                  >
-                    <div className="mb-2">
-                      <svg
-                        className="mx-auto h-12 w-12 text-gray-400"
-                        stroke="currentColor"
-                        fill="none"
-                        viewBox="0 0 48 48"
-                      >
-                        <path
-                          d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                    <span className="text-sm font-medium">
-                      Adicionar Fotos e Vídeos
-                    </span>
-                  </label>
+                    return (
+                      <div key={i} className="relative">
+                        {hasImage ? (
+                          // Botão com imagem (não clicável)
+                          <div className="w-full aspect-square border-2 border-solid border-purple-400 rounded-lg overflow-hidden bg-gray-100">
+                            <img
+                              src={
+                                existingImage
+                                  ? existingImage.url
+                                  : URL.createObjectURL(newImage)
+                              }
+                              alt={`Imagem ${i + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                            <button
+                              onClick={() =>
+                                existingImage
+                                  ? handleRemoveExistingImage(i)
+                                  : handleRemoveNewImage(i)
+                              }
+                              type="button"
+                              className="absolute top-2 right-2 w-6 h-6 text-[#483D9E] flex items-center justify-center text-2xl hover:text-[#211C49] transition-colors font-semibold"
+                              title="Remover imagem do anúncio"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          // Botão vazio (clicável)
+                          <label className="w-full aspect-square border-2 border-dashed border-purple-400 rounded-lg flex flex-col items-center justify-center cursor-pointer text-center text-sm text-gray-600 hover:bg-purple-50 hover:border-purple-600 hover:text-purple-600 transition p-2">
+                            <Camera className="w-6 h-6 mb-1 text-purple-500" />
+                            Incluir Fotos e Vídeos
+                            <input
+                              type="file"
+                              accept="image/*,video/*"
+                              onChange={(e) => handleImageSelect(e, i)}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
+
+                {/* Mensagem de erro de tamanho de imagem */}
+                {imageError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-600">{imageError}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* Alterar Condições de Troca - Só exibe se o anúncio tiver troca */}
-          {currentEditingAd?.trade && (
+          {advertisement?.trade && (
             <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <h2 className="text-lg font-semibold text-gray-700 mb-4 bg-gray-100 p-3 rounded">
                 Alterar Condições de Troca

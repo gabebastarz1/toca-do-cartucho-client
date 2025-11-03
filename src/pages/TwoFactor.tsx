@@ -18,6 +18,7 @@ import Footer from "../components/Footer";
 import BottomBar from "../components/BottomBar";
 import Head from "../components/Head";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 const TwoFactor: React.FC = () => {
   const [twoFactorInfo, setTwoFactorInfo] = useState<TwoFactorResponse | null>(
@@ -29,6 +30,7 @@ const TwoFactor: React.FC = () => {
   const { userProfile, isLoading: profileLoading } = useUserProfile();
   const [searchParams] = useSearchParams();
   const { showSuccess, showError } = useCustomAlert();
+  const { logout } = useAuth();
 
   // useEffect para carregar informações de 2FA
   useEffect(() => {
@@ -91,15 +93,19 @@ const TwoFactor: React.FC = () => {
     setIs2FALoading(true);
     try {
       await twoFactorAuthService.disable2FA();
-      const info = await twoFactorAuthService.get2FAInfo();
-      setTwoFactorInfo(info);
-      showSuccess("Autenticação de dois fatores desativada com sucesso!");
+      showSuccess("Autenticação de dois fatores desativada com sucesso! Você será deslogado.");
+      
+      // Aguardar um momento para mostrar a mensagem antes de deslogar
+      setTimeout(async () => {
+        await logout();
+        // Recarregar a página após logout
+        window.location.href = "/login";
+      }, 1500);
     } catch (error) {
       console.error("Erro ao desativar 2FA:", error);
       showError(
         "Erro ao desativar autenticação de dois fatores. Tente novamente."
       );
-    } finally {
       setIs2FALoading(false);
     }
   };
@@ -226,9 +232,12 @@ const TwoFactor: React.FC = () => {
                   ⚠️ Atenção!
                 </span>
               </p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 mb-2">
                 Tem certeza que deseja desativar a autenticação de dois fatores?
                 Sua conta ficará menos segura sem essa camada extra de proteção.
+              </p>
+              <p className="text-sm text-orange-600 font-medium">
+                Você será deslogado automaticamente após desativar o 2FA e precisará fazer login novamente.
               </p>
             </div>
             <div className="flex gap-3 justify-end">

@@ -57,6 +57,7 @@ export interface RegisterRequest {
   lastName: string;
   nickName: string;
   cpf?: string | null;
+  birthdayDate?: string | null;
 }
 
 export interface AuthResponse {
@@ -108,7 +109,8 @@ class AuthService {
     try {
       const response = await api.post('/api/accounts/login', credentials, {
         params: {
-          useCookies: true
+          useCookies: true,
+          useSessionCookies: false
         }
       });
 

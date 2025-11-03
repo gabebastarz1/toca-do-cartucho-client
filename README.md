@@ -1,8 +1,235 @@
-# Toca do Cartucho - Client
+# 🎮 Toca do Cartucho - Frontend
 
-Para rodar o projeto:
+Aplicação web frontend da plataforma Toca do Cartucho, desenvolvida em React com TypeScript. Uma plataforma para compra, venda e troca de jogos retrô e cartuchos.
 
- - Instale o Node.js
- - Clone esse repositorio
- - Na pasta do repositorio, rode o comando 'npm i' para instalar as dependencias.
- - Rode o comando 'npm run dev' para iniciar o servidor de desenvolvimento
+## 📋 Índice
+
+- [Tecnologias](#tecnologias)
+- [Pré-requisitos](#pré-requisitos)
+- [Instalação](#instalação)
+- [Configuração](#configuração)
+- [Scripts Disponíveis](#scripts-disponíveis)
+- [Estrutura do Projeto](#estrutura-do-projeto)
+- [Funcionalidades Principais](#funcionalidades-principais)
+- [Desenvolvimento](#desenvolvimento)
+- [Build de Produção](#build-de-produção)
+- [Troubleshooting](#troubleshooting)
+
+## 🛠️ Tecnologias
+
+- **React 19** - Biblioteca JavaScript para construção de interfaces
+- **TypeScript** - Superset do JavaScript com tipagem estática
+- **Vite** - Build tool e dev server moderno
+- **React Router DOM** - Roteamento no lado do cliente
+- **Axios** - Cliente HTTP para requisições à API
+- **Tailwind CSS** - Framework CSS utility-first
+- **Lucide React** - Biblioteca de ícones
+- **Material-UI** - Componentes React prontos
+- **Swiper** - Carrossel/touch slider
+
+## 📦 Pré-requisitos
+
+Antes de começar, certifique-se de ter instalado:
+
+- **Node.js** (versão 18 ou superior)
+- **npm** (geralmente vem com o Node.js) ou **yarn**
+- **Git** (para clonar o repositório)
+
+## 🚀 Instalação
+
+1. **Clone o repositório:**
+   ```bash
+   git clone <url-do-repositorio>
+   cd toca-do-cartucho-client
+   ```
+
+2. **Instale as dependências:**
+   ```bash
+   npm install
+   ```
+
+3. **Configure as variáveis de ambiente** (veja seção [Configuração](#configuração))
+
+4. **Inicie o servidor de desenvolvimento:**
+   ```bash
+   npm run dev
+   ```
+
+5. **Acesse a aplicação:**
+   - A aplicação estará disponível em `http://localhost:5173` (ou a porta indicada no terminal)
+   - O Vite está configurado para aceitar conexões de qualquer IP (`--host`)
+
+## ⚙️ Configuração
+
+### Variáveis de Ambiente
+
+Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis:
+
+```env
+VITE_API_URL=http://localhost:5000
+```
+
+**Descrição das variáveis:**
+- `VITE_API_URL`: URL base da API backend (sem a barra no final)
+
+**Nota:** Todas as variáveis de ambiente no Vite devem começar com `VITE_` para serem expostas ao código do cliente.
+
+## 📜 Scripts Disponíveis
+
+### `npm run dev`
+Inicia o servidor de desenvolvimento com hot-reload. A aplicação estará disponível em `http://localhost:5173` e acessível por qualquer IP na rede local.
+
+### `npm run build`
+Compila o projeto para produção. Os arquivos otimizados serão gerados na pasta `dist/`.
+
+### `npm run preview`
+Serve a build de produção localmente para testar antes do deploy.
+
+### `npm run lint`
+Executa o linter ESLint para verificar problemas no código.
+
+## 📁 Estrutura do Projeto
+
+```
+toca-do-cartucho-client/
+├── public/              # Arquivos estáticos
+│   └── Icons/          # Ícones da aplicação
+├── src/
+│   ├── api/            # Tipos e configurações da API
+│   ├── assets/         # Imagens e outros assets
+│   ├── components/     # Componentes React reutilizáveis
+│   │   ├── ui/         # Componentes de UI base
+│   │   └── ...
+│   ├── hooks/          # Custom hooks
+│   ├── pages/          # Páginas/rotas da aplicação
+│   ├── services/       # Serviços e integrações
+│   ├── utils/          # Funções utilitárias
+│   ├── App.tsx         # Componente raiz
+│   └── main.tsx        # Entry point
+├── .env                # Variáveis de ambiente (não commitado)
+├── package.json        # Dependências e scripts
+├── tsconfig.json       # Configuração TypeScript
+├── vite.config.ts      # Configuração Vite
+└── tailwind.config.js  # Configuração Tailwind CSS
+```
+
+## ✨ Funcionalidades Principais
+
+- 🔐 **Autenticação**
+  - Login e cadastro de usuários
+  - Autenticação de dois fatores (2FA)
+  - Login com Google
+  - Recuperação de senha
+
+- 👤 **Gerenciamento de Perfil**
+  - Visualização e edição de dados pessoais
+  - Upload de foto de perfil
+  - Gerenciamento de endereços
+  - Configurações de segurança
+
+- 🛍️ **Anúncios**
+  - Listagem de produtos com filtros avançados
+  - Criação e edição de anúncios
+  - Visualização de detalhes do produto
+  - Sistema de favoritos
+
+- 🔍 **Busca e Filtros**
+  - Busca por texto
+  - Filtros por categoria, preço, condição, etc.
+  - Ordenação de resultados
+  - Paginação
+
+- 💬 **Sistema de Avaliações**
+  - Avaliação de vendedores
+  - Histórico de transações
+
+- 🎨 **UI/UX**
+  - Design responsivo (mobile-first)
+  - Tema personalizado
+  - Componentes reutilizáveis
+  - Feedback visual (alerts, modals)
+
+## 💻 Desenvolvimento
+
+### Hot Module Replacement (HMR)
+O Vite oferece HMR extremamente rápido, atualizando automaticamente os módulos alterados sem recarregar toda a página.
+
+### Linting
+Execute o linter antes de commitar:
+```bash
+npm run lint
+```
+
+### Estrutura de Componentes
+- Use componentes funcionais com hooks
+- Prefira TypeScript para tipagem
+- Siga os padrões de estilo do projeto (Tailwind CSS)
+- Componentes devem ser reutilizáveis quando possível
+
+### Gerenciamento de Estado
+- React Context para estado global (autenticação, perfil)
+- Estado local com `useState` para componentes simples
+- Custom hooks para lógica reutilizável
+
+## 🏗️ Build de Produção
+
+1. **Execute o build:**
+   ```bash
+   npm run build
+   ```
+
+2. **Os arquivos otimizados estarão em `dist/`:**
+   - HTML, CSS e JavaScript minificados
+   - Assets otimizados
+   - Code splitting automático
+
+3. **Teste o build localmente:**
+   ```bash
+   npm run preview
+   ```
+
+4. **Deploy:**
+   - Os arquivos em `dist/` podem ser servidos por qualquer servidor web estático
+   - Recomendado: Nginx, Apache, ou serviços como Vercel, Netlify
+
+## 🔧 Troubleshooting
+
+### Problemas Comuns
+
+**Erro ao instalar dependências:**
+- Limpe o cache: `npm cache clean --force`
+- Delete `node_modules` e `package-lock.json` e reinstale: `npm install`
+
+**Erro de conexão com API:**
+- Verifique se a variável `VITE_API_URL` está configurada corretamente
+- Confirme que a API backend está rodando
+- Verifique CORS no backend
+
+**Porta já em uso:**
+- O Vite tentará usar outra porta automaticamente
+- Ou especifique uma porta: `npm run dev -- --port 3000`
+
+**Erros de TypeScript:**
+- Execute `npm run build` para ver erros de tipo
+- Certifique-se de que todos os tipos estão importados corretamente
+
+## 📝 Notas Adicionais
+
+- **Autenticação:** A aplicação usa cookies HTTP-only para autenticação segura
+- **Performance:** O Vite oferece build extremamente rápido graças ao uso de ESM nativo
+- **Compatibilidade:** Suporta navegadores modernos (ES2020+)
+
+## 👥 Contribuindo
+
+1. Crie uma branch para sua feature: `git checkout -b feature/nova-feature`
+2. Faça commit das mudanças: `git commit -m 'Adiciona nova feature'`
+3. Envie para o repositório: `git push origin feature/nova-feature`
+4. Abra um Pull Request
+
+## 📄 Licença
+
+[Adicione informações de licença se aplicável]
+
+---
+
+Desenvolvido com ❤️ para a comunidade de gamers retrô

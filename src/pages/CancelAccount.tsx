@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { CircleStop, Loader2, ChevronRight, CircleX, X } from "lucide-react";
+import {
+  CircleStop,
+  Loader2,
+  ChevronRight,
+  CircleX,
+  X,
+  CircleCheck,
+} from "lucide-react";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { useCustomAlert } from "../hooks/useCustomAlert";
 import TopBar from "../components/TopBar";
@@ -8,6 +15,7 @@ import Footer from "../components/Footer";
 import BottomBar from "../components/BottomBar";
 import Head from "../components/Head";
 import { useNavigate } from "react-router-dom";
+import { accountService } from "../services/accountService";
 
 const CancelAccount: React.FC = () => {
   const [isCancelLoading, setIsCancelLoading] = useState(false);
@@ -15,20 +23,18 @@ const CancelAccount: React.FC = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  const { userProfile, isLoading: profileLoading } = useUserProfile();
+  const { userProfile, isLoading: profileLoading, refetch } = useUserProfile();
   const { showSuccess, showError } = useCustomAlert();
   const navigate = useNavigate();
+
+  const isAccountInactive = userProfile?.accountStatus === "Inactive";
 
   // Função para cancelar conta (desativar temporariamente)
   const handleCancelAccount = async () => {
     setShowCancelModal(false);
     setIsCancelLoading(true);
     try {
-      // TODO: Implementar chamada à API para cancelar conta
-      // await accountService.cancelAccount();
-
-      // Simulação
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await accountService.deactivateAccount();
 
       showSuccess(
         "Conta cancelada com sucesso! Você tem 30 dias para reativar."
@@ -39,6 +45,26 @@ const CancelAccount: React.FC = () => {
     } catch (error) {
       console.error("Erro ao cancelar conta:", error);
       showError("Erro ao cancelar conta. Tente novamente.");
+    } finally {
+      setIsCancelLoading(false);
+    }
+  };
+
+  // Função para ativar conta
+  const handleActivateAccount = async () => {
+    setShowCancelModal(false);
+    setIsCancelLoading(true);
+    try {
+      await accountService.activateAccount();
+      await refetch(); // Recarregar dados do perfil
+
+      showSuccess("Conta reativada com sucesso!");
+      setTimeout(() => {
+        navigate("/perfil");
+      }, 2000);
+    } catch (error) {
+      console.error("Erro ao reativar conta:", error);
+      showError("Erro ao reativar conta. Tente novamente.");
     } finally {
       setIsCancelLoading(false);
     }
@@ -58,7 +84,6 @@ const CancelAccount: React.FC = () => {
       // TODO: Implementar chamada à API para excluir conta
       // await accountService.deleteAccount();
 
-      // Simulação
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       showSuccess("Conta excluída permanentemente.");
@@ -116,16 +141,24 @@ const CancelAccount: React.FC = () => {
             </span>
           </div>
 
-          {/* Seção Cancelar Conta */}
+          {/* Seção Cancelar/Ativar Conta */}
           <section className="bg-white rounded-lg shadow-sm p-6 px-12 mb-6">
             <div className="flex items-center justify-between gap-4">
-              <CircleStop className="w-8 h-8 text-[#1E1E1E]" />
+              {isAccountInactive ? (
+                <CircleCheck className="w-8 h-8 text-[#2B2560]" />
+              ) : (
+                <CircleStop className="w-8 h-8 text-[#1E1E1E]" />
+              )}
               <div className="flex-1">
                 <h3 className="text-lg font-medium text-gray-900 -mb-1">
-                  Desativar sua conta
+                  {isAccountInactive
+                    ? "Reativar sua conta"
+                    : "Desativar sua conta"}
                 </h3>
                 <p className="text-sm text-gray-600">
-                  Solicite o desativamento da sua conta.
+                  {isAccountInactive
+                    ? "Sua conta está desativada. Reative para voltar a usar a plataforma."
+                    : "Solicite o desativamento da sua conta. Seu perfil e anúncios não serão mais visíveis para outros usuários."}
                 </p>
               </div>
 
@@ -133,12 +166,20 @@ const CancelAccount: React.FC = () => {
                 <button
                   onClick={() => setShowCancelModal(true)}
                   disabled={isCancelLoading}
-                  className="px-6 py-2 bg-[#EDECF7] text-[#2B2560] rounded-lg hover:bg-[#ddd9f3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap text-sm font-medium"
+                  className={`px-6 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap text-sm font-medium ${
+                    isAccountInactive
+                      ? "bg-[#EDECF7] text-[#2B2560] hover:bg-[#ddd9f3]"
+                      : "bg-[#EDECF7] text-[#2B2560] hover:bg-[#ddd9f3]"
+                  }`}
                 >
                   {isCancelLoading && (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   )}
-                  {isCancelLoading ? "Processando..." : "Desativar Conta"}
+                  {isCancelLoading
+                    ? "Processando..."
+                    : isAccountInactive
+                    ? "Ativar Conta"
+                    : "Desativar Conta"}
                 </button>
               </div>
             </div>
@@ -174,15 +215,19 @@ const CancelAccount: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal de Confirmação - Desativar Conta */}
+      {/* Modal de Confirmação - Desativar/Ativar Conta */}
       {showCancelModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-6 mx-4 w-full max-w-md shadow-xl">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
-                <CircleStop className="w-6 h-6 text-[#2B2560]" />
+                {isAccountInactive ? (
+                  <CircleCheck className="w-6 h-6 text-[#2B2560]" />
+                ) : (
+                  <CircleStop className="w-6 h-6 text-[#2B2560]" />
+                )}
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Desativar Conta
+                  {isAccountInactive ? "Reativar Conta" : "Desativar Conta"}
                 </h3>
               </div>
               <button
@@ -193,8 +238,9 @@ const CancelAccount: React.FC = () => {
               </button>
             </div>
             <p className="text-sm text-gray-600 mb-6">
-              Tem certeza que deseja desativar sua conta? Você poderá reativá-la
-              dentro de 30 dias.
+              {isAccountInactive
+                ? "Tem certeza que deseja reativar sua conta?"
+                : "Tem certeza que deseja desativar sua conta?"}
             </p>
             <div className="flex gap-3 justify-end">
               <button
@@ -204,10 +250,18 @@ const CancelAccount: React.FC = () => {
                 Cancelar
               </button>
               <button
-                onClick={handleCancelAccount}
-                className="px-4 py-2 bg-[#2B2560] text-white rounded-lg hover:bg-[#1f1a45] transition-colors text-sm font-medium"
+                onClick={
+                  isAccountInactive
+                    ? handleActivateAccount
+                    : handleCancelAccount
+                }
+                className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                  isAccountInactive
+                    ? "bg-[#2B2560] text-white hover:bg-[#1f1a45]"
+                    : "bg-[#2B2560] text-white hover:bg-[#1f1a45]"
+                }`}
               >
-                Desativar
+                {isAccountInactive ? "Ativar" : "Desativar"}
               </button>
             </div>
           </div>
@@ -238,7 +292,7 @@ const CancelAccount: React.FC = () => {
             <div className="mb-6">
               <p className="text-sm text-gray-600 mb-4">
                 <span className="font-semibold text-red-600">
-                  ⚠️ Esta ação é irreversível!
+                  Esta ação é irreversível!
                 </span>
                 <br />
                 Todos os seus dados, anúncios e histórico serão excluídos

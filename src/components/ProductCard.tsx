@@ -13,6 +13,7 @@ interface ProductCardProps {
   originalPrice?: number;
   currentPrice: number;
   discount?: number;
+  displayDiscount?: boolean; // Se false, não mostra o desconto
   condition: "new" | "semi-new" | "good" | "normal" | "damaged";
   type: "retro" | "repro";
   location: string;
@@ -36,6 +37,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   type,
   location,
   discount,
+  displayDiscount = true, // Por padrão, mostra o desconto
   saleType,
   sellerId,
   onClick,
@@ -207,14 +209,16 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {/* Preços */}
           {currentPrice > 0 && (
             <div className="mb-2">
-              {originalPrice && originalPrice > 0 && (
-                <span className="text-xs text-gray-400 line-through mr-2">
-                  {formatPrice(originalPrice)}
-                </span>
-              )}
+              {originalPrice &&
+                originalPrice > 0 &&
+                originalPrice !== currentPrice && (
+                  <span className="text-xs text-gray-400 line-through mr-2">
+                    {formatPrice(originalPrice)}
+                  </span>
+                )}
               <span className="flex items-center text-sm font-semibold text-gray-900">
                 {formatPrice(currentPrice)}
-                {discount && (
+                {discount && displayDiscount !== false && (
                   <span className="text-[#47884F] text-xs px-1 py-0.5 font-normal ml-1">
                     {discount}% OFF
                   </span>
@@ -296,14 +300,18 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {/* Preços */}
           {currentPrice > 0 && (
             <div className="mb-3">
-              {originalPrice && originalPrice > 0 && (
-                <span className="text-xs text-gray-400 line-through mr-2">
-                  {formatPrice(originalPrice)}
-                </span>
-              )}
+              {originalPrice &&
+                originalPrice > 0 &&
+                originalPrice > currentPrice &&
+                originalPrice !== currentPrice &&
+                displayDiscount !== false && (
+                  <span className="text-xs text-gray-400 line-through mr-2">
+                    {formatPrice(originalPrice)}
+                  </span>
+                )}
               <span className="flex items-center text-lg font-semibold text-gray-900">
                 {formatPrice(currentPrice)}
-                {discount && (
+                {discount && displayDiscount !== false && (
                   <div className=" text-[#47884F] text-sm px-2 py-1 font-normal">
                     {discount}% OFF
                   </div>

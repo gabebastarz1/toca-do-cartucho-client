@@ -16,6 +16,7 @@ import {
   EditarAnuncio,
   TwoFactor,
   Security,
+  ChangePassword,
   CancelAccount,
 } from "./pages";
 import MeusDados from "./pages/MeusDados";
@@ -23,7 +24,7 @@ import About from "./pages/About";
 import Favorites from "./pages/Favorites";
 import MyAds from "./pages/MyAds";
 import { CategoryDataProvider } from "./components/CategoryDataProvider";
-import { AuthProvider, useAuth } from "./hooks/useAuth";
+import { AuthProvider } from "./hooks/useAuth";
 import PWAInstallBanner from "./components/PWAInstallBanner";
 //import TwoFactorAlert from "./components/TwoFactorAlert";
 
@@ -52,6 +53,7 @@ function AppContent() {
         <Route path="/criar-conta" element={<CadastroParaAnunciar />} />
         <Route path="/autenticacao-2fa" element={<TwoFactor />} />
         <Route path="/seguranca" element={<Security />} />
+        <Route path="/alterar-senha" element={<ChangePassword />} />
         <Route path="/cancelar-conta" element={<CancelAccount />} />
         <Route
           path="/criar-anuncio/apenas-troca"

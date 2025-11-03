@@ -15,4 +15,5 @@ export { default as Register } from './Register';
 export { default as EditarAnuncio } from './EditarAnuncio';
 export { default as TwoFactor } from './TwoFactor';
 export { default as Security } from './Security';
+export { default as ChangePassword } from './ChangePassword';
 export { default as CancelAccount } from './CancelAccount';
