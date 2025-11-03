@@ -5,6 +5,7 @@ export interface FormData {
   nome: string;
   sobrenome: string;
   nomeUsuario: string;
+  dataNascimento: string;
   cpf: string; 
 }
 

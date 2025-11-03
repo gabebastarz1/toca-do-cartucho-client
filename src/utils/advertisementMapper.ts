@@ -10,6 +10,7 @@ export interface Product {
   originalPrice?: number;
   currentPrice: number;
   discount?: number;
+  displayDiscount?: boolean; // Se false, não mostra o desconto no card
   condition: "new" | "semi-new" | "good" | "normal" | "damaged";
   type: "retro" | "repro";
   location: string;
@@ -102,10 +103,11 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
   const gameMode = gameModes.length > 1 ? ["singleplayer", "multiplayer"] : ["singleplayer"];
 
   // Extrair dados de preço do objeto sale
-  const saleData = advertisement.sale;
+  const saleData = advertisement.sale as { price?: number; previousPrice?: number; discountPercentage?: string; displayDiscount?: boolean } | undefined;
   const currentPrice = saleData?.price || 0;
   const previousPrice = saleData?.previousPrice;
   const discountPercentage = saleData?.discountPercentage;
+  const displayDiscount = saleData?.displayDiscount;
   
   // Só mostrar preço original se ele existir e for maior que 0
   const originalPrice = previousPrice && previousPrice > 0 ? previousPrice : undefined;
@@ -153,6 +155,7 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
     originalPrice: originalPrice,
     currentPrice: currentPrice,
     discount: discount,
+    displayDiscount: displayDiscount,
     condition: condition,
     type: type,
     location: sellerLocation,

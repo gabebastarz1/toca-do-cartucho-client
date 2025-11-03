@@ -8,6 +8,7 @@ export interface AdvertisementFilteringDTO {
   maxPrice?: number;
   minPrice?: number;
   status?: string;
+  sellerStatus?: string;
   preservationStateIds?: number[];
   cartridgeTypeIds?: number[];
   sellerIds?: string[];

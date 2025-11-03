@@ -36,7 +36,7 @@ const CreateAccount: React.FC = () => {
 
   return (
     <div
-      className="bg-[#f4f3f5] min-h-screen font-['Lexend_Deca',_sans-serif]"
+      className="bg-[#f4f3f5] min-h-screen"
       data-name="cadastro para anunciar"
     >
       <TopBar 

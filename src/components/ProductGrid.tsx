@@ -10,6 +10,7 @@ interface Product {
   originalPrice?: number;
   currentPrice: number;
   discount?: number;
+  displayDiscount?: boolean;
   condition: "new" | "semi-new" | "good" | "normal" | "damaged";
   type: "retro" | "repro";
   location: string;

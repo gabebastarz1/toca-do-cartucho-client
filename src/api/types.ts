@@ -45,6 +45,7 @@ export interface SaleDTO {
   price: number;
   previousPrice?: number;
   discountPercentage?: string;
+  displayDiscount?: boolean;
   updatedAt: string;
 }
 
@@ -187,6 +188,7 @@ export interface UserDTO {
   roles?: string[];
   favoriteAdvertisements?: AdvertisementDTO[];
   profileImage?: UserProfileImageDTO;
+  accountStatus?: string;
 }
 
 // Tipos personalizados para evitar conflitos

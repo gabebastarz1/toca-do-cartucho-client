@@ -26,6 +26,28 @@ export default function CustomSelect({
   required = false,
   showValidation = false,
 }: CustomSelectProps) {
+  // Garantir que options é um array válido
+  const validOptions = Array.isArray(options)
+    ? options.filter((opt) => {
+        const isValid =
+          opt &&
+          typeof opt === "object" &&
+          typeof opt.label === "string" &&
+          typeof opt.value === "string";
+        if (!isValid && opt) {
+          console.error("Invalid option in CustomSelect:", opt);
+        }
+        return isValid;
+      })
+    : [];
+
+  if (!Array.isArray(options)) {
+    console.error(
+      "CustomSelect: options must be an array, received:",
+      typeof options
+    );
+  }
+
   const [selected, setSelected] = useState<Option | null>(value || null);
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -65,7 +87,7 @@ export default function CustomSelect({
     }
   };
 
-  const filteredOptions = options.filter((option) =>
+  const filteredOptions = validOptions.filter((option) =>
     option.label.toLowerCase().includes(query.toLowerCase())
   );
 

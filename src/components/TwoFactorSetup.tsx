@@ -213,14 +213,14 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
               <Shield className="w-8 h-8 text-[#483d9e]" />
             </div>
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-              Configure o Google Authenticator
+              Autenticação de Dois Fatores
             </h2>
             <p className="text-gray-600">
               Siga os passos abaixo para ativar a autenticação de dois fatores
             </p>
           </div>
 
-          {/* Passo 1: Instalar App */}
+          {/* Passo 1: Instalar App
           <div className="bg-gray-50 rounded-lg p-6">
             <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
               <span className="flex items-center justify-center w-7 h-7 bg-[#483d9e] text-white rounded-full text-sm">
@@ -263,19 +263,18 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
                 Google Play
               </a>
             </div>
-          </div>
+          </div> */}
 
-          {/* Passo 2: Escanear QR Code */}
+          {/* Passo 1: Escanear QR Code */}
           <div className="bg-gray-50 rounded-lg p-6">
             <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
               <span className="flex items-center justify-center w-7 h-7 bg-[#483d9e] text-white rounded-full text-sm">
-                2
+                1
               </span>
               Escaneie o QR Code
             </h3>
             <p className="text-gray-600 mb-4">
-              Abra o aplicativo e escaneie este código:
-            </p>
+              Abra o aplicativo autenticador de sua preferência e escaneie o QR Code exibido.            </p>
 
             {qrCodeDataUrl && (
               <div className="flex justify-center mb-4">
@@ -315,11 +314,11 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
             </div>
           </div>
 
-          {/* Passo 3: Verificar */}
+          {/* Passo 2: Verificar */}
           <div className="bg-gray-50 rounded-lg p-6">
             <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
               <span className="flex items-center justify-center w-7 h-7 bg-[#483d9e] text-white rounded-full text-sm">
-                3
+                2
               </span>
               Insira o código de verificação
             </h3>
@@ -401,7 +400,7 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
               
             </div>
 
-            <div className="bg-[#F8F8FC] rounded-lg p-4  mb-4">
+            <div className="bg-[#F8F8FC] rounded-lg p-4">
             <div className="flex justify-end">
             <button
                 onClick={() => setShowRecoveryCodes(!showRecoveryCodes)}
@@ -429,6 +428,8 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
                   </div>
                 ))}
               </div>
+            </div>
+            <div className="rounded-lg p-4  mb-4">
               <p className="text-sm text-gray-900 text-start mt-4">
                 Lembre-se de anotar e guardar seus códigos de backup em um local
                 seguro. Eles são gerados apenas uma vez e serão essenciais para
@@ -436,7 +437,6 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
                 dispositivo principal.
               </p>
             </div>
-
             <div className="flex gap-2 justify-center">
               <button
                 onClick={() =>

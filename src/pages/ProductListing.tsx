@@ -47,8 +47,6 @@ const ProductListing: React.FC = () => {
     label: "Mais Novo",
   });
 
-  // Função para criar filtros iniciais baseados na URL (removida - não mais necessária)
-
   // Hook para buscar anúncios do backend
   const {
     advertisements,
@@ -63,7 +61,7 @@ const ProductListing: React.FC = () => {
     setOrdering,
     fetchAdvertisements,
   } = useAdvertisements({
-    initialFilters: { status: "Active" }, // Apenas status inicial, filtros serão aplicados via useEffect
+    initialFilters: { status: "Active", sellerStatus: "Active" },
     initialPagination: { page: 1, pageSize: 15 },
     initialOrdering: { ordering: "Newest" },
   });
@@ -262,8 +260,12 @@ const ProductListing: React.FC = () => {
     console.log("IsTrade in mapped:", mapped.isTrade);
     console.log("===================");
 
-    // Garantir que sempre filtre apenas produtos ativos
-    const finalFilters = { ...cleaned, status: "Active" };
+    // Garantir que sempre filtre apenas produtos e vendedores ativos
+    const finalFilters = {
+      ...cleaned,
+      status: "Active",
+      sellerStatus: "Active",
+    };
     console.log("Setting backend filters:", finalFilters);
     console.log("Aguardando resposta da API...");
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ChevronRight, Check, HelpCircle, Loader2 } from "lucide-react";
 
 import {
@@ -23,10 +23,8 @@ import { useCustomAlert } from "../hooks/useCustomAlert";
 import { CustomAlert } from "../components/ui/CustomAlert";
 import useDebounce from "../hooks/useDebounce";
 
-
 const MeusDados: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { alertState, showSuccess, showError, hideAlert } = useCustomAlert();
   const {
     userProfile,
@@ -51,8 +49,6 @@ const MeusDados: React.FC = () => {
     cpf: "",
     ocultarLocalizacao: false,
   });
-
-
 
   const [originalData, setOriginalData] = useState({
     nomeCompleto: "",
@@ -116,7 +112,10 @@ const MeusDados: React.FC = () => {
     }
 
     if (formData.whatsapp !== originalData.whatsapp) {
-      changes.phoneNumber = formData.whatsapp || null;
+      // Remove a máscara do telefone antes de enviar
+      changes.phoneNumber = formData.whatsapp
+        ? formData.whatsapp.replace(/\D/g, "")
+        : null;
     }
 
     if (formData.cpf !== originalData.cpf) {
@@ -193,6 +192,9 @@ const MeusDados: React.FC = () => {
       console.log("📮 [MeusDados] CEP formatado:", rawCEP, "→", formattedCEP);
       console.log("🆔 [MeusDados] CPF formatado:", rawCPF, "→", formattedCPF);
 
+      // Formatar telefone do backend
+      const formattedPhone = formatPhone(userProfile.phoneNumber || "");
+
       const formDataToSet = {
         nomeCompleto: `${userProfile.firstName || ""} ${
           userProfile.lastName || ""
@@ -208,7 +210,7 @@ const MeusDados: React.FC = () => {
         bairro: userProfile.addresses?.[0]?.address?.neighborhood || "",
         cidade: userProfile.addresses?.[0]?.address?.city || "",
         estado: userProfile.addresses?.[0]?.address?.state || "",
-        whatsapp: userProfile.phoneNumber || "",
+        whatsapp: formattedPhone, // ✅ Telefone formatado do backend
         email: userProfile.email || "",
         cpf: formattedCPF, // ✅ CPF formatado do backend
         ocultarLocalizacao: false,
@@ -229,7 +231,7 @@ const MeusDados: React.FC = () => {
         bairro: userProfile.addresses?.[0]?.address?.neighborhood || "",
         cidade: userProfile.addresses?.[0]?.address?.city || "",
         estado: userProfile.addresses?.[0]?.address?.state || "",
-        whatsapp: userProfile.phoneNumber || "",
+        whatsapp: formattedPhone, // ✅ Telefone formatado do backend
         email: userProfile.email || "",
         cpf: formattedCPF,
       };
@@ -268,10 +270,6 @@ const MeusDados: React.FC = () => {
 
     checkNickname();
   }, [debouncedNickname, userProfile]);
-
-  
-
-
 
   // Funções de formatação melhoradas com limite de caracteres
   const formatCEP = (value: string) => {
@@ -369,7 +367,7 @@ const MeusDados: React.FC = () => {
     );
   };
 
-  // ✅ Função para formatar data de nascimento
+  // ✅ Função para formatar data de nascimento (para exibição)
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
 
@@ -389,6 +387,62 @@ const MeusDados: React.FC = () => {
       console.error("Erro ao formatar data:", error);
       return "";
     }
+  };
+
+  // ✅ Função para formatar data de nascimento (para input com máscara)
+  const formatDateInput = (value: string) => {
+    if (!value) return "";
+
+    // Remove tudo que não é dígito
+    const numbers = value.replace(/\D/g, "");
+
+    // Limita a 8 dígitos (DDMMYYYY)
+    const limitedNumbers = numbers.slice(0, 8);
+
+    // Se tem menos de 3 dígitos, retorna apenas os números
+    if (limitedNumbers.length <= 2) {
+      return limitedNumbers;
+    }
+
+    // Se tem entre 3-4 dígitos, aplica DD/MM
+    if (limitedNumbers.length <= 4) {
+      return limitedNumbers.replace(/(\d{2})(\d{0,2})/, "$1/$2");
+    }
+
+    // Se tem 5+ dígitos, aplica a máscara completa DD/MM/YYYY
+    return limitedNumbers.replace(/(\d{2})(\d{2})(\d{0,4})/, "$1/$2/$3");
+  };
+
+  // ✅ Função para formatar telefone
+  const formatPhone = (value: string) => {
+    if (!value) return "";
+
+    // Remove tudo que não é dígito
+    const numbers = value.replace(/\D/g, "");
+
+    // Limita a 11 dígitos (telefone brasileiro com DDD)
+    const limitedNumbers = numbers.slice(0, 11);
+
+    // Se tem menos de 3 dígitos, retorna apenas os números
+    if (limitedNumbers.length <= 2) {
+      return limitedNumbers;
+    }
+
+    // Se tem entre 3-6 dígitos, aplica (XX) X
+    if (limitedNumbers.length <= 6) {
+      return limitedNumbers.replace(/(\d{2})(\d{0,4})/, "($1) $2");
+    }
+
+    // Se tem entre 7-10 dígitos, aplica (XX) XXXX-X
+    if (limitedNumbers.length <= 10) {
+      return limitedNumbers.replace(/(\d{2})(\d{4})(\d{0,4})/, "($1) $2-$3");
+    }
+
+    // Se tem 11 dígitos, aplica (XX) X XXXX-XXXX
+    return limitedNumbers.replace(
+      /(\d{2})(\d{1})(\d{4})(\d{0,4})/,
+      "($1) $2 $3-$4"
+    );
   };
 
   // ✅ Função para converter data do formato brasileiro para ISO
@@ -519,7 +573,6 @@ const MeusDados: React.FC = () => {
     setBirthdayError(null); // Limpar erro de data de nascimento ao salvar
 
     try {
- 
       const changedFields = getChangedFields();
 
       if (Object.keys(changedFields).length === 0) {
@@ -536,10 +589,7 @@ const MeusDados: React.FC = () => {
         "[MeusDados] Total de campos alterados:",
         Object.keys(changedFields).length
       );
-      console.log(
-        "[MeusDados] Fazendo PATCH para:",
-        `/api/accounts/profile`
-      );
+      console.log("[MeusDados] Fazendo PATCH para:", `/api/accounts/profile`);
 
       // Atualizar dados do usuário
       await api.patch(`/api/accounts/profile`, changedFields);
@@ -566,10 +616,7 @@ const MeusDados: React.FC = () => {
         cpf: formData.cpf,
       };
       setOriginalData(newOriginalData);
-      console.log(
-        "[MeusDados] Dados originais atualizados:",
-        newOriginalData
-      );
+      console.log("[MeusDados] Dados originais atualizados:", newOriginalData);
 
       // Mostrar alert de sucesso
       showSuccess("Dados salvos com sucesso!");
@@ -692,7 +739,6 @@ const MeusDados: React.FC = () => {
       <TopBar logoPosition="left" showSearchBar={true} showUserMenu={true} />
       <FilterTopBar />
 
-
       <main className="bg-[#f4f3f5] flex flex-col items-center py-12 px-4 font-lexend">
         <div className="w-full max-w-6xl">
           {/* Breadcrumb */}
@@ -733,18 +779,17 @@ const MeusDados: React.FC = () => {
                 <div className="text-red-500 text-sm mt-1">{nicknameError}</div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  label="Data de nascimento"
-                  name="dataNascimento"
-                  value={formData.dataNascimento}
-                  onChange={handleInputChange}
-                  placeholder="DD/MM/AAAA"
-                />
-                {birthdayError && (
-                  <div className="text-red-500 text-sm mt-1">
-                    {birthdayError}
-                  </div>
-                )}
+                <div>
+                  <FormattedField
+                    label="Data de nascimento"
+                    name="dataNascimento"
+                    value={formData.dataNascimento}
+                    onChange={handleInputChange}
+                    placeholder="DD/MM/AAAA"
+                    formatFunction={formatDateInput}
+                    error={birthdayError}
+                  />
+                </div>
               </div>
             </section>
 
@@ -833,12 +878,13 @@ const MeusDados: React.FC = () => {
             <section>
               <h2 className="text-2xl font-normal text-black mb-6">Contato</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
+                <FormattedField
                   label="WhatsApp"
                   name="whatsapp"
                   value={formData.whatsapp}
                   onChange={handleInputChange}
                   placeholder="(00) 0 0000-0000"
+                  formatFunction={formatPhone}
                 />
                 <FormField
                   label="E-mail"
@@ -879,8 +925,6 @@ const MeusDados: React.FC = () => {
             </section>
 
             <hr className="my-8 border-gray-200" />
-
-            
 
             {/* Botão Salvar */}
             <div className="flex justify-end mt-10">

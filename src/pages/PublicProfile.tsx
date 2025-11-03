@@ -129,7 +129,7 @@ const PublicProfile: React.FC = () => {
   const renderPurpleStars = (rating: number) => {
     const stars = [];
     const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
+    const hasHalfStar = rating % 1 >= 0.3;
 
     for (let i = 0; i < 5; i++) {
       if (i < fullStars) {
@@ -142,7 +142,7 @@ const PublicProfile: React.FC = () => {
         stars.push(
           <div key={i} className="relative w-5 h-5">
             {/* Estrela vazia (fundo) */}
-            <Star className="absolute w-5 h-5 text-gray-300" />
+            <Star className="absolute w-5 h-5" />
             {/* Estrela preenchida pela metade */}
             <div
               className="absolute w-5 h-5 overflow-hidden"
@@ -154,7 +154,7 @@ const PublicProfile: React.FC = () => {
         );
       } else {
         // Estrela vazia
-        stars.push(<Star key={i} className="w-5 h-5 text-gray-300" />);
+        stars.push(<Star key={i} className="w-5 h-5  text-[#4f43ae]" />);
       }
     }
 
@@ -310,7 +310,7 @@ const PublicProfile: React.FC = () => {
           {/* Nome do usuário com foto */}
           <div className="flex items-center justify-center gap-4 mb-6">
             {/* Foto do perfil */}
-            <div className="w-5 h-5 md:w-20 md:h-20 rounded-full overflow-hidden flex-shrink-0 border-2 border-gray-200">
+            <div className="w-10 h-10 md:w-10 md:h-10 rounded-lg overflow-hidden flex-shrink-0 border-2 border-gray-200">
               {user.profileImage?.preSignedUrl ? (
                 <img
                   src={user.profileImage.preSignedUrl}
@@ -327,14 +327,14 @@ const PublicProfile: React.FC = () => {
             </div>
 
             {/* Nome do usuário */}
-            <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">
+            <h1 className="text-2xl md:text-xl font-normal text-gray-900">
               {displayName}
             </h1>
           </div>
 
           {/* Tabs */}
           <div className="border-b border-gray-300 mb-6">
-            <div className="flex justify-center gap-8">
+            <div className="flex justify-start">
               <button
                 onClick={() => setActiveTab("anuncios")}
                 className={`pb-3 px-4 text-base font-medium transition-colors relative ${
@@ -345,7 +345,7 @@ const PublicProfile: React.FC = () => {
               >
                 Anúncios
                 {activeTab === "anuncios" && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#4f43ae]"></div>
                 )}
               </button>
               <button
@@ -358,10 +358,11 @@ const PublicProfile: React.FC = () => {
               >
                 Avaliações
                 {activeTab === "avaliacoes" && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#4f43ae]"></div>
                 )}
               </button>
-              <button
+              {/*CONTATO */}
+              {/* <button
                 onClick={() => setActiveTab("contato")}
                 className={`pb-3 px-4 text-base font-medium transition-colors relative ${
                   activeTab === "contato"
@@ -373,7 +374,7 @@ const PublicProfile: React.FC = () => {
                 {activeTab === "contato" && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"></div>
                 )}
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -419,7 +420,7 @@ const PublicProfile: React.FC = () => {
                     </p>
                   </div>
                 ) : (
-                  // NOVO LAYOUT DE GRID
+                 
                   <div>
                     <h2 className="text-2xl font-semibold text-gray-900 mb-6">
                       Avaliações do Vendedor
@@ -435,7 +436,7 @@ const PublicProfile: React.FC = () => {
                           {/* Estrelas e Total */}
                           <div>
                             <div className="flex">
-                              {/* Estrelas Roxas com suporte a meia estrela */}
+                              {/* Estrelas Roxas */}
                               {renderPurpleStars(averageRating)}
                             </div>
                             <div className="text-sm text-gray-600 mt-1">
@@ -461,37 +462,35 @@ const PublicProfile: React.FC = () => {
                                 key={starLevel}
                                 className="flex items-center gap-3"
                               >
-                                {/* Número da estrela */}
-                                <div className="flex items-center gap-1 w-12">
-                                  <span className="text-sm font-medium text-gray-700">
-                                    {starLevel}
-                                  </span>
-                                  <Star className="w-3 h-3 text-gray-400" />
-                                </div>
-
                                 {/* Track da barra (fundo) */}
                                 <div
-                                  className={`flex-1 rounded-full transition-all ${
+                                  className={`flex-1 transition-all ${
                                     isHighlighted
-                                      ? "h-3 bg-gray-200"
+                                      ? "h-2 bg-gray-200"
                                       : "h-2 bg-gray-200"
                                   }`}
                                 >
                                   {/* Barra de progresso */}
                                   <div
-                                    className={`rounded-full transition-all ${
+                                    className={`transition-all ${
                                       isHighlighted
-                                        ? "h-3 bg-[#4f43ae]" // Barra roxa e grossa
+                                        ? "h-2 bg-[#4f43ae]" // Barra roxa e grossa
                                         : "h-2 bg-gray-400" // Barra cinza e fina
                                     }`}
                                     style={{ width: `${percentage}%` }}
                                   ></div>
                                 </div>
-
-                                {/* Contador de avaliações */}
+                                {/* Número da estrela */}
+                                <div className="flex items-center gap-1 w-12">
+                                  <span className="text-sm font-medium text-gray-700">
+                                    {starLevel}
+                                  </span>
+                                  {/* <Star className="w-3 h-3 text-gray-400" /> */}
+                                </div>
+                                {/* Contador de avaliações
                                 <span className="text-sm text-gray-500 w-8 text-right">
                                   {count}
-                                </span>
+                                </span> */}
                               </div>
                             );
                           })}
