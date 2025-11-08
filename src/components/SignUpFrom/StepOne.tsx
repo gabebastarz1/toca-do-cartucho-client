@@ -2,6 +2,7 @@ import React from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { StepProps } from "./types";
 import PasswordRequirements from "./PasswordRequirements";
+import { useIsMobile } from "../../hooks/useIsMobile";
 
 // Estende a interface para incluir as novas props
 interface StepOneProps extends StepProps {
@@ -20,6 +21,99 @@ const StepOne: React.FC<StepOneProps> = ({
   showConfirmPassword,
   toggleShowConfirmPassword,
 }) => {
+  const isMobile = useIsMobile();
+
+  // Layout Mobile
+  if (isMobile) {
+    return (
+      <div className="space-y-5">
+        <div>
+          <label
+            htmlFor="email"
+            className="mb-2 block text-sm font-medium text-[#2B2560]"
+          >
+            Email *
+          </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="Digite seu email"
+            value={formData.email}
+            onChange={handleChange}
+            className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 shadow-sm focus:border-[#31295F] focus:outline-none focus:ring-1 focus:ring-[#31295F]"
+          />
+          {errors.email && (
+            <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+          )}
+        </div>
+
+        <div>
+          <label
+            htmlFor="senha"
+            className="mb-2 block text-sm font-medium text-[#2B2560]"
+          >
+            Criar uma senha *
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              id="senha"
+              name="senha"
+              placeholder="Digite uma senha"
+              value={formData.senha}
+              onChange={handleChange}
+              className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 pr-10 text-gray-900 placeholder-gray-400 shadow-sm focus:border-[#31295F] focus:outline-none focus:ring-1 focus:ring-[#31295F]"
+            />
+            <button
+              type="button"
+              onClick={toggleShowPassword}
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
+          {errors.senha && (
+            <p className="text-red-500 text-xs mt-1">{errors.senha}</p>
+          )}
+        </div>
+
+        <div>
+          <label
+            htmlFor="confirmeSenha"
+            className="mb-2 block text-sm font-medium text-[#2B2560]"
+          >
+            Repita sua senha *
+          </label>
+          <div className="relative">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              id="confirmeSenha"
+              name="confirmeSenha"
+              placeholder="Repita sua senha"
+              value={formData.confirmeSenha}
+              onChange={handleChange}
+              className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 pr-10 text-gray-900 placeholder-gray-400 shadow-sm focus:border-[#31295F] focus:outline-none focus:ring-1 focus:ring-[#31295F]"
+            />
+            <button
+              type="button"
+              onClick={toggleShowConfirmPassword}
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+            >
+              {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
+          {errors.confirmeSenha && (
+            <p className="text-red-500 text-xs mt-1">{errors.confirmeSenha}</p>
+          )}
+        </div>
+
+        <PasswordRequirements password={formData.senha} />
+      </div>
+    );
+  }
+
+  // Layout Desktop
   return (
     <>
       <div className="mb-4 ">

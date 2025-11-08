@@ -56,7 +56,7 @@ const NotFound: React.FC = () => {
               Criar Anúncio
             </Link>
             <Link
-              to="/perfil"
+              to="/meu-perfil"
               className="text-blue-600 hover:text-blue-700 text-sm font-medium"
             >
               Meu Perfil

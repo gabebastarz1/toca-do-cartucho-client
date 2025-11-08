@@ -1,24 +1,23 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  User,
-  Heart,
-  ShoppingBag,
-  LogOut,
-  ChevronRight,
-  Lock,
-} from "lucide-react";
-import { useAuth } from "../hooks/useAuth";
 import { useUserProfile } from "../hooks/useUserProfile";
-import { UserDTO } from "../api/types";
-import { User as AuthUser } from "../services/authService";
-import BottomBar from "../components/BottomBar";
-import Head from "../components/Head";
+import { useAuth } from "../hooks/useAuth";
 import TopBar from "../components/TopBar";
+import Head from "../components/Head";
 import FilterTopBar from "../components/FilterTopBar";
 import Footer from "../components/Footer";
+import BottomBar from "../components/BottomBar";
+import {
+  User,
+  Lock,
+  ShoppingBag,
+  ArrowLeft,
+  ChevronRight,
+  Tag,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { UserDTO } from "../api/types";
+import { User as AuthUser } from "../services/authService";
 
 // Tipo union para incluir profileImage
 type UserWithProfileImage = (AuthUser | UserDTO) & {
@@ -32,20 +31,18 @@ type UserWithProfileImage = (AuthUser | UserDTO) & {
   };
 };
 
-const Profile: React.FC = () => {
+const MyProfile: React.FC = () => {
+  const { userProfile } = useUserProfile();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { user, logout } = useAuth();
-  const { userProfile } = useUserProfile();
 
-  // Usar dados do perfil se disponível, senão do contexto de autenticação
   const displayUser = userProfile || user;
   const displayName =
     displayUser?.firstName && displayUser?.lastName
       ? `${displayUser.firstName} ${displayUser.lastName}`
       : displayUser?.nickName || "Usuário";
 
-  const displayUsername = displayUser?.nickName || "";
   const displayEmail = displayUser?.email || "";
 
   const displayInitial =
@@ -57,16 +54,15 @@ const Profile: React.FC = () => {
   const profileImageUrl = (displayUser as UserWithProfileImage)?.profileImage
     ?.preSignedUrl;
 
-  const handleMenuItemClick = (path: string) => {
-    navigate(path);
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
   };
 
-  const handleLogout = async () => {
-    await logout();
-    window.location.reload();
-  };
-
-  // Layout Mobile 
+  // Layout Mobile - exatamente como a imagem
   if (isMobile) {
     return (
       <>
@@ -76,7 +72,7 @@ const Profile: React.FC = () => {
           <div className="bg-[#2B2560] text-white">
             <div className="flex bg-[#211C49] items-center px-4 py-4 pt-8">
               <button
-                onClick={() => navigate("/")}
+                onClick={() => navigate("/perfil")}
                 className="p-2 -ml-2 focus:outline-none"
                 aria-label="Voltar"
               >
@@ -92,7 +88,7 @@ const Profile: React.FC = () => {
                 <img
                   src={profileImageUrl}
                   alt={displayName}
-                  className="w-28 h-28 rounded-full object-cover mb-4 bg-gray-200"
+                  className="w-24 h-24 rounded-full object-cover mb-4 bg-gray-200"
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
                     e.currentTarget.nextElementSibling?.classList.remove(
@@ -102,11 +98,11 @@ const Profile: React.FC = () => {
                 />
               ) : null}
               <div
-                className={`w-28 h-28 rounded-full bg-gray-200 flex items-center justify-center mb-4 ${
+                className={`w-24 h-24 rounded-full bg-gray-300 flex items-center justify-center mb-4 ${
                   profileImageUrl ? "hidden" : ""
                 }`}
               >
-                <span className="text-gray-600 text-4xl font-semibold">
+                <span className="text-gray-500 text-4xl font-semibold">
                   {displayInitial}
                 </span>
               </div>
@@ -116,80 +112,60 @@ const Profile: React.FC = () => {
                 {displayName}
               </h2>
 
-              {/* Nome de usuário (nickName) */}
-              {displayUsername && (
-                <p className="text-sm text-white/90 mb-1">{displayUsername}</p>
-              )}
-
               {/* Email do usuário */}
-              {displayEmail && (
-                <p className="text-sm text-white/90">{displayEmail}</p>
-              )}
+              <p className="text-sm text-white/90">{displayEmail}</p>
             </div>
           </div>
 
           {/* Lista de opções */}
-          <div className="bg-[#f4f3f5] flex-1 max-h-screen pt-4">
+          <div className="bg-[#F4F3F5] flex-1 max-h-screen pt-4">
             <div className="space-y-0">
-              {/* Meu Perfil */}
+              {/* Meus Dados */}
               <button
-                onClick={() => handleMenuItemClick("/meu-perfil")}
+                onClick={() => navigate("/meus-dados")}
                 className="w-full flex items-center px-4 py-4 hover:bg-gray-50 transition-colors active:bg-gray-100"
               >
                 <User className="w-6 h-6 text-gray-700 mr-3 flex-shrink-0" />
                 <div className="flex-1 text-left">
                   <p className="text-black text-base font-semibold">
-                    Meu Perfil
+                    Meus Dados
                   </p>
                   <p className="text-black text-sm font-light text-gray-600 mt-0.5">
-                    Gerenciar seu perfil
+                    Gerenciar seus dados pessoais
                   </p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
               </button>
 
-              {/* Meus Favoritos */}
+              {/* Segurança */}
               <button
-                onClick={() => handleMenuItemClick("/favoritos")}
+                onClick={() => navigate("/seguranca")}
                 className="w-full flex items-center px-4 py-4 mt-1 hover:bg-gray-50 transition-colors active:bg-gray-100"
               >
-                <Heart className="w-6 h-6 text-gray-700 mr-3 flex-shrink-0" />
+                <Lock className="w-6 h-6 text-gray-700 mr-3 flex-shrink-0" />
                 <div className="flex-1 text-left">
                   <p className="text-black text-base font-semibold">
-                    Meus Favoritos
+                    Segurança
                   </p>
                   <p className="text-black text-sm font-light text-gray-600 mt-0.5">
-                    Ver seus produtos favoritos
-                  </p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
-              </button>
-
-              {/* Vender */}
-              <button
-                onClick={() => handleMenuItemClick("/criar-anuncio")}
-                className="w-full flex items-center px-4 py-4 mt-1 hover:bg-gray-50 transition-colors active:bg-gray-100"
-              >
-                <ShoppingBag className="w-6 h-6 text-gray-700 mr-3 flex-shrink-0" />
-                <div className="flex-1 text-left">
-                  <p className="text-black text-base font-semibold">Vender</p>
-                  <p className="text-black text-sm font-light text-gray-600 mt-0.5">
-                    Criar um novo anúncio
+                    Gerenciar segurança da sua conta e senha
                   </p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
               </button>
 
-              {/* Sair */}
+              {/* Meus Anúncios */}
               <button
-                onClick={handleLogout}
+                onClick={() => navigate("/meus-anuncios")}
                 className="w-full flex items-center px-4 py-4 mt-1 hover:bg-gray-50 transition-colors active:bg-gray-100"
               >
-                <LogOut className="w-6 h-6 text-gray-700 mr-3 flex-shrink-0" />
+                <Tag className="w-6 h-6 text-gray-700 mr-3 flex-shrink-0" />
                 <div className="flex-1 text-left">
-                  <p className="text-black text-base font-semibold">Sair</p>
+                  <p className="text-black text-base font-semibold">
+                    Meus Anúncios
+                  </p>
                   <p className="text-black text-sm font-light text-gray-600 mt-0.5">
-                    Fazer logout da sua conta
+                    Gerenciar seus anúncios
                   </p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
@@ -202,7 +178,7 @@ const Profile: React.FC = () => {
     );
   }
 
-  // Layout Desktop - mantém o layout original do MyProfile
+  // Layout Desktop
   return (
     <>
       <Head title="Meu Perfil" />
@@ -235,7 +211,7 @@ const Profile: React.FC = () => {
                   profileImageUrl ? "hidden" : ""
                 }`}
               >
-                {displayInitial}
+                {getInitials(displayName)}
               </span>
             </div>
 
@@ -308,4 +284,4 @@ const Profile: React.FC = () => {
   );
 };
 
-export default Profile;
+export default MyProfile;

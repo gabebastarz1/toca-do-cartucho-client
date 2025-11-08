@@ -150,7 +150,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     >
       {/* ✅ Botão de favorito no canto superior direito */}
       <div
-        className="absolute top-2 right-2 z-10"
+        className="absolute bottom-2 right-2 z-10"
         onClick={(e) => e.stopPropagation()}
       >
         <FavoriteButton
@@ -172,7 +172,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </span>
         )}
         {/* Imagem à esquerda */}
-        <div className="w-24 h-24 bg-gray-100 overflow-hidden rounded-l-lg flex-shrink-0 flex items-center justify-center">
+        <div className="w-24 h-24 bg-gray-100 overflow-hidden rounded-lg ml-2 flex-shrink-0 flex items-center justify-center">
           {image && image.trim() !== "" ? (
             <img
               src={image}

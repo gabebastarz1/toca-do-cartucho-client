@@ -11,13 +11,9 @@ const Requirement: React.FC<{ met: boolean; text: string }> = ({
   text,
 }) => (
   <li
-    className={`flex items-center ${met ? "text-[#47884F]" : "text-gray-500"}`}
+    className={`flex items-center ${met ? "text-[#47884F]" : "text-[#DC5959]"}`}
   >
-    {met ? (
-      <FaCheck className="mr-1" />
-    ) : (
-      <IoCloseSharp className="mr-1" />
-    )}
+    {met ? <FaCheck className="mr-1" /> : <IoCloseSharp className="mr-1" />}
     {text}
   </li>
 );

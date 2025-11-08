@@ -36,7 +36,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ isOpen, onClose }) => {
   const handleLogout = async () => {
     await logout();
     onClose();
-    window.location.reload(); // Recarrega a página para limpar o estado
+    navigate("/login"); 
   };
 
   // Usar dados do perfil se disponível, senão do contexto de autenticação
@@ -44,7 +44,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ isOpen, onClose }) => {
   const displayName =
     displayUser?.firstName && displayUser?.lastName
       ? `${displayUser.firstName} ${displayUser.lastName}`
-      : displayUser?.nickName || "Usuário";
+      : displayUser?.nickName || "";
 
   const displayInitial =
     displayUser?.firstName?.charAt(0) ||
@@ -62,7 +62,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ isOpen, onClose }) => {
       <div className="relative p-4 pb-0">
         {/* Header com foto e nome */}
         <button
-          onClick={() => handleMenuItemClick("/perfil")}
+          onClick={() => handleMenuItemClick("/meu-perfil")}
           className="w-full"
         >
           <div className="flex items-center mb-4">
@@ -107,7 +107,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({ isOpen, onClose }) => {
         {/* Menu items */}
         <div className="space-y-0">
           <button
-            onClick={() => handleMenuItemClick("/perfil")}
+            onClick={() => handleMenuItemClick("/meu-perfil")}
             className="w-full text-center py-3 px-0 text-black text-sm font-normal hover:bg-black/5 transition-colors"
           >
             Meus Dados

@@ -45,7 +45,6 @@ const BottomBar: React.FC<BottomBarProps> = ({ className = "" }) => {
 
   return (
     <div
-
       className={`fixed bottom-0 left-0 right-0 z-50 bg-[#211C49] p-1 md:hidden ${className}`}
     >
       <div className="flex w-full items-center justify-around">
@@ -57,21 +56,18 @@ const BottomBar: React.FC<BottomBarProps> = ({ className = "" }) => {
             <button
               key={item.id}
               onClick={() => handleNavClick(item.path)}
-
               className="flex flex-1 flex-col items-center justify-center gap-1 py-2 transition-transform duration-200 ease-in-out active:scale-95"
             >
-
               <div
                 className={`flex h-[32px] w-[64px] items-center justify-center rounded-2xl transition-all duration-300 ${
-                  isActive ? "bg-[#4A448C]" : "bg-transparent" 
+                  isActive ? "bg-[#4A448C]" : "bg-transparent"
                 }`}
               >
                 <IconComponent
                   className="h-6 w-6 text-[#edecf7]"
-                  strokeWidth={isActive ? 2.5 : 2} 
+                  strokeWidth={isActive ? 2.5 : 2}
                 />
               </div>
-
 
               <span
                 className={`text-xs font-medium text-[#edecf7] transition-all duration-300 ${

@@ -177,10 +177,14 @@ class AuthService {
   }
 
   // Confirmação de e-mail
-  async confirmEmail(userId: string, code: string): Promise<void> {
+  async confirmEmail(userId: string, code: string, changedEmail?: string): Promise<void> {
     try {
-      await api.get('/api/accounts/confirmEmail', {
-        params: { userId, code },
+      const params: Record<string, string> = { userId, code };
+      if (changedEmail) {
+        params.changedEmail = changedEmail;
+      }
+      await api.get('/api/accounts/confirm-email', {
+        params,
       });
     } catch (error) {
       console.error("Erro ao confirmar e-mail:", error);

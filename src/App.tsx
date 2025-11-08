@@ -18,7 +18,10 @@ import {
   Security,
   ChangePassword,
   CancelAccount,
+  MyProfile,
 } from "./pages";
+import ConfirmEmail from "./pages/ConfirmEmail";
+import ResetPassword from "./pages/ResetPassword";
 import MeusDados from "./pages/MeusDados";
 import About from "./pages/About";
 import Favorites from "./pages/Favorites";
@@ -43,10 +46,13 @@ function AppContent() {
         {/* <Route path="/auth" element={<Auth />} /> */}
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Register />} />
+        <Route path="/confirmar-email" element={<ConfirmEmail />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/anuncio/:id" element={<Advertisement />} />
         <Route path="/anuncio/:id/editar" element={<EditarAnuncio />} />
         <Route path="/criar-anuncio" element={<CreateAdvertisement />} />
         <Route path="/perfil" element={<Profile />} />
+        <Route path="/meu-perfil" element={<MyProfile />} />
         <Route path="/usuario/:identifier" element={<PublicProfile />} />
         <Route path="/meus-dados" element={<MeusDados />} />
         <Route path="/meus-anuncios" element={<MyAds />} />
