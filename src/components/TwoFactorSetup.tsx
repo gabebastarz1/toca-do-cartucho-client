@@ -8,9 +8,11 @@ import {
   Download,
   Eye,
   EyeOff,
+  ArrowLeft,
 } from "lucide-react";
 import { twoFactorAuthService } from "../services/twoFactorAuthService";
 import { useAuth } from "../hooks/useAuth";
+import { useIsMobile } from "../hooks/useIsMobile";
 import QRCode from "qrcode";
 
 interface TwoFactorSetupProps {
@@ -25,6 +27,7 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
   userEmail,
 }) => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const email = userEmail || user?.email;
   const [step, setStep] = useState<"loading" | "setup" | "verify" | "success">(
     "loading"
@@ -64,7 +67,9 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
         setStep("setup");
         setInitialized(true);
       } else {
-        setError("Erro: Dados incompletos para configurar 2FA");
+        setError(
+          "Erro: Dados incompletos para configurar autenticação de dois fatores"
+        );
         setStep("setup");
       }
     } catch (err: unknown) {
@@ -72,7 +77,10 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
         message?: string;
         response?: { data?: unknown; status?: number };
       };
-      console.error("❌ [TwoFactorSetup] Erro ao inicializar 2FA:", err);
+      console.error(
+        "❌ [TwoFactorSetup] Erro ao inicializar autenticação de dois fatores:",
+        err
+      );
       console.error("❌ [TwoFactorSetup] Erro detalhado:", {
         message: error.message,
         response: error.response?.data,
@@ -82,7 +90,7 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
       // Mensagem específica para erro de autenticação
       if (error.response?.status === 401) {
         setError(
-          "Sua sessão expirou. Por favor, faça logout e login novamente para ativar o 2FA."
+          "Sua sessão expirou. Por favor, faça logout e login novamente para ativar a autenticação de dois fatores."
         );
       } else {
         setError(
@@ -204,6 +212,230 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
     );
   }
 
+  // Layout Mobile
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-white">
+        {/* Header roxo escuro */}
+        <div className="bg-[#2B2560] text-white">
+          <div className="flex bg-[#211C49] items-center px-4 py-4 pt-8">
+            <button
+              onClick={onCancel}
+              className="p-2 -ml-2 focus:outline-none"
+              aria-label="Voltar"
+            >
+              <ArrowLeft className="w-6 h-6 text-white" />
+            </button>
+            <h1 className="text-lg font-light ml-2">
+              {step === "setup" ? "Configurar 2FA" : "2FA Ativado"}
+            </h1>
+          </div>
+        </div>
+
+        {/* Conteúdo Mobile */}
+        <div className="bg-[#F4F3F5] min-h-screen px-4 pt-6 pb-20">
+          {step === "setup" && (
+            <div className="space-y-6">
+              {/* Passo 1: Escanear QR Code */}
+              <div className="bg-white rounded-lg p-4">
+                <h3 className="font-semibold text-base mb-3 flex items-center gap-2">
+                  <span className="flex items-center justify-center w-6 h-6 bg-[#4A2C7C] text-white rounded-full text-sm">
+                    1
+                  </span>
+                  Escaneie o QR Code
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Use seu aplicativo autenticador para escanear:
+                </p>
+
+                {qrCodeDataUrl && (
+                  <div className="flex justify-center mb-4">
+                    <img
+                      src={qrCodeDataUrl}
+                      alt="QR Code"
+                      className="border-4 border-white rounded-lg shadow-lg w-64 h-64"
+                    />
+                  </div>
+                )}
+
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 mb-2">
+                    Ou insira manualmente:
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-xs font-mono bg-white px-2 py-2 rounded border border-gray-200 break-all">
+                      {twoFactorAuthService.formatSharedKey(sharedKey)}
+                    </code>
+                    <button
+                      onClick={() => copyToClipboard(sharedKey, "key")}
+                      className="flex items-center gap-1 px-3 py-2 bg-[#4A2C7C] text-white rounded-lg text-sm"
+                    >
+                      {copiedKey ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Passo 2: Verificar */}
+              <div className="bg-white rounded-lg p-4">
+                <h3 className="font-semibold text-base mb-3 flex items-center gap-2">
+                  <span className="flex items-center justify-center w-6 h-6 bg-[#4A2C7C] text-white rounded-full text-sm">
+                    2
+                  </span>
+                  Código de verificação
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Digite o código de 6 dígitos:
+                </p>
+
+                <input
+                  type="text"
+                  value={verificationCode}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+                    setVerificationCode(value);
+                    setError("");
+                  }}
+                  placeholder="000000"
+                  className="w-full px-4 py-3 text-center text-2xl font-mono tracking-widest border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A2C7C]"
+                  maxLength={6}
+                />
+
+                {error && (
+                  <div className="mt-3 flex items-center gap-2 text-red-600 text-sm">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Botões */}
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handleVerify}
+                  disabled={verificationCode.length !== 6 || isLoading}
+                  className="w-full px-6 py-3 bg-[#4A2C7C] text-white rounded-lg hover:bg-[#3a2260] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Verificando...
+                    </>
+                  ) : (
+                    "Ativar"
+                  )}
+                </button>
+                {onCancel && (
+                  <button
+                    onClick={onCancel}
+                    className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {step === "success" && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                  <Check className="w-8 h-8 text-green-600" />
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  2FA Ativado!
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Sua conta está protegida
+                </p>
+              </div>
+
+              {/* Códigos de Recuperação */}
+              <div className="bg-white rounded-lg p-4">
+                <h3 className="font-bold text-base text-center mb-4">
+                  Códigos de Recuperação
+                </h3>
+
+                <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                  <div className="flex justify-end mb-2">
+                    <button
+                      onClick={() => setShowRecoveryCodes(!showRecoveryCodes)}
+                      className="flex items-center gap-2 px-3 py-1 text-sm text-gray-900"
+                    >
+                      {showRecoveryCodes ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 font-mono text-xs">
+                    {recoveryCodes.map((code, index) => (
+                      <div
+                        key={index}
+                        className="px-2 py-2 rounded text-center"
+                      >
+                        {showRecoveryCodes ? code : "••••••••••••"}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="text-xs text-gray-600 mb-4">
+                  Guarde esses códigos em local seguro. Eles são essenciais para
+                  recuperar o acesso à sua conta.
+                </p>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() =>
+                      copyToClipboard(recoveryCodes.join("\n"), "recovery")
+                    }
+                    disabled={!showRecoveryCodes}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-[#4A2C7C] bg-white text-[#4A2C7C] hover:bg-[#4A2C7C] hover:text-white transition-colors rounded-lg disabled:opacity-50"
+                  >
+                    {copiedRecovery ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        Copiado!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        Copiar
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={downloadRecoveryCodes}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-[#4A2C7C] bg-white text-[#4A2C7C] hover:bg-[#4A2C7C] hover:text-white transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={handleFinish}
+                className="w-full px-6 py-3 bg-[#4A2C7C] text-white rounded-lg hover:bg-[#3a2260] transition-colors font-medium"
+              >
+                Concluir
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Layout Desktop
   return (
     <div className="max-w-2xl mx-auto">
       {step === "setup" && (
@@ -274,7 +506,9 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
               Escaneie o QR Code
             </h3>
             <p className="text-gray-600 mb-4">
-              Abra o aplicativo autenticador de sua preferência e escaneie o QR Code exibido.            </p>
+              Abra o aplicativo autenticador de sua preferência e escaneie o QR
+              Code exibido.{" "}
+            </p>
 
             {qrCodeDataUrl && (
               <div className="flex justify-center mb-4">
@@ -368,7 +602,7 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
                   Verificando...
                 </>
               ) : (
-                "Ativar 2FA"
+                "Ativar"
               )}
             </button>
           </div>
@@ -382,7 +616,7 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
               <Check className="w-8 h-8 text-green-600" />
             </div>
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-              2FA Ativado com Sucesso!
+              Autenticação de dois fatores ativada com sucesso!
             </h2>
             <p className="text-gray-600">
               Sua conta agora está protegida com autenticação de dois fatores
@@ -397,31 +631,27 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
                   Salve seus Códigos de Recuperação
                 </h3>
               </div>
-              
             </div>
 
             <div className="bg-[#F8F8FC] rounded-lg p-4">
-            <div className="flex justify-end">
-            <button
-                onClick={() => setShowRecoveryCodes(!showRecoveryCodes)}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 rounded-lg"
-              >
-                {showRecoveryCodes ? (
-                  <>
-                    <EyeOff className="w-4 h-4" />
-                    
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-4 h-4" />
-                    
-                  </>
-                )}
-              </button>
-            </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setShowRecoveryCodes(!showRecoveryCodes)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 rounded-lg"
+                >
+                  {showRecoveryCodes ? (
+                    <>
+                      <EyeOff className="w-4 h-4" />
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </div>
 
               <div className="grid grid-cols-2 gap-2 font-mono text-sm">
-                
                 {recoveryCodes.map((code, index) => (
                   <div key={index} className="px-3 py-2 rounded text-center">
                     {showRecoveryCodes ? code : "••••••••••••"}

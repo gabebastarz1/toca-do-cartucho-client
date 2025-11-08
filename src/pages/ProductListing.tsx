@@ -151,7 +151,7 @@ const ProductListing: React.FC = () => {
       navigate(`/anuncio/${productId}`);
     }
   };
-  const handleProfileClick = () => navigate("/perfil");
+  const handleProfileClick = () => navigate("/meu-perfil");
 
   // Callback para limpar a pesquisa
   const handleClearSearch = useCallback(() => {

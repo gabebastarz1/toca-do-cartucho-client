@@ -6,6 +6,7 @@ import {
   CircleX,
   X,
   CircleCheck,
+  ArrowLeft,
 } from "lucide-react";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { useCustomAlert } from "../hooks/useCustomAlert";
@@ -16,8 +17,11 @@ import BottomBar from "../components/BottomBar";
 import Head from "../components/Head";
 import { useNavigate } from "react-router-dom";
 import { accountService } from "../services/accountService";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 const CancelAccount: React.FC = () => {
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [isCancelLoading, setIsCancelLoading] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -25,7 +29,6 @@ const CancelAccount: React.FC = () => {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const { userProfile, isLoading: profileLoading, refetch } = useUserProfile();
   const { showSuccess, showError } = useCustomAlert();
-  const navigate = useNavigate();
 
   const isAccountInactive = userProfile?.accountStatus === "Inactive";
 
@@ -60,7 +63,7 @@ const CancelAccount: React.FC = () => {
 
       showSuccess("Conta reativada com sucesso!");
       setTimeout(() => {
-        navigate("/perfil");
+        navigate("/meu-perfil");
       }, 2000);
     } catch (error) {
       console.error("Erro ao reativar conta:", error);
@@ -113,6 +116,203 @@ const CancelAccount: React.FC = () => {
     return null;
   }
 
+  // Layout Mobile - seguindo o padrão
+  if (isMobile) {
+    return (
+      <>
+        <Head title="Cancelar Conta" />
+        <div className="min-h-screen bg-[#f4f3f5] md:hidden">
+          {/* Header roxo escuro */}
+          <div className="bg-[#2B2560] text-white">
+            <div className="flex bg-[#211C49] items-center px-4 py-4 pt-8">
+              <button
+                onClick={() => navigate("/seguranca")}
+                className="p-2 -ml-2 focus:outline-none"
+                aria-label="Voltar"
+              >
+                <ArrowLeft className="w-6 h-6 text-white" />
+              </button>
+              <h1 className="text-lg font-light ml-2">Cancelar Conta</h1>
+            </div>
+          </div>
+
+          {/* Conteúdo */}
+          <div className="bg-[#F4F3F5] max-h-screen pb-20 pt-4">
+            <div className="space-y-0">
+              {/* Desativar/Reativar Conta */}
+              <button
+                onClick={() => setShowCancelModal(true)}
+                disabled={isCancelLoading}
+                className="w-full flex items-center px-4 py-4 hover:bg-gray-50 transition-colors active:bg-gray-100"
+              >
+                {isAccountInactive ? (
+                  <CircleCheck className="w-6 h-6 text-gray-700 mr-3 flex-shrink-0" />
+                ) : (
+                  <CircleStop className="w-6 h-6 text-gray-700 mr-3 flex-shrink-0" />
+                )}
+                <div className="flex-1 text-left">
+                  <p className="text-black text-base font-semibold">
+                    {isAccountInactive
+                      ? "Reativar sua conta"
+                      : "Desativar sua conta"}
+                  </p>
+                  <p className="text-black text-sm font-light text-gray-600 mt-0.5">
+                    {isAccountInactive
+                      ? "Sua conta está desativada. Reative para voltar a usar."
+                      : "Solicite o desativamento da sua conta"}
+                  </p>
+                </div>
+                {isCancelLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-gray-400 flex-shrink-0" />
+                ) : (
+                  <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                )}
+              </button>
+
+              {/* Excluir Conta */}
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                disabled={isDeleteLoading}
+                className="w-full flex items-center px-4 py-4 mt-1 hover:bg-gray-50 transition-colors active:bg-gray-100"
+              >
+                <CircleX className="w-6 h-6 text-red-600 mr-3 flex-shrink-0" />
+                <div className="flex-1 text-left">
+                  <p className="text-red-600 text-base font-semibold">
+                    Excluir sua conta
+                  </p>
+                  <p className="text-red-600 text-sm font-light mt-0.5">
+                    Solicite o encerramento da sua conta permanentemente
+                  </p>
+                </div>
+                {isDeleteLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-red-400 flex-shrink-0" />
+                ) : (
+                  <ChevronRight className="w-5 h-5 text-red-400 flex-shrink-0" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal de Confirmação - Desativar/Ativar Conta */}
+        {showCancelModal && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  {isAccountInactive ? (
+                    <CircleCheck className="w-6 h-6 text-[#2B2560]" />
+                  ) : (
+                    <CircleStop className="w-6 h-6 text-[#2B2560]" />
+                  )}
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {isAccountInactive ? "Reativar Conta" : "Desativar Conta"}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 mb-6">
+                {isAccountInactive
+                  ? "Tem certeza que deseja reativar sua conta?"
+                  : "Tem certeza que deseja desativar sua conta?"}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={
+                    isAccountInactive
+                      ? handleActivateAccount
+                      : handleCancelAccount
+                  }
+                  className="flex-1 px-4 py-2 bg-[#2B2560] text-white rounded-lg hover:bg-[#1f1a45] transition-colors"
+                >
+                  {isAccountInactive ? "Ativar" : "Desativar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Confirmação - Excluir Conta */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <CircleX className="w-6 h-6 text-red-600" />
+                  <h3 className="text-lg font-semibold text-red-600">
+                    Excluir Conta
+                  </h3>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeleteConfirmText("");
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="mb-6">
+                <p className="text-sm text-gray-600 mb-4">
+                  <span className="font-semibold text-red-600">
+                    Esta ação é irreversível!
+                  </span>
+                  <br />
+                  Todos os seus dados serão excluídos permanentemente.
+                </p>
+                <p className="text-sm text-gray-700 mb-2 font-medium">
+                  Digite <span className="font-bold text-red-600">EXCLUIR</span>{" "}
+                  para confirmar:
+                </p>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Digite EXCLUIR"
+                  className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-red-500 focus:outline-none"
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeleteConfirmText("");
+                  }}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleteConfirmText !== "EXCLUIR"}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Excluir
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <BottomBar />
+      </>
+    );
+  }
+
+  // Layout Desktop - mantém o layout original
   return (
     <>
       <Head title="Cancelar Conta" />
@@ -123,7 +323,7 @@ const CancelAccount: React.FC = () => {
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 mb-6">
             <button
-              onClick={() => navigate("/perfil")}
+              onClick={() => navigate("/meu-perfil")}
               className="text-[#211a21] text-sm font-normal hover:text-[#483d9e] transition-colors"
             >
               Meu perfil

@@ -9,8 +9,10 @@ import { useCustomAlert } from "../hooks/useCustomAlert";
 import { CustomAlert } from "../components/ui/CustomAlert";
 import { handleGoogleLogin } from "../services/authService";
 import { api } from "../services/api";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 const Login: React.FC = () => {
+  const isMobile = useIsMobile();
   const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,12 +22,57 @@ const Login: React.FC = () => {
   const [twoFactorCode, setTwoFactorCode] = useState("");
   const [useRecoveryCode, setUseRecoveryCode] = useState(false);
   const [stage, setStage] = useState<"email" | "password">("email");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { login: loginContext } = useAuth();
-  const { alertState, showError, hideAlert } = useCustomAlert();
+  const { alertState, showError, showSuccess, hideAlert } = useCustomAlert();
 
   const toggleShowPassword = () => setShowPassword(!showPassword);
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!forgotPasswordEmail) {
+      showError("Por favor, digite seu email.");
+      return;
+    }
+
+    setIsSendingEmail(true);
+
+    try {
+      await api.post("/api/accounts/forgot-password", {
+        email: forgotPasswordEmail,
+      });
+
+      showSuccess(
+        "Código de recuperação enviado! Verifique sua caixa de entrada e acesse a página de redefinição de senha."
+      );
+      setShowForgotPassword(false);
+      const emailToRedirect = forgotPasswordEmail;
+
+      // Salvar email no localStorage como backup
+      localStorage.setItem("resetPasswordEmail", emailToRedirect);
+
+      setForgotPasswordEmail("");
+
+      // Redirecionar para a página de reset de senha após 2 segundos
+      setTimeout(() => {
+        navigate(
+          `/reset-password?email=${encodeURIComponent(emailToRedirect)}`
+        );
+      }, 2000);
+    } catch (error) {
+      console.error("Erro ao enviar email de recuperação:", error);
+      showError(
+        "Erro ao enviar email de recuperação. Verifique se o email está correto."
+      );
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -115,6 +162,277 @@ const Login: React.FC = () => {
     }
   };
 
+  // Layout Mobile
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-[#ECF0F1] p-6 font-sans">
+        <CustomAlert
+          type={alertState.type}
+          message={alertState.message}
+          isVisible={alertState.isVisible}
+          onClose={hideAlert}
+        />
+
+        <div className="max-w-md mx-auto pt-8">
+          <div className="text-start mb-8">
+            <h1 className="text-3xl max-w-xs font-bold text-[#2B2560]">
+              Acesse sua conta ou cadastre-se
+            </h1>
+          </div>
+
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            {stage === "email" && (
+              <>
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="mb-2 block text-sm font-medium text-[#2B2560]"
+                  >
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    placeholder="Digite seu email"
+                    className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 shadow-sm focus:border-[#31295F] focus:outline-none focus:ring-1 focus:ring-[#31295F]"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full rounded-md bg-[#31295F] px-4 py-3 text-base font-semibold text-white shadow-sm transition-colors hover:bg-[#292250] disabled:opacity-50"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Verificando..." : "Acessar"}
+                </button>
+              </>
+            )}
+
+            {stage === "password" && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStage("email");
+                    setRequires2FA(false);
+                    setTwoFactorCode("");
+                  }}
+                  className="mb-4 inline-flex items-center gap-1 text-[#31295F] text-sm hover:underline"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Voltar
+                </button>
+
+                <div>
+                  <label
+                    htmlFor="password"
+                    className="mb-2 block text-sm font-medium text-[#2B2560]"
+                  >
+                    Senha
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      placeholder="Digite sua senha"
+                      className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 pr-10 text-gray-900 placeholder-gray-400 shadow-sm focus:border-[#31295F] focus:outline-none focus:ring-1 focus:ring-[#31295F]"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={requires2FA}
+                      ref={passwordInputRef}
+                    />
+                    <button
+                      type="button"
+                      onClick={toggleShowPassword}
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                      disabled={requires2FA}
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Campo de Código 2FA */}
+                {requires2FA && (
+                  <div className="rounded-lg bg-white p-4 border border-gray-200 animate-fadeIn">
+                    <div className="flex items-center gap-2 mb-3">
+                      <svg
+                        className="w-5 h-5 text-[#31295F]"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                        />
+                      </svg>
+                      <label
+                        htmlFor="twoFactorCode"
+                        className="block text-sm font-semibold text-[#31295F]"
+                      >
+                        {useRecoveryCode
+                          ? "Código de Recuperação"
+                          : "Código de Autenticação"}
+                      </label>
+                    </div>
+                    <input
+                      id="twoFactorCode"
+                      name="twoFactorCode"
+                      type="text"
+                      required
+                      placeholder={
+                        useRecoveryCode
+                          ? "Digite o código de recuperação"
+                          : "000000"
+                      }
+                      className="w-full rounded-md border-2 border-[#31295F] bg-white px-3 py-3 text-center text-2xl font-mono tracking-widest text-gray-900 placeholder-gray-400 shadow-sm focus:border-[#483d9e] focus:outline-none focus:ring-2 focus:ring-[#483d9e]"
+                      value={twoFactorCode}
+                      onChange={(e) => {
+                        const value = useRecoveryCode
+                          ? e.target.value
+                          : e.target.value.replace(/\D/g, "").slice(0, 6);
+                        setTwoFactorCode(value);
+                      }}
+                      maxLength={useRecoveryCode ? undefined : 6}
+                      autoFocus
+                    />
+                    <div className="mt-3 flex items-center justify-between">
+                      <p className="text-xs text-gray-600">
+                        {useRecoveryCode
+                          ? "Digite um dos seus códigos de recuperação"
+                          : "Digite o código do seu aplicativo autenticador"}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUseRecoveryCode(!useRecoveryCode);
+                          setTwoFactorCode("");
+                        }}
+                        className="text-xs text-[#31295F] font-medium hover:underline whitespace-nowrap ml-2"
+                      >
+                        {useRecoveryCode ? "Usar app" : "Usar recuperação"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between text-sm">
+                  <CustomCheckbox
+                    id="remember-me"
+                    label="Lembre-se de mim"
+                    checked={rememberMe}
+                    onChange={setRememberMe}
+                    labelClassName="text-[#2B2560]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotPasswordEmail(email);
+                      setShowForgotPassword(true);
+                    }}
+                    className="font-medium text-[#31295F] hover:underline"
+                  >
+                    Esqueceu a senha?
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full rounded-md bg-[#31295F] px-4 py-3 text-base font-bold text-white shadow-sm transition-colors hover:bg-[#292250] disabled:opacity-50"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Acessando..." : "Acessar"}
+                </button>
+              </>
+            )}
+          </form>
+
+          <div className="my-6 flex items-center">
+            <hr className="flex-grow border-t border-gray-300" />
+            <span className="mx-4 text-sm text-gray-500">Ou</span>
+            <hr className="flex-grow border-t border-gray-300" />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="flex w-full items-center font-bold justify-center gap-3 rounded-md border border-gray-300 bg-[#EDECF7] py-3 text-base text-[#2B2560] shadow-sm transition-colors"
+          >
+            <FaGoogle size={20} />
+            Entrar com o Google
+          </button>
+        </div>
+
+        {/* Modal de Recuperação de Senha */}
+        {showForgotPassword && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-[#2B2560]">
+                  Recuperar Senha
+                </h3>
+                <p className="text-sm text-gray-600 mt-2">
+                  Digite seu email para receber um código de recuperação de
+                  senha por email.
+                </p>
+              </div>
+
+              <form onSubmit={handleForgotPassword}>
+                <div className="mb-4">
+                  <label
+                    htmlFor="forgotPasswordEmail"
+                    className="mb-2 block text-sm font-medium text-[#2B2560]"
+                  >
+                    Email
+                  </label>
+                  <input
+                    id="forgotPasswordEmail"
+                    type="email"
+                    required
+                    placeholder="Digite seu email"
+                    className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 shadow-sm focus:border-[#31295F] focus:outline-none focus:ring-1 focus:ring-[#31295F]"
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForgotPassword(false);
+                      setForgotPasswordEmail("");
+                    }}
+                    className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSendingEmail}
+                    className="flex-1 px-4 py-2 bg-[#31295F] text-white rounded-lg hover:bg-[#292250] transition-colors disabled:opacity-50"
+                  >
+                    {isSendingEmail ? "Enviando..." : "Enviar"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Layout Desktop
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#211C49] p-4 font-sans">
       <CustomAlert
@@ -127,7 +445,7 @@ const Login: React.FC = () => {
       <img
         src={GameControllerImage}
         alt="Controle"
-        className="absolute bottom-16 left-[calc(53%-480px)] z-50 hidden w-80 transform md:block"
+        className="absolute bottom-48 left-[calc(45%-492px)] z-50 hidden w-72 transform md:block"
       />
 
       <main className="relative z-10 w-full max-w-3xl rounded-lg p-6 md:bg-[#F8F8FC] md:p-10 md:shadow-lg ">
@@ -306,12 +624,16 @@ const Login: React.FC = () => {
                 onChange={setRememberMe}
                 labelClassName="text-white md:text-gray-700"
               />
-              <a
-                href="#"
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotPasswordEmail(email);
+                  setShowForgotPassword(true);
+                }}
                 className="font-medium text-white hover:underline md:text-[#31295F]"
               >
                 Esqueceu a senha?
-              </a>
+              </button>
             </div>
           )}
 
@@ -326,16 +648,73 @@ const Login: React.FC = () => {
           <hr className="flex-grow border-t border-gray-500 md:border-gray-300" />
         </div>
         <div className="flex justify-center">
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          className="flex px-6 items-center justify-center gap-3 rounded-md border border-gray-300 bg-[#EDECF7] py-3 text-md text-white md:text-[#2B2560] font-bold shadow-sm transition-colors hover:bg-gray-50"
-        >
-          <FaGoogle size={20} />
-          Entrar com o Google
-        </button>
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="flex px-6 items-center justify-center gap-3 rounded-md border border-gray-300 bg-[#EDECF7] py-3 text-md text-white md:text-[#2B2560] font-bold shadow-sm transition-colors hover:bg-gray-50"
+          >
+            <FaGoogle size={20} />
+            Entrar com o Google
+          </button>
         </div>
       </main>
+
+      {/* Modal de Recuperação de Senha */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-[#2B2560]">
+                Recuperar Senha
+              </h3>
+              <p className="text-sm text-gray-600 mt-2">
+                Digite seu email para receber um código de recuperação de senha
+                por email.
+              </p>
+            </div>
+
+            <form onSubmit={handleForgotPassword}>
+              <div className="mb-4">
+                <label
+                  htmlFor="forgotPasswordEmailDesktop"
+                  className="mb-2 block text-sm font-medium text-[#2B2560]"
+                >
+                  Email
+                </label>
+                <input
+                  id="forgotPasswordEmailDesktop"
+                  type="email"
+                  required
+                  placeholder="Digite seu email"
+                  className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 shadow-sm focus:border-[#31295F] focus:outline-none focus:ring-1 focus:ring-[#31295F]"
+                  value={forgotPasswordEmail}
+                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setForgotPasswordEmail("");
+                  }}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSendingEmail}
+                  className="flex-1 px-4 py-2 bg-[#31295F] text-white rounded-lg hover:bg-[#292250] transition-colors disabled:opacity-50"
+                >
+                  {isSendingEmail ? "Enviando..." : "Enviar"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

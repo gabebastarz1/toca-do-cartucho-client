@@ -289,7 +289,7 @@ const TopBar: React.FC<TopBarProps> = ({
             <span className="text-gray-300 text-sm">{displayUserName}</span>
             <div className="relative user-dropdown-container">
               <button
-                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                onClick={() => navigate("/perfil")}
                 className="focus:outline-none"
               >
                 {profileImageUrl && profileImageUrl.trim() !== "" ? (
@@ -318,10 +318,6 @@ const TopBar: React.FC<TopBarProps> = ({
                   </span>
                 </div>
               </button>
-              <UserDropdown
-                isOpen={isUserDropdownOpen}
-                onClose={() => setIsUserDropdownOpen(false)}
-              />
             </div>
           </div>
         </div>

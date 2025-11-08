@@ -5,8 +5,9 @@ import { CustomAlert } from "../../components/ui/CustomAlert";
 import StepOne from "./StepOne";
 import StepTwo from "./StepTwo";
 import { FormData, FormErrors } from "./types";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../../services/api";
+import { useIsMobile } from "../../hooks/useIsMobile";
 
 const initialFormData: FormData = {
   email: "",
@@ -20,14 +21,22 @@ const initialFormData: FormData = {
 };
 
 const SignUpForm: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isMobile = useIsMobile();
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [formData, setFormData] = useState<FormData>(() => {
+    const emailFromUrl = searchParams.get("email");
+    return {
+      ...initialFormData,
+      email: emailFromUrl ? decodeURIComponent(emailFromUrl) : "",
+    };
+  });
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { alertState, showSuccess, hideAlert } = useCustomAlert();
-  const navigate = useNavigate();
 
   const toggleShowPassword = () => setShowPassword(!showPassword);
   const toggleShowConfirmPassword = () =>
@@ -221,6 +230,68 @@ const SignUpForm: React.FC = () => {
     }
   };
 
+  // Layout Mobile
+  if (isMobile) {
+    return (
+      <div className="max-w-md mx-auto pt-8">
+        <CustomAlert
+          type={alertState.type}
+          message={alertState.message}
+          isVisible={alertState.isVisible}
+          onClose={hideAlert}
+        />
+        <form onSubmit={handleSubmit} noValidate>
+          <h2 className="text-2xl max-w-xs font-bold text-[#2B2560] mb-8">
+            Verificamos que você ainda não tem um cadastro
+          </h2>
+
+          {step === 1 && (
+            <StepOne
+              formData={formData}
+              errors={errors}
+              handleChange={handleChange}
+              showPassword={showPassword}
+              toggleShowPassword={toggleShowPassword}
+              showConfirmPassword={showConfirmPassword}
+              toggleShowConfirmPassword={toggleShowConfirmPassword}
+            />
+          )}
+          {step === 2 && (
+            <StepTwo
+              formData={formData}
+              errors={errors}
+              handleChange={handleChange}
+            />
+          )}
+          {step === 1 && (
+            <div className="mt-6">
+              <button
+                type="button"
+                className="w-full rounded-md bg-[#31295F] px-4 py-3 text-base font-bold text-white shadow-sm transition-colors hover:bg-[#292250] disabled:opacity-50"
+                onClick={handleNextStep}
+                disabled={isLoading}
+              >
+                {isLoading ? "Verificando..." : "Acessar"}
+              </button>
+            </div>
+          )}
+          {step === 2 && (
+            <div className="mt-6">
+              <button
+                type="submit"
+                className="w-full rounded-md bg-[#31295F] px-4 py-3 text-base font-bold text-white shadow-sm transition-colors hover:bg-[#292250] disabled:opacity-50"
+                disabled={isLoading}
+              >
+                {isLoading ? "Cadastrando..." : "Cadastrar"}
+              </button>
+            </div>
+          )}
+        </form>
+      </div>
+    );
+  }
+
+  // Layout Desktop
   return (
     <div className="mx-auto my-10 p-8 md:bg-[#F8F8FC] md:p-10 md:shadow-lg rounded-lg text-white md:text-[#2B2560] w-full max-w-3xl">
       <CustomAlert
@@ -275,7 +346,7 @@ const SignUpForm: React.FC = () => {
               <div className="text-center my-4 text-gray-500 text-xs">Ou</div>
               <hr className="flex-grow border-t border-gray-500 md:border-gray-300" />
             </div>
-             <button
+            <button
               type="button"
               onClick={handleGoogleLogin}
               className="flex w-full items-center justify-center gap-3 rounded-md border border-gray-300 bg-white md:bg-transparent py-3 text-md text-white md:text-[#2B2560] font-bold shadow-sm transition-colors hover:bg-gray-50"

@@ -140,7 +140,7 @@ const PublicProfile: React.FC = () => {
       } else if (i === fullStars && hasHalfStar) {
         // Meia estrela (usando SVG com clip-path)
         stars.push(
-          <div key={i} className="relative w-5 h-5">
+          <div key={i} className="relative w-5 h-5 text-[#4f43ae]">
             {/* Estrela vazia (fundo) */}
             <Star className="absolute w-5 h-5" />
             {/* Estrela preenchida pela metade */}

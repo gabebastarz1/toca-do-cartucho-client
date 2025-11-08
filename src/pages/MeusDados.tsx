@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Check, HelpCircle, Loader2 } from "lucide-react";
+import {
+  ChevronRight,
+  Check,
+  HelpCircle,
+  Loader2,
+  ArrowLeft,
+} from "lucide-react";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 import {
   FormField,
@@ -25,6 +32,7 @@ import useDebounce from "../hooks/useDebounce";
 
 const MeusDados: React.FC = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { alertState, showSuccess, showError, hideAlert } = useCustomAlert();
   const {
     userProfile,
@@ -34,6 +42,8 @@ const MeusDados: React.FC = () => {
   } = useUserProfile();
 
   const [formData, setFormData] = useState({
+    nome: "",
+    sobrenome: "",
     nomeCompleto: "",
     nomeUsuario: "",
     dataNascimento: "",
@@ -51,6 +61,8 @@ const MeusDados: React.FC = () => {
   });
 
   const [originalData, setOriginalData] = useState({
+    nome: "",
+    sobrenome: "",
     nomeCompleto: "",
     nomeUsuario: "",
     dataNascimento: "",
@@ -96,7 +108,15 @@ const MeusDados: React.FC = () => {
       state: "",
     };
 
-    if (formData.nomeCompleto !== originalData.nomeCompleto) {
+    // Verificar mudanças em nome e sobrenome separadamente
+    if (
+      formData.nome !== originalData.nome ||
+      formData.sobrenome !== originalData.sobrenome
+    ) {
+      changes.firstName = formData.nome || null;
+      changes.lastName = formData.sobrenome || null;
+    } else if (formData.nomeCompleto !== originalData.nomeCompleto) {
+      // Fallback para nome completo se nome/sobrenome não estiverem disponíveis
       const [firstName, ...lastNameParts] = formData.nomeCompleto.split(" ");
       const lastName = lastNameParts.join(" ");
       changes.firstName = firstName || null;
@@ -196,6 +216,8 @@ const MeusDados: React.FC = () => {
       const formattedPhone = formatPhone(userProfile.phoneNumber || "");
 
       const formDataToSet = {
+        nome: userProfile.firstName || "",
+        sobrenome: userProfile.lastName || "",
         nomeCompleto: `${userProfile.firstName || ""} ${
           userProfile.lastName || ""
         }`.trim(),
@@ -218,6 +240,8 @@ const MeusDados: React.FC = () => {
 
       // ✅ Armazenar dados originais para comparação posterior
       const originalDataToSet = {
+        nome: userProfile.firstName || "",
+        sobrenome: userProfile.lastName || "",
         nomeCompleto: `${userProfile.firstName || ""} ${
           userProfile.lastName || ""
         }`.trim(),
@@ -602,6 +626,8 @@ const MeusDados: React.FC = () => {
 
       //  Atualizar dados originais com os novos dados salvos
       const newOriginalData = {
+        nome: formData.nome,
+        sobrenome: formData.sobrenome,
         nomeCompleto: formData.nomeCompleto,
         nomeUsuario: formData.nomeUsuario,
         dataNascimento: formData.dataNascimento,
@@ -733,6 +759,327 @@ const MeusDados: React.FC = () => {
     );
   }
 
+  // Layout Mobile - exatamente como a imagem
+  if (isMobile) {
+    return (
+      <>
+        <Head title="Meus Dados" />
+        <div className="min-h-screen bg-white md:hidden">
+          {/* Header roxo escuro */}
+          <div className="bg-[#4A2C7C] text-white">
+            <div className="flex bg-[#211C49] items-center px-4 py-4 pt-8">
+              <button
+                onClick={() => navigate("/meu-perfil")}
+                className="p-2 -ml-2 focus:outline-none"
+                aria-label="Voltar"
+              >
+                <ArrowLeft className="w-6 h-6 text-white" />
+              </button>
+              <h1 className="text-lg font-light ml-2">Meus Dados</h1>
+            </div>
+          </div>
+
+          {/* Conteúdo */}
+          <div className="bg-[#F4F3F5] min-h-screen pt-4 pb-20">
+            {/* Seção Dados Pessoais */}
+            <div className="px-4 mb-6">
+              <h2 className="text-lg font-bold text-black mb-4">
+                Dados Pessoais
+              </h2>
+
+              <div className="space-y-4">
+                {/* Nome */}
+                <div>
+                  <label className="block text-sm font-normal text-black mb-1">
+                    Nome
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.nome}
+                    onChange={(e) => handleInputChange("nome", e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-black focus:outline-none focus:border-[#4A2C7C]"
+                  />
+                </div>
+
+                {/* Sobrenome */}
+                <div>
+                  <label className="block text-sm font-normal text-black mb-1">
+                    Sobrenome
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.sobrenome}
+                    onChange={(e) =>
+                      handleInputChange("sobrenome", e.target.value)
+                    }
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-black focus:outline-none focus:border-[#4A2C7C]"
+                  />
+                </div>
+
+                {/* Nome de Usuário */}
+                <div>
+                  <label className="block text-sm font-normal text-black mb-1">
+                    Nome de Usuário
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.nomeUsuario}
+                    onChange={(e) =>
+                      handleInputChange("nomeUsuario", e.target.value)
+                    }
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-black focus:outline-none focus:border-[#4A2C7C]"
+                  />
+                  {nicknameError && (
+                    <div className="text-red-500 text-sm mt-1">
+                      {nicknameError}
+                    </div>
+                  )}
+                </div>
+
+                {/* Data de Nascimento */}
+                <div>
+                  <label className="block text-sm font-normal text-black mb-1">
+                    Data de Nascimento
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.dataNascimento}
+                    onChange={(e) => {
+                      const formatted = formatDateInput(e.target.value);
+                      handleInputChange("dataNascimento", formatted);
+                    }}
+                    placeholder="DD/MM/AAAA"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-black focus:outline-none focus:border-[#4A2C7C]"
+                  />
+                  {birthdayError && (
+                    <div className="text-red-500 text-sm mt-1">
+                      {birthdayError}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Seção Endereço */}
+            <div className="px-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-black">Endereço</h2>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() =>
+                      handleInputChange(
+                        "ocultarLocalizacao",
+                        !formData.ocultarLocalizacao
+                      )
+                    }
+                    className={`w-5 h-5 border-2 rounded flex items-center justify-center transition-all ${
+                      formData.ocultarLocalizacao
+                        ? "bg-[#4A2C7C] border-[#4A2C7C]"
+                        : "border-gray-400 bg-white"
+                    }`}
+                  >
+                    {formData.ocultarLocalizacao && (
+                      <Check className="w-3 h-3 text-white" />
+                    )}
+                  </button>
+                  <span className="text-sm font-normal text-black">
+                    Ocultar minha localização
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* CEP */}
+                <div>
+                  <label className="block text-sm font-normal text-black mb-1">
+                    CEP
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.cep}
+                    onChange={(e) => {
+                      const formatted = formatCEP(e.target.value);
+                      handleInputChange("cep", formatted);
+                    }}
+                    placeholder="00000-000"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-black focus:outline-none focus:border-[#4A2C7C]"
+                  />
+                </div>
+
+                {/* Rua */}
+                <div>
+                  <label className="block text-sm font-normal text-black mb-1">
+                    Rua
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.rua}
+                    onChange={(e) => handleInputChange("rua", e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-black focus:outline-none focus:border-[#4A2C7C]"
+                  />
+                </div>
+
+                {/* Número */}
+                <div>
+                  <label className="block text-sm font-normal text-black mb-1">
+                    Número
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.numero}
+                    onChange={(e) =>
+                      handleInputChange("numero", e.target.value)
+                    }
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-black focus:outline-none focus:border-[#4A2C7C]"
+                  />
+                </div>
+
+                {/* Bairro */}
+                <div>
+                  <label className="block text-sm font-normal text-black mb-1">
+                    Bairro
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.bairro}
+                    onChange={(e) =>
+                      handleInputChange("bairro", e.target.value)
+                    }
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-black focus:outline-none focus:border-[#4A2C7C]"
+                  />
+                </div>
+
+                {/* Cidade */}
+                <div>
+                  <label className="block text-sm font-normal text-black mb-1">
+                    Cidade
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.cidade}
+                    onChange={(e) =>
+                      handleInputChange("cidade", e.target.value)
+                    }
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-black focus:outline-none focus:border-[#4A2C7C]"
+                  />
+                </div>
+
+                {/* Estado */}
+                <div>
+                  <label className="block text-sm font-normal text-black mb-1">
+                    Estado
+                  </label>
+                  <select
+                    value={formData.estado}
+                    onChange={(e) =>
+                      handleInputChange("estado", e.target.value)
+                    }
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-black focus:outline-none focus:border-[#4A2C7C]"
+                  >
+                    <option value="">Selecione um estado</option>
+                    {estadosDoBrasil.map((estado) => (
+                      <option key={estado} value={estado}>
+                        {estado}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Seção Contato */}
+            <div className="px-4 mt-6">
+              <h2 className="text-lg font-bold text-black mb-4">Contato</h2>
+
+              <div className="space-y-4">
+                {/* WhatsApp */}
+                <div>
+                  <label className="block text-sm font-normal text-black mb-1">
+                    WhatsApp
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.whatsapp}
+                    onChange={(e) => {
+                      const formatted = formatPhone(e.target.value);
+                      handleInputChange("whatsapp", formatted);
+                    }}
+                    placeholder="(00) 0 0000-0000"
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-black focus:outline-none focus:border-[#4A2C7C]"
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-normal text-black mb-1">
+                    E-mail
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-black focus:outline-none focus:border-[#4A2C7C]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Seção Informações Adicionais */}
+            <div className="px-4 mt-6">
+              <div className="flex items-center gap-2 mb-4">
+                <h2 className="text-lg font-bold text-black">CPF</h2>
+                <HelpCircle className="w-4 h-4 text-gray-500" />
+              </div>
+
+              <div>
+                <input
+                  type="text"
+                  value={formData.cpf}
+                  onChange={(e) => {
+                    const formatted = formatCPF(e.target.value);
+                    handleInputChange("cpf", formatted);
+                  }}
+                  placeholder="000.000.000-00"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-black focus:outline-none focus:border-[#4A2C7C]"
+                />
+                {cpfError && (
+                  <div className="text-red-500 text-sm mt-1">{cpfError}</div>
+                )}
+              </div>
+            </div>
+
+            {/* Botão Salvar */}
+            <div className="px-4 mt-8 mb-8">
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className={`w-full py-3 rounded-md text-base font-normal transition-colors flex items-center justify-center gap-2 ${
+                  isSaving
+                    ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                    : "bg-[#4A2C7C] text-white hover:bg-[#3a2370]"
+                }`}
+              >
+                {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                {isSaving ? "Salvando..." : "Salvar Dados"}
+              </button>
+            </div>
+          </div>
+
+          {/* Custom Alert */}
+          <CustomAlert
+            type={alertState.type}
+            message={alertState.message}
+            isVisible={alertState.isVisible}
+            onClose={hideAlert}
+            duration={5000}
+          />
+        </div>
+        <BottomBar />
+      </>
+    );
+  }
+
+  // Layout Desktop - mantém o layout original
   return (
     <>
       <Head title="Meus Dados" />
