@@ -48,17 +48,11 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
   const handleCategoryClick = (categoryId: string) => {
     setOpenDropdown(null);
 
-    console.log("=== FILTER TOPBAR CLICK ===");
-    console.log("Category clicked:", categoryId);
-    console.log("Current filters:", currentFilters);
-    console.log("onFiltersChange available:", !!onFiltersChange);
+   
 
     // Se há callback de filtros, usar o mesmo método do FilterSidebar
     if (onFiltersChange) {
-      console.log(
-        "FilterTopBar - Aplicando filtro usando método do FilterSidebar:",
-        categoryId
-      );
+     
 
       // LIMPAR TODOS OS FILTROS E APLICAR APENAS O NOVO FILTRO
       const newFilters: Record<string, string[]> = {};
@@ -79,11 +73,6 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
           // Aplicar apenas o tema selecionado
           newFilters.theme = [categoryId];
 
-        } else {
-          // Se não é nem gênero nem tema, manter filtros vazios
-          console.log(
-     
-          );
         }
       }
 

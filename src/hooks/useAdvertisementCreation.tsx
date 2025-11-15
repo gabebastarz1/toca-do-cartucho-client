@@ -4,6 +4,7 @@ import {
   AdvertisementForCreationDTO,
   AdvertisementCreationResponse,
   AdvertisementFormData,
+  AdvertisementImageDTO,
 } from "../api/advertisementTypes";
 import {
   FrontendFormData,
@@ -11,6 +12,7 @@ import {
   convertFormDataToBackend,
   extractValidImages,
 } from "../utils/formDataConverter";
+import { LanguageSupportDTO } from "../api/referenceDataTypes";
 
 class AdvertisementCreationService {
   private baseUrl = "/api/advertisements";
@@ -20,38 +22,40 @@ class AdvertisementCreationService {
     advertisement: AdvertisementForCreationDTO
   ): Promise<AdvertisementCreationResponse> {
     try {
-      console.log("=== DADOS ENVIADOS PARA O BACKEND ===");
-      console.log("URL:", `${api.defaults.baseURL}${this.baseUrl}`);
-      console.log("Dados completos:", JSON.stringify(advertisement, null, 2));
-      console.log("=====================================");
-
       const response = await api.post(this.baseUrl, advertisement);
       return response.data;
-    } catch (error: any) {
-      console.error("=== ERRO AO CRIAR ANÚNCIO ===");
-      console.error("Status:", error.response?.status);
-      console.error("Status Text:", error.response?.statusText);
-      console.error("Response Data:", error.response?.data);
-      console.error("Request Data:", error.config?.data);
-      console.error("==============================");
+    } catch (error: unknown) {
+      // Verificar se é um erro do Axios
+      if (
+        error &&
+        typeof error === "object" &&
+        "response" in error &&
+        error.response &&
+        typeof error.response === "object" &&
+        "data" in error.response
+      ) {
+        const axiosError = error as {
+          response?: { data?: { error?: string } };
+        };
 
-      if (error.response?.data?.error) {
-        const backendError = error.response.data.error;
+        if (axiosError.response?.data?.error) {
+          const backendError = axiosError.response.data.error;
 
-        if (backendError.includes("CPF")) {
-          throw new Error(
-            "Para vender produtos, você precisa cadastrar seu CPF no perfil. Acesse a página de perfil para completar seu cadastro."
-          );
+          if (backendError.includes("CPF")) {
+            throw new Error(
+              "Para vender produtos, você precisa cadastrar seu CPF no perfil. Acesse a página de perfil para completar seu cadastro."
+            );
+          }
+
+          if (
+            backendError.includes("authentication") ||
+            backendError.includes("unauthorized")
+          ) {
+            throw new Error("Sua sessão expirou. Faça login novamente.");
+          }
+
+          throw new Error(backendError);
         }
-
-        if (
-          backendError.includes("authentication") ||
-          backendError.includes("unauthorized")
-        ) {
-          throw new Error("Sua sessão expirou. Faça login novamente.");
-        }
-
-        throw new Error(backendError);
       }
 
       throw error;
@@ -61,15 +65,11 @@ class AdvertisementCreationService {
   // Testar dados antes de criar anúncio
   async testAdvertisement(
     advertisement: AdvertisementForCreationDTO
-  ): Promise<any> {
-    try {
-      console.log("Testando dados do anúncio:", advertisement);
+  ): Promise<AdvertisementCreationResponse> {
+   
       const response = await api.post(`${this.baseUrl}/test`, advertisement);
       return response.data;
-    } catch (error) {
-      console.error("Erro ao testar anúncio:", error);
-      throw error;
-    }
+    
   }
 
   // Criar anúncio com dados dos formulários existentes (MultiPartForm)
@@ -131,23 +131,16 @@ class AdvertisementCreationService {
           const variationImages = extractValidImages(frontendVariation.imagens);
 
           if (variationImages.length > 0) {
-            console.log(
-              `Fazendo upload de imagens para a variação ID: ${createdVariation.id}`
-            );
+           
 
             await this.uploadImages(createdVariation.id, variationImages);
           }
         }
-      } else {
-        console.warn(
-          "A resposta do backend não continha as variações criadas ou o número de variações não corresponde. O upload de imagens das variações foi ignorado."
-        );
-      }
+      } 
 
       return advertisement;
     } catch (error) {
       console.error(
-        "Erro ao criar anúncio a partir do formulário existente:",
         error
       );
       throw error;
@@ -218,32 +211,20 @@ class AdvertisementCreationService {
    * @param images - Um array de arquivos de imagem.
    */
   async uploadImages(advertisementId: number, images: File[]): Promise<void> {
-    try {
+
       const formData = new FormData();
       images.forEach((image) => formData.append("images", image));
 
       const url = `${this.baseUrl}/${advertisementId}/images`;
-      console.log(`=== DEBUG: Enviando imagens para ${url} ===`);
+   
 
-      // Debug: Log do FormData
-      console.log("=== DEBUG: Conteúdo do FormData ===");
-      for (const [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
-      }
-      console.log("=================================");
-
+   
+     
       await api.post(url, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      console.log(`=== DEBUG: Upload concluído para ${url} ===`);
-    } catch (error) {
-      console.error(
-        `Erro ao fazer upload de imagens para o anúncio ${advertisementId}:`,
-        error
-      );
-      throw error;
-    }
+      
   }
 
   // Upload de uma única imagem
@@ -272,7 +253,7 @@ class AdvertisementCreationService {
   }
 
   // Obter imagens de um anúncio
-  async getImages(advertisementId: number): Promise<any[]> {
+  async getImages(advertisementId: number): Promise<AdvertisementImageDTO[]> {
     try {
       const response = await api.get(
         `${this.baseUrl}/${advertisementId}/images`
@@ -292,57 +273,45 @@ class AdvertisementCreationService {
     interfaceLanguage?: string
   ): Promise<number[]> {
     try {
-      console.log("=== DEBUG getLanguageSupportsIds ===");
-      console.log("gameId:", gameId);
-      console.log("audioLanguage:", audioLanguage);
-      console.log("subtitleLanguage:", subtitleLanguage);
-      console.log("interfaceLanguage:", interfaceLanguage);
+
 
       const languageSupportsIds: number[] = [];
       const languageSupportTypes = { audio: 1, subtitles: 2, interface: 3 };
 
       if (audioLanguage) {
-        console.log(
-          `Buscando suporte de áudio para gameId=${gameId}, languageId=${audioLanguage}`
-        );
+        
         const audioSupport = await this.findLanguageSupport(
           gameId,
           parseInt(audioLanguage),
           languageSupportTypes.audio
         );
-        console.log("audioSupport encontrado:", audioSupport);
+
         if (audioSupport) languageSupportsIds.push(audioSupport.id);
       }
       if (subtitleLanguage) {
-        console.log(
-          `Buscando suporte de legenda para gameId=${gameId}, languageId=${subtitleLanguage}`
-        );
+       
         const subtitleSupport = await this.findLanguageSupport(
           gameId,
           parseInt(subtitleLanguage),
           languageSupportTypes.subtitles
         );
-        console.log("subtitleSupport encontrado:", subtitleSupport);
+     
         if (subtitleSupport) languageSupportsIds.push(subtitleSupport.id);
       }
       if (interfaceLanguage) {
-        console.log(
-          `Buscando suporte de interface para gameId=${gameId}, languageId=${interfaceLanguage}`
-        );
+        
         const interfaceSupport = await this.findLanguageSupport(
           gameId,
           parseInt(interfaceLanguage),
           languageSupportTypes.interface
         );
-        console.log("interfaceSupport encontrado:", interfaceSupport);
+        
         if (interfaceSupport) languageSupportsIds.push(interfaceSupport.id);
       }
 
-      console.log("languageSupportsIds finais:", languageSupportsIds);
-      console.log("=====================================");
       return languageSupportsIds;
     } catch (error) {
-      console.error("Erro ao buscar LanguageSupports:", error);
+      console.error(error);
       return [];
     }
   }
@@ -351,37 +320,26 @@ class AdvertisementCreationService {
     gameId: number,
     languageId: number,
     supportTypeId: number
-  ): Promise<any> {
+  ): Promise<LanguageSupportDTO | null> {
     try {
-      console.log(`=== findLanguageSupport ===`);
-      console.log(
-        `gameId: ${gameId}, languageId: ${languageId}, supportTypeId: ${supportTypeId}`
-      );
+      
 
       const response = await api.get("/api/language-supports", {
         params: { GameId: gameId, LanguageSupportTypeId: supportTypeId },
       });
 
-      console.log(`Resposta da API /api/language-supports:`, response.data);
-      console.log(`Status da resposta:`, response.status);
-      console.log(`Tipo de dados:`, typeof response.data);
-      console.log(`É array?`, Array.isArray(response.data));
-      console.log(`Length:`, response.data?.length);
-      console.log(`Procurando por language.id === ${languageId}`);
+     
 
-      if (response.data && Array.isArray(response.data)) {
-        console.log("Primeiro item da resposta:", response.data[0]);
-        console.log("Estrutura do language:", response.data[0]?.language);
-      }
 
       const result =
-        response.data.find((ls: any) => ls.language.id === languageId) || null;
-      console.log("Resultado encontrado:", result);
-      console.log("===========================");
+        response.data.find(
+          (ls: LanguageSupportDTO) => ls.language.id === languageId
+        ) || null;
+    
 
       return result;
     } catch (error) {
-      console.error("Erro ao buscar LanguageSupport específico:", error);
+      console.error(error);
       return null;
     }
   }
@@ -394,39 +352,26 @@ class AdvertisementCreationService {
     }
   ): Promise<number | undefined> {
     try {
-      console.log("=== DEBUG getGameLocalizationId ===");
-      console.log("gameId:", gameId);
-      console.log("regionValue:", regionValue);
-      console.log("referenceData?.regions:", referenceData?.regions);
+      
 
       // Se não há região selecionada (campo não visível), buscar sem filtro de região
       if (!regionValue || regionValue.trim() === "") {
-        console.log(
-          "Nenhuma região selecionada, buscando gameLocalization sem filtro de região"
-        );
-
+        
         const response = await api.get("/api/game-localizations", {
           params: {
             GameId: gameId,
           },
         });
 
-        console.log(
-          "Resposta da API /api/game-localizations (sem região):",
-          response.data
-        );
+        
         const gameLocalizationId = response.data?.[0]?.id;
-        console.log(
-          "gameLocalizationId encontrado (sem região):",
-          gameLocalizationId
-        );
-        console.log("====================================");
+       
 
         return gameLocalizationId;
       }
 
       if (!referenceData?.regions) {
-        console.log("Nenhum referenceData.regions fornecido");
+      
         return undefined;
       }
 
@@ -437,17 +382,15 @@ class AdvertisementCreationService {
           r.identifier === regionValue
       );
 
-      console.log("Região encontrada:", region);
+     
       if (!region) {
-        console.log("Nenhuma região correspondente encontrada");
+        
         return undefined;
       }
 
       const regionParam =
         region.identifier || region.name || region.id.toString();
-      console.log(
-        `Fazendo requisição para /api/game-localizations com GameId=${gameId}, Region=${regionParam}`
-      );
+      
 
       const response = await api.get("/api/game-localizations", {
         params: {
@@ -456,19 +399,13 @@ class AdvertisementCreationService {
         },
       });
 
-      console.log("Resposta da API /api/game-localizations:", response.data);
-      console.log("Status da resposta:", response.status);
-      console.log("Tipo de dados:", typeof response.data);
-      console.log("É array?", Array.isArray(response.data));
-      console.log("Length:", response.data?.length);
+      
 
       const gameLocalizationId = response.data?.[0]?.id;
-      console.log("gameLocalizationId encontrado:", gameLocalizationId);
-      console.log("====================================");
-
+      
       return gameLocalizationId;
     } catch (error) {
-      console.error("Erro ao buscar GameLocalization:", error);
+      console.error(error);
       return undefined;
     }
   }

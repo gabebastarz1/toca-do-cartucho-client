@@ -34,8 +34,8 @@ const ChangePassword: React.FC = () => {
 
   const isPasswordValid =
     hasMinLength && hasUppercase && hasLowercase && hasNumber && hasSpecialChar;
-  const passwordsMatch =
-    newPassword === confirmPassword && confirmPassword !== "";
+  // const passwordsMatch =
+  //   newPassword === confirmPassword && confirmPassword !== "";
 
   const handleSave = async () => {
     // Validações

@@ -19,6 +19,7 @@ import {
   ChangePassword,
   CancelAccount,
   MyProfile,
+  Reports,
 } from "./pages";
 import ConfirmEmail from "./pages/ConfirmEmail";
 import ResetPassword from "./pages/ResetPassword";
@@ -61,6 +62,7 @@ function AppContent() {
         <Route path="/seguranca" element={<Security />} />
         <Route path="/alterar-senha" element={<ChangePassword />} />
         <Route path="/cancelar-conta" element={<CancelAccount />} />
+        <Route path="/relatorios" element={<Reports />} />
         <Route
           path="/criar-anuncio/apenas-troca"
           element={<CreateAdvertisementOnlyTrade />}

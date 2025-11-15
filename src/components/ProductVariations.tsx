@@ -2,23 +2,15 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { useReferenceData } from "../hooks/useReferenceData"; // Removed to use mock
 import WhatsAppLink from "./WhatsAppLink"; // Removed to use mock
+import { AdvertisementDTO } from "../api/types";
 
-type AdvertisementDTO = {
-  id: number | string;
-  preservationState?: { name: string };
-  cartridgeType?: { name: string };
-  gameLocalization?: { region?: { name: string } };
-  advertisementLanguageSupports?: {
-    languageSupport?: {
-      language?: { name: string };
-      languageSupportType?: { id: number };
-    };
-  }[];
-  availableStock?: number;
-  game?: {
-    title?: string;
-    igdbUrl?: string;
+// Tipo auxiliar para a estrutura de languageSupport que pode vir do backend
+type LanguageSupportItem = {
+  languageSupport?: {
+    language?: { name: string };
+    languageSupportType?: { id: number; name?: string };
   };
+  language?: string; // Fallback para estrutura simples
 };
 
 interface OptionButtonProps {
@@ -166,27 +158,39 @@ const ProductVariations: React.FC<ProductVariationsProps> = ({
         if (!v.advertisementLanguageSupports) return [];
         return v.advertisementLanguageSupports
           .filter(
-            (als: any) => als.languageSupport?.languageSupportType?.id === 1
+            (als: LanguageSupportItem) =>
+              als.languageSupport?.languageSupportType?.id === 1
           )
-          .map((als: any) => als.languageSupport?.language?.name)
+          .map(
+            (als: LanguageSupportItem) =>
+              als.languageSupport?.language?.name || als.language || ""
+          )
           .filter(Boolean);
       },
       subtitleLanguages: (v: AdvertisementDTO) => {
         if (!v.advertisementLanguageSupports) return [];
         return v.advertisementLanguageSupports
           .filter(
-            (als: any) => als.languageSupport?.languageSupportType?.id === 2
+            (als: LanguageSupportItem) =>
+              als.languageSupport?.languageSupportType?.id === 2
           )
-          .map((als: any) => als.languageSupport?.language?.name)
+          .map(
+            (als: LanguageSupportItem) =>
+              als.languageSupport?.language?.name || als.language || ""
+          )
           .filter(Boolean);
       },
       interfaceLanguages: (v: AdvertisementDTO) => {
         if (!v.advertisementLanguageSupports) return [];
         return v.advertisementLanguageSupports
           .filter(
-            (als: any) => als.languageSupport?.languageSupportType?.id === 3
+            (als: LanguageSupportItem) =>
+              als.languageSupport?.languageSupportType?.id === 3
           )
-          .map((als: any) => als.languageSupport?.language?.name)
+          .map(
+            (als: LanguageSupportItem) =>
+              als.languageSupport?.language?.name || als.language || ""
+          )
           .filter(Boolean);
       },
     }),

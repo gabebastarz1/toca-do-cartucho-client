@@ -184,8 +184,8 @@ const SignUpForm: React.FC = () => {
         birthdayDate: dataNascimento || null,
       };
 
-      const response = await authService.register(apiPayload);
-      console.log("Cadastro realizado com sucesso! Resposta da API:", response);
+  await authService.register(apiPayload);
+   
       showSuccess(
         "Conta criada com sucesso! Verifique seu e-mail para ativá-la. Você será redirecionado para o login em 5 segundos."
       );
@@ -194,7 +194,7 @@ const SignUpForm: React.FC = () => {
       }, 5000);
     } catch (error: unknown) {
       const apiError = error as { status?: number; data?: unknown };
-      console.error("Erro no cadastro:", apiError);
+      
       const errorData = (apiError.data ?? {}) as {
         errors?: Record<string, string[]>;
       };

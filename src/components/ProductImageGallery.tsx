@@ -92,15 +92,12 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
 
       if (variationImageIndex !== -1) {
         setCurrentIndex(variationImageIndex);
-        console.log("=== URL SYNC - VARIATION ===");
-        console.log("variationId:", variationId);
-        console.log("variationImageIndex:", variationImageIndex);
+        
       }
     } else {
       // Se não há variation na URL, mostrar primeira imagem do anúncio principal
       setCurrentIndex(0);
-      console.log("=== URL SYNC - MAIN AD ===");
-      console.log("Setting to first image (index 0)");
+      
     }
   }, [location.search, images]);
 

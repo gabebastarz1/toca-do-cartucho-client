@@ -122,14 +122,10 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
     setError("");
 
     try {
-      console.log("🔐 [TwoFactorSetup] Verificando código:", verificationCode);
+      
       const response = await twoFactorAuthService.enable2FA(verificationCode);
 
-      console.log("✅ [TwoFactorSetup] Resposta da verificação:", response);
-      console.log(
-        "✅ [TwoFactorSetup] Recovery codes:",
-        response.recoveryCodes
-      );
+      
 
       if (response.recoveryCodes && response.recoveryCodes.length > 0) {
         setRecoveryCodes(response.recoveryCodes);

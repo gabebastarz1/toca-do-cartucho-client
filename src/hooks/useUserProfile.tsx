@@ -28,16 +28,14 @@ export const useUserProfile = (): UseUserProfileReturn => {
     setError(null);
 
     try {
-      console.log(
-        "🔍 [useUserProfile] Fazendo requisição para /api/accounts/profile"
-      );
+      
       const response = await api.get("/api/accounts/profile");
-      console.log("✅ [useUserProfile] Resposta recebida:", response.data);
+
       setUserProfile(response.data);
       userProfileCache.set(response.data); // Salva no cache
     } catch (err) {
       console.error(
-        "❌ [useUserProfile] Erro ao buscar perfil do usuário:",
+        
         err
       );
       setError("Erro ao carregar dados do usuário");

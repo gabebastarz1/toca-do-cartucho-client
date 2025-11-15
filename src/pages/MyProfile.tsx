@@ -13,11 +13,13 @@ import {
   ArrowLeft,
   ChevronRight,
   Tag,
+  BarChart,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { UserDTO } from "../api/types";
 import { User as AuthUser } from "../services/authService";
+import { authService } from "../services/authService";
 
 // Tipo union para incluir profileImage
 type UserWithProfileImage = (AuthUser | UserDTO) & {
@@ -44,6 +46,28 @@ const MyProfile: React.FC = () => {
       : displayUser?.nickName || "Usuário";
 
   const displayEmail = displayUser?.email || "";
+
+  // Verificar se o usuário é administrador
+  // Verificar tanto no user quanto no userProfile, pois podem ter origens diferentes
+  // Também usar authService.isAdmin() como fallback
+  const userRoles = user?.roles || userProfile?.roles || [];
+  const isAdminFromRoles = userRoles.includes("Administrator");
+  const isAdminFromService = authService.isAdmin();
+  const isAdmin = isAdminFromRoles || isAdminFromService;
+
+  // Debug: log para verificar roles (remover em produção)
+  if (user || userProfile) {
+    console.log("🔍 [MyProfile] Debug roles:", {
+      userRoles,
+      userHasRoles: !!user?.roles,
+      userProfileHasRoles: !!userProfile?.roles,
+      userRolesArray: user?.roles,
+      userProfileRolesArray: userProfile?.roles,
+      isAdminFromRoles,
+      isAdminFromService,
+      isAdmin,
+    });
+  }
 
   const displayInitial =
     displayUser?.firstName?.charAt(0) ||
@@ -170,6 +194,23 @@ const MyProfile: React.FC = () => {
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
               </button>
+              {isAdmin && (
+                <button
+                onClick={() => navigate("/relatorios")}
+                className="w-full flex items-center px-4 py-4 mt-1 hover:bg-gray-50 transition-colors active:bg-gray-100"
+              >
+                <BarChart className="w-6 h-6 text-gray-700 mr-3 flex-shrink-0" />
+                <div className="flex-1 text-left">
+                    <p className="text-black text-base font-semibold">
+                      Relatórios e estatísticas
+                  </p>
+                  <p className="text-black text-sm font-light text-gray-600 mt-0.5">
+                    Ver relatórios e estatísticas
+                  </p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+              </button>
+              )}
             </div>
           </div>
         </div>
@@ -275,6 +316,24 @@ const MyProfile: React.FC = () => {
                 </p>
               </div>
             </button>
+
+            {/* Card: Relatórios e estatísticas - Apenas para Administradores */}
+            {isAdmin && (
+              <button
+                onClick={() => navigate("/relatorios")}
+                className="bg-white border border-[#908a99]/50 rounded-[10px] w-full sm:w-[379px] h-[140px] sm:h-[160px] p-4 sm:p-6 flex flex-col justify-start hover:shadow-md transition-shadow"
+              >
+                <BarChart className="w-6 h-6 sm:w-5 sm:h-5" />
+                <div className="mt-2 text-left">
+                  <h3 className="text-[18px] sm:text-[20px] font-normal text-black">
+                    Relatórios e estatísticas
+                  </h3>
+                  <p className="text-[12px] sm:text-[14px] font-normal text-[#3c3a40] mt-2">
+                    Ver relatórios e estatísticas
+                  </p>
+                </div>
+              </button>
+            )}
           </section>
         </div>
       </main>

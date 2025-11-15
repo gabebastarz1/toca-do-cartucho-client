@@ -20,7 +20,6 @@ const RecommendedProducts: React.FC<RecommendedProductsProps> = ({
 }) => {
   // ✅ Buscar produtos relacionados baseado no anúncio atual
   const getRelatedFilters = () => {
-    console.log("🔍 [RecommendedProducts] Buscando anúncios mais recentes");
     // Apenas produtos ativos, sem filtros complexos
     return { status: "Active" };
   };
@@ -33,27 +32,14 @@ const RecommendedProducts: React.FC<RecommendedProductsProps> = ({
     autoFetch: true,
   });
 
-  console.log("📊 [RecommendedProducts] Estado do hook:");
-  console.log("📊 [RecommendedProducts] Loading:", loading);
-  console.log("📊 [RecommendedProducts] Error:", error);
-  console.log(
-    "📊 [RecommendedProducts] Advertisements count:",
-    advertisements?.length || 0
-  );
-  console.log("📊 [RecommendedProducts] Advertisements:", advertisements);
+ 
 
   // ✅ Converter advertisements para produtos
   const recommendedProducts = React.useMemo(() => {
-    console.log(
-      "🔄 [RecommendedProducts] Convertendo advertisements para produtos..."
-    );
-    console.log(
-      "🔄 [RecommendedProducts] Advertisements recebidos:",
-      advertisements
-    );
+   
 
     const products = mapAdvertisementsToProducts(advertisements);
-    console.log("🔄 [RecommendedProducts] Produtos convertidos:", products);
+   
 
     // Filtrar o produto atual se estiver na lista (opcional)
     const filteredProducts = products.filter(
@@ -61,13 +47,10 @@ const RecommendedProducts: React.FC<RecommendedProductsProps> = ({
         !currentAdvertisement ||
         product.id !== currentAdvertisement.id.toString()
     );
-    console.log(
-      "🔄 [RecommendedProducts] Produtos após filtrar atual:",
-      filteredProducts
-    );
+ 
 
     const finalProducts = filteredProducts.slice(0, maxProducts);
-    console.log("🔄 [RecommendedProducts] Produtos finais:", finalProducts);
+   
 
     return finalProducts;
   }, [advertisements, currentAdvertisement, maxProducts]);

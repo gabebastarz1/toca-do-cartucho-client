@@ -41,21 +41,18 @@ const TwoFactor: React.FC = () => {
     const load2FAInfo = async () => {
       // Verificar se usuário está autenticado
       if (!userProfile) {
-        console.log(
-          "⚠️ [TwoFactor] Usuário não autenticado, redirecionando para login..."
-        );
         window.location.href = "/login?redirect=/2fa";
         return;
       }
 
       try {
-        console.log("🔍 [TwoFactor] Carregando informações de 2FA...");
+       
         const info = await twoFactorAuthService.get2FAInfo();
-        console.log("✅ [TwoFactor] Informações carregadas:", info);
+        
         setTwoFactorInfo(info);
       } catch (error) {
         console.error(
-          "❌ [TwoFactor] Erro ao carregar informações de 2FA:",
+         
           error
         );
         showError(

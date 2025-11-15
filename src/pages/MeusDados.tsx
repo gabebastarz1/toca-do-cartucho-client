@@ -181,36 +181,18 @@ const MeusDados: React.FC = () => {
   // Carregar dados do usuário quando o perfil for carregado
   useEffect(() => {
     if (userProfile) {
-      console.log("📋 [MeusDados] Dados do usuário carregados:", userProfile);
-      console.log(
-        "🏠 [MeusDados] Endereços disponíveis:",
-        userProfile.addresses
-      );
-      console.log("🆔 [MeusDados] CPF do usuário:", userProfile.cpf);
-      console.log(
-        "📞 [MeusDados] Telefone do usuário:",
-        userProfile.phoneNumber
-      );
-      console.log(
-        "🔍 [MeusDados] Campos disponíveis:",
-        Object.keys(userProfile)
-      );
+      
 
       // Dados brutos do backend
       const rawCEP = userProfile.addresses?.[0]?.address?.zipCode || "";
       const rawCPF = userProfile.cpf || "";
 
-      console.log("🔧 [MeusDados] Dados brutos do backend:");
-      console.log("📮 [MeusDados] CEP bruto:", rawCEP);
-      console.log("🆔 [MeusDados] CPF bruto:", rawCPF);
 
       // Aplicar formatação aos dados do backend
       const formattedCEP = formatCEP(rawCEP);
       const formattedCPF = formatCPF(rawCPF);
 
-      console.log("🎨 [MeusDados] Formatação aplicada:");
-      console.log("📮 [MeusDados] CEP formatado:", rawCEP, "→", formattedCEP);
-      console.log("🆔 [MeusDados] CPF formatado:", rawCPF, "→", formattedCPF);
+
 
       // Formatar telefone do backend
       const formattedPhone = formatPhone(userProfile.phoneNumber || "");
@@ -260,11 +242,7 @@ const MeusDados: React.FC = () => {
         cpf: formattedCPF,
       };
 
-      console.log("📝 [MeusDados] Formulário preenchido com:", formDataToSet);
-      console.log(
-        "📋 [MeusDados] Dados originais armazenados:",
-        originalDataToSet
-      );
+     
       setFormData(formDataToSet);
       setOriginalData(originalDataToSet);
     }
@@ -305,12 +283,7 @@ const MeusDados: React.FC = () => {
     // Limita a 8 dígitos (CEP brasileiro)
     const limitedNumbers = numbers.slice(0, 8);
 
-    // Log quando o limite é aplicado
-    if (numbers.length > 8) {
-      console.log(
-        `📮 [formatCEP] Limite aplicado: ${numbers} → ${limitedNumbers} (máximo 8 dígitos)`
-      );
-    }
+  
 
     // Se tem menos de 5 dígitos, retorna apenas os números
     if (limitedNumbers.length <= 5) {
@@ -362,12 +335,7 @@ const MeusDados: React.FC = () => {
     // Limita a 11 dígitos (CPF brasileiro)
     const limitedNumbers = numbers.slice(0, 11);
 
-    // Log quando o limite é aplicado
-    if (numbers.length > 11) {
-      console.log(
-        `🆔 [formatCPF] Limite aplicado: ${numbers} → ${limitedNumbers} (máximo 11 dígitos)`
-      );
-    }
+    
 
     // Se tem menos de 4 dígitos, retorna apenas os números
     if (limitedNumbers.length <= 3) {
@@ -523,7 +491,7 @@ const MeusDados: React.FC = () => {
   };
 
   const handleInputChange = (field: string, value: string | boolean) => {
-    console.log(`🔧 [MeusDados] Campo: ${field}, Valor recebido:`, value);
+
 
     // Limpar erros quando o usuário começar a digitar novamente
     if (field === "cpf" && cpfError) {
@@ -541,7 +509,7 @@ const MeusDados: React.FC = () => {
 
   const handleSave = async () => {
     if (!userProfile?.id) {
-      console.log("❌ [MeusDados] Usuário não encontrado para salvar");
+      
       showError("Usuário não encontrado");
       return;
     }
@@ -558,18 +526,12 @@ const MeusDados: React.FC = () => {
       if (cpfNumbers.length === 11 && !isValidCPF(formData.cpf)) {
         setCpfError("CPF inválido. Verifique os dígitos informados.");
         showError("CPF inválido. Corrija o CPF antes de salvar.");
-        console.log(
-          "❌ [MeusDados] Tentativa de salvar com CPF inválido:",
-          formData.cpf
-        );
+        
         return;
       } else if (cpfNumbers.length > 0 && cpfNumbers.length < 11) {
         setCpfError("CPF deve ter 11 dígitos.");
         showError("CPF incompleto. Digite todos os 11 dígitos.");
-        console.log(
-          "❌ [MeusDados] Tentativa de salvar com CPF incompleto:",
-          formData.cpf
-        );
+       
         return;
       }
     }
@@ -580,16 +542,10 @@ const MeusDados: React.FC = () => {
         "Data de nascimento inválida. Use o formato DD/MM/AAAA."
       );
       showError("Data de nascimento inválida. Corrija a data antes de salvar.");
-      console.log(
-        "❌ [MeusDados] Tentativa de salvar com data inválida:",
-        formData.dataNascimento
-      );
+      
       return;
     }
 
-    //console.log("💾 [MeusDados] Iniciando salvamento dos dados...");
-    //console.log("📊 [MeusDados] Dados do formulário:", formData);
-    //console.log("👤 [MeusDados] ID do usuário:", userProfile.id);
 
     setIsSaving(true);
     setCpfError(null);
@@ -600,29 +556,22 @@ const MeusDados: React.FC = () => {
       const changedFields = getChangedFields();
 
       if (Object.keys(changedFields).length === 0) {
-        console.log(
-          " [MeusDados] Nenhum campo foi alterado, não é necessário salvar"
-        );
+        
 
         setIsSaving(false);
         return;
       }
 
-      console.log("📤 [MeusDados] Campos alterados detectados:", changedFields);
-      console.log(
-        "[MeusDados] Total de campos alterados:",
-        Object.keys(changedFields).length
-      );
-      console.log("[MeusDados] Fazendo PATCH para:", `/api/accounts/profile`);
+     
+  
 
       // Atualizar dados do usuário
       await api.patch(`/api/accounts/profile`, changedFields);
-      console.log("[MeusDados] Dados atualizados com sucesso!");
+      
 
-      // Recarregar dados do perfil
-      console.log("[MeusDados] Recarregando dados do perfil...");
+      
       await refetch();
-      console.log("[MeusDados] Dados do perfil recarregados!");
+    
 
       //  Atualizar dados originais com os novos dados salvos
       const newOriginalData = {
@@ -642,7 +591,7 @@ const MeusDados: React.FC = () => {
         cpf: formData.cpf,
       };
       setOriginalData(newOriginalData);
-      console.log("[MeusDados] Dados originais atualizados:", newOriginalData);
+      
 
       // Mostrar alert de sucesso
       showSuccess("Dados salvos com sucesso!");

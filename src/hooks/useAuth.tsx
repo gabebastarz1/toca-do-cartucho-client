@@ -5,7 +5,7 @@ import {
   useState,
   ReactNode,
 } from "react";
-import { authService, User } from "../services/authService";
+import { authService, User, RegisterRequest } from "../services/authService";
 import { twoFactorAuthService } from "../services/twoFactorAuthService";
 
 interface AuthContextType {
@@ -19,7 +19,7 @@ interface AuthContextType {
     twoFactorCode?: string,
     twoFactorRecoveryCode?: string
   ) => Promise<void>;
-  register: (userData: any) => Promise<void>;
+  register: (userData: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   setCookieAuth: (cookieValue: string) => void;
   hide2FAAlert: () => void;
@@ -28,6 +28,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -51,35 +52,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // Debug dos cookies para diagnóstico
-        authService.debugCookies();
-
         if (authService.isAuthenticated()) {
           const currentUser = authService.getUser();
           if (currentUser) {
-            console.log("Usuário encontrado no localStorage:", currentUser);
+            
             setUser(currentUser);
           } else {
             // Tentar obter usuário do servidor (pode haver cookie de sessão válido)
-            console.log("Tentando obter usuário do servidor...");
+            
             const serverUser = await authService.getCurrentUser();
             if (serverUser) {
-              console.log("Usuário obtido do servidor:", serverUser);
+            
               setUser(serverUser);
               // Salvar dados do usuário no localStorage para próximas verificações
               authService.setAuthData("cookie-based-auth", serverUser);
             } else {
-              console.log(
-                "Nenhum usuário encontrado no servidor, fazendo logout"
-              );
+              
               authService.logout();
             }
           }
-        } else {
-          console.log("Usuário não autenticado");
-        }
+        } 
       } catch (error) {
-        console.error("Erro ao inicializar autenticação:", error);
+        console.error(error);
         authService.logout();
       } finally {
         setIsLoading(false);
@@ -131,7 +125,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     await check2FAStatus();
   };
 
-  const register = async (userData: any) => {
+  const register = async (userData: RegisterRequest) => {
     const response = await authService.register(userData);
     setUser(response.user);
   };
@@ -143,10 +137,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     sessionStorage.removeItem(ALERT_SHOWN_KEY);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const setCookieAuth = (cookieValue: string) => {
-    authService.setCookieAuth(cookieValue);
+    // O cookie já está definido pelo servidor, então apenas atualizamos o usuário
+    // O parâmetro cookieValue não é usado, mas é mantido para compatibilidade com a interface
     const user = authService.getUser();
-    setUser(user);
+    if (!user) {
+      // Se não há usuário no localStorage, tentar obter do servidor
+      authService.getCurrentUser().then((serverUser) => {
+        if (serverUser) {
+          setUser(serverUser);
+        }
+      });
+    } else {
+      setUser(user);
+    }
   };
 
   const value: AuthContextType = {

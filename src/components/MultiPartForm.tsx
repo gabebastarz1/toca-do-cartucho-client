@@ -181,7 +181,7 @@ const MultiPartForm = () => {
 
     // Quando um jogo é selecionado, buscar dados específicos do jogo principal
     if (name === "jogo" && value) {
-      console.log(`🎮 Jogo principal selecionado: ${value}`);
+      
       mainGameData.fetchGameData(parseInt(value));
     } else if (name === "jogo" && !value) {
       // Se o jogo for desmarcado, limpar os dados específicos
@@ -190,7 +190,7 @@ const MultiPartForm = () => {
 
     // Quando um jogo de troca é selecionado, buscar dados específicos do jogo de troca
     if (name === "jogosTroca" && value) {
-      console.log(`🎮 Jogo de troca selecionado: ${value}`);
+      
       tradeGameData.fetchGameData(parseInt(value));
     } else if (name === "jogosTroca" && !value) {
       // Se o jogo de troca for desmarcado, limpar os dados específicos

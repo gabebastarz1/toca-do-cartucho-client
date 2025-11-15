@@ -84,11 +84,7 @@ export const useAdvertisements = (
       console.log("Total pages from API:", response?.totalPages || 0);*/
       }
 
-      if (response?.advertisements?.length > 0) {
-        //console.log("First advertisement sample:", response.advertisements[0]);
-        //console.log("Advertisement sale:", response.advertisements[0]?.sale);
-        //console.log("Advertisement trade:", response.advertisements[0]?.trade);
-      }
+      
       //console.log("===========================");
 
       // Verificar se a resposta tem a estrutura esperada
