@@ -7,6 +7,7 @@ import React, {
   ReactNode,
 } from "react";
 import { api } from "../services/api";
+import { GameLocalizationDTO, RegionDTO as ApiRegionDTO } from "../api/types";
 
 // Interfaces para os dados do backend
 interface GenreDTO {
@@ -161,10 +162,6 @@ export const CategoryDataProvider: React.FC<CategoryDataProviderProps> = ({
     setError(null);
 
     try {
-      console.log(
-        "Buscando gêneros, temas, modos de jogo, idiomas e regiões do backend..."
-      );
-
       const [
         genresResponse,
         themesResponse,
@@ -183,27 +180,24 @@ export const CategoryDataProvider: React.FC<CategoryDataProviderProps> = ({
       const themesData: ThemeDTO[] = themesResponse.data;
       const gameModesData: GameModeDTO[] = gameModesResponse.data;
       const languagesData: LanguageDTO[] = languagesResponse.data;
-      const gameLocalizationsData: any[] = gameLocalizationsResponse.data;
-
-      console.log("Gêneros recebidos:", genresData.length);
-      console.log("Temas recebidos:", themesData.length);
-      console.log("Modos de jogo recebidos:", gameModesData.length);
-      console.log("Idiomas recebidos:", languagesData.length);
-      console.log(
-        "Localizações de jogos recebidas:",
-        gameLocalizationsData.length
-      );
+      const gameLocalizationsData: GameLocalizationDTO[] =
+        gameLocalizationsResponse.data;
 
       // Extrair regiões únicas das localizações de jogos
-      const regionsMap = new Map<number, RegionDTO>();
-      gameLocalizationsData.forEach((localization: any) => {
+      const regionsMap = new Map<number, ApiRegionDTO>();
+      gameLocalizationsData.forEach((localization: GameLocalizationDTO) => {
         if (localization.region && !regionsMap.has(localization.region.id)) {
           regionsMap.set(localization.region.id, localization.region);
         }
       });
-      const regionsData = Array.from(regionsMap.values());
-
-      console.log("Regiões únicas extraídas:", regionsData.length);
+      // Converter ApiRegionDTO para RegionDTO local (adicionando campos faltantes)
+      const regionsData: RegionDTO[] = Array.from(regionsMap.values()).map(
+        (region) => ({
+          ...region,
+          createdAt: region.updatedAt || new Date().toISOString(),
+          category: region.category || "",
+        })
+      );
 
       // Converter DTOs para interfaces do frontend
       const convertedGenres = genresData.map(convertGenreDTO);
@@ -254,6 +248,7 @@ export const CategoryDataProvider: React.FC<CategoryDataProviderProps> = ({
 };
 
 // Hook para usar o contexto
+// eslint-disable-next-line react-refresh/only-export-components
 export const useCategoryData = (): CategoryDataContextType => {
   const context = useContext(CategoryDataContext);
 
@@ -267,42 +262,49 @@ export const useCategoryData = (): CategoryDataContextType => {
 };
 
 // Hook específico para gêneros
+// eslint-disable-next-line react-refresh/only-export-components
 export const useGenres = () => {
   const { genres, loading, error, refetch } = useCategoryData();
   return { genres, loading, error, refetch };
 };
 
 // Hook específico para temáticas
+// eslint-disable-next-line react-refresh/only-export-components
 export const useThemes = () => {
   const { themes, loading, error, refetch } = useCategoryData();
   return { themes, loading, error, refetch };
 };
 
 // Hook específico para modos de jogo
+// eslint-disable-next-line react-refresh/only-export-components
 export const useGameModes = () => {
   const { gameModes, loading, error, refetch } = useCategoryData();
   return { gameModes, loading, error, refetch };
 };
 
 // Hook específico para idiomas
+// eslint-disable-next-line react-refresh/only-export-components
 export const useLanguages = () => {
   const { languages, loading, error, refetch } = useCategoryData();
   return { languages, loading, error, refetch };
 };
 
 // Hook específico para regiões
+// eslint-disable-next-line react-refresh/only-export-components
 export const useRegions = () => {
   const { regions, loading, error, refetch } = useCategoryData();
   return { regions, loading, error, refetch };
 };
 
 // Hook para categorias básicas (gêneros e temas)
+// eslint-disable-next-line react-refresh/only-export-components
 export const useCategories = () => {
   const { genres, themes, loading, error, refetch } = useCategoryData();
   return { genres, themes, loading, error, refetch };
 };
 
 // Hook para todos os dados
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAllCategoryData = () => {
   const {
     genres,

@@ -1,31 +1,62 @@
 import { useState, useCallback } from "react";
 import { api } from "../services/api";
+import { RegionDTO } from "../api/types";
+import { LanguageSupportDTO } from "../api/referenceDataTypes";
 
 interface GameLocalizationDTO {
   id: number;
   gameId: number;
-  region: {
-    id: number;
-    name: string;
-    identifier: string;
-  };
+  region:
+    | RegionDTO
+    | {
+        id: number;
+        name: string;
+        identifier?: string;
+        region?: RegionDTO;
+      };
 }
 
-interface LanguageSupportDTO {
-  id: number;
-  gameId: number;
-  languageSupport: {
-    id: number;
-    languageSupportType: {
+// Tipo auxiliar para lidar com diferentes estruturas de region
+type RegionLike =
+  | RegionDTO
+  | {
       id: number;
-      name: string;
+      name?: string;
+      identifier?: string;
+      region?: RegionDTO;
     };
-    language: {
+
+// Tipo auxiliar para lidar com diferentes estruturas de languageSupport
+type LanguageSupportLike =
+  | LanguageSupportDTO
+  | {
       id: number;
-      name: string;
+      languageSupport?: {
+        id: number;
+        languageSupportType?:
+          | {
+              id: number;
+              name?: string;
+            }
+          | number;
+        language?:
+          | {
+              id: number;
+              name: string;
+            }
+          | string;
+      };
+      language?: {
+        id: number;
+        name: string;
+      };
+      languageSupportType?:
+        | {
+            id: number;
+            name?: string;
+          }
+        | number;
     };
-  };
-}
 
 interface GameSpecificData {
   gameLocalizations: GameLocalizationDTO[];
@@ -56,8 +87,6 @@ export const useGameSpecificData = () => {
     setData((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
-      console.log(`🔍 Buscando dados específicos para o jogo ID: ${gameId}`);
-
       // Buscar localizações do jogo
       const gameLocalizationsResponse = await api.get(
         "/api/game-localizations",
@@ -126,22 +155,39 @@ export const useGameSpecificData = () => {
       .map((gl) => {
         try {
           // Verificar diferentes estruturas possíveis
-          const region = gl.region || gl;
+          const region = (gl.region || gl) as RegionLike;
 
-          // console.log("🔍 GameLocalization item:", gl);
-          // console.log("🔍 Region:", region);
+          // Extrair nome de forma segura
+          const getName = (r: RegionLike): string => {
+            if (
+              "region" in r &&
+              r.region &&
+              typeof r.region === "object" &&
+              "name" in r.region
+            ) {
+              return r.region.name;
+            }
+            if ("name" in r && typeof r.name === "string") {
+              return r.name;
+            }
+            return "";
+          };
 
           return {
             id: region.id,
-            name: (region as any).region?.name || (region as any).name,
-            identifier: (region as any).region?.name || (region as any).name,
+            name: getName(region),
+            identifier: getName(region),
           };
         } catch (error) {
-          console.error("❌ Erro ao processar gameLocalization:", error, gl);
+          console.error(error);
           return null;
         }
       })
-      .filter(Boolean); // Remove valores null/undefined
+      .filter(Boolean) as Array<{
+      id: number;
+      name: string;
+      identifier: string;
+    }>; // Remove valores null/undefined
   }, [data.gameLocalizations]);
 
   const getAvailableLanguages = useCallback(
@@ -165,38 +211,107 @@ export const useGameSpecificData = () => {
         .filter((ls) => {
           try {
             // Verificar diferentes estruturas possíveis
-            const languageSupport = ls.languageSupport || ls;
-            const languageSupportType = (languageSupport as any)
-              .languageSupportType;
+            const languageSupport = (
+              "languageSupport" in ls && ls.languageSupport
+                ? ls.languageSupport
+                : ls
+            ) as LanguageSupportLike;
 
-            //console.log("🔍 Item sendo analisado:", ls);
-            // console.log("🔍 languageSupport:", languageSupport);
-            //console.log("🔍 languageSupportType:", languageSupportType);
+            // Extrair languageSupportType de forma segura
+            const getLanguageSupportType = (
+              lsItem: LanguageSupportLike
+            ): number | null => {
+              // Verificar se é LanguageSupportDTO (tem languageSupportType diretamente)
+              if (
+                "languageSupportType" in lsItem &&
+                lsItem.languageSupportType
+              ) {
+                if (
+                  typeof lsItem.languageSupportType === "object" &&
+                  "id" in lsItem.languageSupportType
+                ) {
+                  return lsItem.languageSupportType.id;
+                }
+                if (typeof lsItem.languageSupportType === "number") {
+                  return lsItem.languageSupportType;
+                }
+              }
+              // Verificar estrutura aninhada (languageSupport.languageSupportType)
+              if ("languageSupport" in lsItem && lsItem.languageSupport) {
+                const ls = lsItem.languageSupport;
+                if ("languageSupportType" in ls && ls.languageSupportType) {
+                  if (
+                    typeof ls.languageSupportType === "object" &&
+                    "id" in ls.languageSupportType
+                  ) {
+                    return ls.languageSupportType.id;
+                  }
+                  if (typeof ls.languageSupportType === "number") {
+                    return ls.languageSupportType;
+                  }
+                }
+              }
+              return null;
+            };
 
-            // Tentar diferentes formas de acessar o tipo
-            const typeId = languageSupportType?.id || languageSupportType;
-
+            const typeId = getLanguageSupportType(languageSupport);
             return typeId === typeMap[supportType];
           } catch (error) {
-            console.error("❌ Erro ao processar languageSupport:", error, ls);
+            console.error(error, ls);
             return false;
           }
         })
         .map((ls) => {
           try {
-            const languageSupport = ls.languageSupport || ls;
-            const language = (languageSupport as any).language;
+            // Verificar diferentes estruturas possíveis
+            const languageSupport = (
+              "languageSupport" in ls && ls.languageSupport
+                ? ls.languageSupport
+                : ls
+            ) as LanguageSupportLike;
+
+            // Extrair language de forma segura
+            const getLanguageName = (lsItem: LanguageSupportLike): string => {
+              // Verificar se é LanguageSupportDTO (tem language diretamente)
+              if ("language" in lsItem && lsItem.language) {
+                if (
+                  typeof lsItem.language === "object" &&
+                  "name" in lsItem.language
+                ) {
+                  return lsItem.language.name;
+                }
+                if (typeof lsItem.language === "string") {
+                  return lsItem.language;
+                }
+              }
+              // Verificar estrutura aninhada (languageSupport.language)
+              if ("languageSupport" in lsItem && lsItem.languageSupport) {
+                const ls = lsItem.languageSupport;
+                if ("language" in ls && ls.language) {
+                  if (
+                    typeof ls.language === "object" &&
+                    "name" in ls.language
+                  ) {
+                    return ls.language.name;
+                  }
+                  if (typeof ls.language === "string") {
+                    return ls.language;
+                  }
+                }
+              }
+              return "";
+            };
 
             return {
               id: languageSupport.id,
-              name: language,
+              name: getLanguageName(languageSupport),
             };
           } catch (error) {
-            console.error("❌ Erro ao mapear languageSupport:", error, ls);
+            console.error(error, ls);
             return null;
           }
         })
-        .filter(Boolean); // Remove valores null/undefined
+        .filter(Boolean) as Array<{ id: number; name: string }>; // Remove valores null/undefined
     },
     [data.languageSupports]
   );

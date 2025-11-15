@@ -64,8 +64,8 @@ const Login: React.FC = () => {
           `/reset-password?email=${encodeURIComponent(emailToRedirect)}`
         );
       }, 2000);
-    } catch (error) {
-      console.error("Erro ao enviar email de recuperação:", error);
+    } catch {
+      
       showError(
         "Erro ao enviar email de recuperação. Verifique se o email está correto."
       );
@@ -110,7 +110,7 @@ const Login: React.FC = () => {
       );
       navigate("/"); // Redireciona para a home page
     } catch (err: unknown) {
-      console.log("🔍 [Login] Erro capturado:", err);
+
 
       const error = err as {
         status?: number;
@@ -119,8 +119,7 @@ const Login: React.FC = () => {
           | string;
       };
 
-      console.log("🔍 [Login] Status:", error.status);
-      console.log("🔍 [Login] Data:", error.data);
+
 
       // Detectar se necessita de 2FA - verificar múltiplos formatos de resposta
       const dataString =
@@ -138,7 +137,7 @@ const Login: React.FC = () => {
             error.data.title.includes("RequiresTwoFactor")));
 
       if (requires2FADetected && !requires2FA) {
-        console.log("✅ [Login] 2FA detectado - mostrando campo");
+      
         setRequires2FA(true);
         showError(
           "Esta conta possui autenticação de dois fatores. Por favor, insira seu código."

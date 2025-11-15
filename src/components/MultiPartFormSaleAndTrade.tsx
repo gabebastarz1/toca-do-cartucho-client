@@ -171,7 +171,7 @@ const MultiPartFormSaleAndTrade = () => {
 
     // Quando um jogo é selecionado, buscar dados específicos do jogo principal
     if (name === "jogo" && value) {
-      console.log(`🎮 Jogo principal selecionado: ${value}`);
+      
       mainGameData.fetchGameData(parseInt(value));
     } else if (name === "jogo" && !value) {
       // Se o jogo for desmarcado, limpar os dados específicos
@@ -180,7 +180,7 @@ const MultiPartFormSaleAndTrade = () => {
 
     // Quando um jogo de troca é selecionado, buscar dados específicos do jogo de troca
     if (name === "jogosTroca" && value) {
-      console.log(`🎮 Jogo de troca selecionado: ${value}`);
+    
       tradeGameData.fetchGameData(parseInt(value));
     } else if (name === "jogosTroca" && !value) {
       // Se o jogo de troca for desmarcado, limpar os dados específicos
@@ -193,7 +193,7 @@ const MultiPartFormSaleAndTrade = () => {
 
     // Quando um jogo de troca é selecionado na variação, buscar dados específicos do jogo de troca
     if (name === "jogosTroca" && value) {
-      console.log(`🎮 Jogo de troca selecionado na variação: ${value}`);
+      
       tradeGameData.fetchGameData(parseInt(value));
     } else if (name === "jogosTroca" && !value) {
       // Se o jogo de troca for desmarcado, limpar os dados específicos
@@ -1873,21 +1873,7 @@ const MultiPartFormSaleAndTrade = () => {
                                   variationData.jogosTroca &&
                                   tradeGameData.getAvailableRegions().length >
                                     0;
-                                console.log("🔍 Condições de troca variação:", {
-                                  variationData_jogosTroca:
-                                    variationData.jogosTroca,
-                                  tradeGameData_regions:
-                                    tradeGameData.getAvailableRegions(),
-                                  tradeGameData_regions_length:
-                                    tradeGameData.getAvailableRegions().length,
-                                  tradeGameData_audioLanguages:
-                                    tradeGameData.getAvailableAudioLanguages(),
-                                  tradeGameData_subtitleLanguages:
-                                    tradeGameData.getAvailableSubtitleLanguages(),
-                                  tradeGameData_interfaceLanguages:
-                                    tradeGameData.getAvailableInterfaceLanguages(),
-                                  shouldShow: shouldShow,
-                                });
+                                
                                 return shouldShow;
                               })() ? (
                                 <div

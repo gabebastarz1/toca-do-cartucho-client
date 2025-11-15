@@ -140,12 +140,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
     const newFiltersString = JSON.stringify(newSelectedFilters);
 
     if (currentFiltersString !== newFiltersString) {
-      console.log(
-        "FilterSidebar - Sincronizando com initialFilters:",
-        initialFilters,
-        "initialPriceRange:",
-        initialPriceRange
-      );
+      
       setSelectedFilters(newSelectedFilters);
     }
   }, [initialFilters, initialPriceRange]); // eslint-disable-line react-hooks/exhaustive-deps

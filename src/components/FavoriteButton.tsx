@@ -20,19 +20,15 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
   const isCurrentlyFavorite = isFavorite(advertisementId);
 
   const handleClick = async () => {
-    console.log("❤️ [FavoriteButton] Clicado:", {
-      advertisementId,
-      isCurrentlyFavorite,
-      action: isCurrentlyFavorite ? "remover" : "adicionar",
-    });
+    
 
-    const success = await toggleFavorite(advertisementId);
+    await toggleFavorite(advertisementId);
 
-    if (success) {
-      console.log("✅ [FavoriteButton] Operação realizada com sucesso");
-    } else {
-      console.log("❌ [FavoriteButton] Falha na operação");
-    }
+    // if (success) {
+    //   console.log("✅ [FavoriteButton] Operação realizada com sucesso");
+    // } else {
+    //   console.log("❌ [FavoriteButton] Falha na operação");
+    // }
   };
 
   // ✅ Tamanhos do ícone

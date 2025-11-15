@@ -7,6 +7,7 @@ import BottomBar from "@/components/BottomBar";
 import { useNavigate } from "react-router-dom";
 import { useFavorites } from "../hooks/useFavorites";
 import ProductGrid from "../components/ProductGrid";
+import { advertisementImageService } from "../services/advertisementImageService";
 
 const Favorites: React.FC = () => {
   const navigate = useNavigate();
@@ -56,20 +57,22 @@ const Favorites: React.FC = () => {
     const type: "retro" | "repro" =
       typeName === "repro" || typeName === "reprô" ? "repro" : "retro";
 
-    // Log para debug
-    console.log("📦 [Favorites] Mapeando anúncio:", {
-      id: advertisement.id,
-      slug: advertisement.slug,
-      title: advertisement.title,
-      images: advertisement.images,
-      firstImage: advertisement.images?.[0],
-    });
+    // ✅ Função para obter URL da imagem usando o serviço
+    const getImageUrl = (): string => {
+      if (advertisement.images && advertisement.images.length > 0) {
+        const firstImage = advertisement.images[0];
+        // Usar o serviço para obter a URL de exibição correta
+        const imageUrl = advertisementImageService.getDisplayUrl(firstImage);
+        if (imageUrl) {
+          return imageUrl;
+        }
+      }
+      return ""; // Retorna string vazia se não houver imagem
+    };
 
-    // ✅ A API retorna preSignedUrl, não url
-    const imageUrl =
-      advertisement.images?.[0]?.preSignedUrl ||
-      advertisement.images?.[0]?.url ||
-      "";
+    const imageUrl = getImageUrl();
+
+    // Log para debug
 
     return {
       id: advertisement.id?.toString() || "0",
@@ -95,31 +98,18 @@ const Favorites: React.FC = () => {
   });
 
   // ✅ Handler para clique no produto
-  const handleProductClick = (
-    productId: string,
-    parentAdvertisementId?: number
-  ) => {
-    console.log("🔍 [Favorites] Clique no produto:", {
-      productId,
-      parentAdvertisementId,
-    });
-    console.log("🔍 [Favorites] Lista de favoritos:", favoritesList);
+  const handleProductClick = (productId: string) => {
+    ;
 
     const advertisement = favoritesList.find(
       (ad) => ad.id?.toString() === productId
     );
 
-    console.log("🔍 [Favorites] Anúncio encontrado:", advertisement);
-
     if (advertisement?.id) {
-      console.log(
-        "✅ [Favorites] Navegando para:",
-        `/anuncio/${advertisement.id}`
-      );
       navigate(`/anuncio/${advertisement.id}`);
     } else {
       console.error(
-        "❌ [Favorites] ID não encontrado para o anúncio:",
+        
         advertisement
       );
     }

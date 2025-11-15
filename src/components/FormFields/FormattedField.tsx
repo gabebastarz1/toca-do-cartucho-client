@@ -27,13 +27,11 @@ export const FormattedField: React.FC<FormattedFieldProps> = ({
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
-    console.log(`🔧 [FormattedField] Campo: ${name}, Valor: ${inputValue}`);
+    
 
     if (formatFunction) {
       const formattedValue = formatFunction(inputValue);
-      console.log(
-        `🎨 [FormattedField] Formatado: ${inputValue} → ${formattedValue}`
-      );
+    
       onChange(name, formattedValue);
     } else {
       onChange(name, inputValue);

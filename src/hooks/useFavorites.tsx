@@ -24,32 +24,21 @@ export const useFavorites = (): UseFavoritesReturn => {
     setError(null);
 
     try {
-      console.log("🔄 [useFavorites] Recarregando favoritos...");
-
       const response = await api.get(
         "/api/accounts/profile/advertisements/favorites"
       );
 
-      console.log("✅ [useFavorites] Resposta completa da API:", response);
-      console.log("✅ [useFavorites] response.data:", response.data);
-
       // ✅ A API retorna um objeto com a propriedade 'advertisements'
       const favoriteAds = response.data?.advertisements || response.data;
 
-      console.log("✅ [useFavorites] Tipo de favoriteAds:", typeof favoriteAds);
-      console.log("✅ [useFavorites] É array?:", Array.isArray(favoriteAds));
-      console.log("✅ [useFavorites] Favoritos carregados:", favoriteAds);
-
       // ✅ Garantir que sempre seja um array
       const favoritesArray = Array.isArray(favoriteAds) ? favoriteAds : [];
-      console.log(
-        "✅ [useFavorites] Total de favoritos:",
-        favoritesArray.length
-      );
+
       setFavorites(favoritesArray);
     } catch (err: unknown) {
-      console.error("❌ [useFavorites] Erro ao recarregar favoritos:", err);
-      setError("Erro ao carregar favoritos");
+      setError(
+        err instanceof Error ? err.message : "Erro ao carregar favoritos"
+      );
       setFavorites([]);
     } finally {
       setIsLoading(false);
@@ -63,32 +52,19 @@ export const useFavorites = (): UseFavoritesReturn => {
       setError(null);
 
       try {
-        console.log(
-          "❤️ [useFavorites] Adicionando aos favoritos:",
-          advertisementId
-        );
-
-        const response = await api.post(
+        await api.post(
           "/api/accounts/profile/advertisements/favorites",
           {
             advertisementId: advertisementId,
           }
         );
 
-        console.log(
-          "✅ [useFavorites] Adicionado aos favoritos:",
-          response.data
-        );
-
-        // ✅ Recarregar lista de favoritos
+        
         await refreshFavorites();
 
         return true;
       } catch (err: unknown) {
-        console.error(
-          "❌ [useFavorites] Erro ao adicionar aos favoritos:",
-          err
-        );
+        console.error(err);
         setError("Erro ao adicionar aos favoritos");
         return false;
       } finally {
@@ -105,23 +81,16 @@ export const useFavorites = (): UseFavoritesReturn => {
       setError(null);
 
       try {
-        console.log(
-          "💔 [useFavorites] Removendo dos favoritos:",
-          advertisementId
-        );
-
         await api.delete(
           `/api/accounts/profile/advertisements/${advertisementId}/favorites`
         );
-
-        console.log("✅ [useFavorites] Removido dos favoritos");
 
         // ✅ Recarregar lista de favoritos
         await refreshFavorites();
 
         return true;
       } catch (err: unknown) {
-        console.error("❌ [useFavorites] Erro ao remover dos favoritos:", err);
+        console.error(err);
         setError("Erro ao remover dos favoritos");
         return false;
       } finally {
@@ -143,12 +112,6 @@ export const useFavorites = (): UseFavoritesReturn => {
   const toggleFavorite = useCallback(
     async (advertisementId: number): Promise<boolean> => {
       const isCurrentlyFavorite = isFavorite(advertisementId);
-
-      console.log("🔄 [useFavorites] Alternando favorito:", {
-        advertisementId,
-        isCurrentlyFavorite,
-        action: isCurrentlyFavorite ? "remover" : "adicionar",
-      });
 
       if (isCurrentlyFavorite) {
         return await removeFromFavorites(advertisementId);

@@ -198,12 +198,12 @@ class AuthService {
   // Verificar se a sessão no servidor ainda está ativa
   async isServerSessionValid(): Promise<boolean> {
     try {
-      console.log("🔍 [authService] Verificando se sessão do servidor está ativa...");
+      
       const response = await api.get('/api/accounts/profile');
-      console.log("✅ [authService] Sessão do servidor está ativa");
+      
       return response.status === 200;
     } catch (error) {
-      console.log("❌ [authService] Sessão do servidor não está ativa ou erro:", error);
+   
       return false;
     }
   }
@@ -211,15 +211,13 @@ class AuthService {
   // Logout com verificação de sessão
   async logout(): Promise<void> {
     try {
-      console.log("🚪 [authService] Iniciando logout...");
+   
       await api.get('/api/accounts/profile/logout');
-      console.log("✅ [authService] Logout no servidor bem-sucedido");
-    } catch (error) {
-      console.warn('⚠️ [authService] Erro ao fazer logout no servidor:', error);
+  
     } finally {
       this.clearAuthData();
       userProfileCache.clear(); // Clear cache on logout
-      console.log("🧹 [authService] Dados locais limpos");
+
     }
   }
 
@@ -228,28 +226,24 @@ class AuthService {
     const hasValidCookie = this.hasSessionCookie();
     const isServerValid = await this.isServerSessionValid();
 
-    console.log("🔐 [authService] safeLogout - Cookie válido?:", hasValidCookie);
-    console.log("🔐 [authService] safeLogout - Servidor válido?:", isServerValid);
+
 
     if (!hasValidCookie && !isServerValid) {
-      // Realmente expirou - fazer logout
-      console.log("❌ [authService] Sessão expirou - fazendo logout");
+      
       await this.logout();
-    } else {
-      console.log("✅ [authService] Sessão ainda válida - não fazer logout");
-    }
+    } 
   }
 
   // Obter usuário atual
   async getCurrentUser(): Promise<User | null> {
     try {
-      console.log("🔍 [authService] Fazendo requisição para /api/accounts/profile");
+     
       const response = await api.get('/api/accounts/profile');
-      console.log("✅ [authService] Usuário obtido do servidor:", response.data);
+     
       userProfileCache.set(response.data); // Cache user data
       return response.data;
-    } catch (error) {
-      console.log("❌ [authService] Erro ao obter usuário do servidor:", error);
+    } catch {
+ 
       return null;
     }
   }
@@ -448,33 +442,21 @@ class AuthService {
 
   // verificar se o cookie está sendo bloqueado por políticas de segurança
   checkCookieAccessibility(): void {
-    console.log("=== VERIFICAÇÃO DE ACESSIBILIDADE DE COOKIES ===");
     
-    // Tentar acessar document.cookie
-    console.log("document.cookie acessível:", typeof document.cookie === 'string');
-    console.log("Tamanho do document.cookie:", document.cookie.length);
-    
-    // Verificar se estamos em contexto seguro (HTTPS)
-    console.log("Protocolo atual:", window.location.protocol);
-    console.log("É HTTPS:", window.location.protocol === 'https:');
-    
-    // Verificar se estamos no localhost
-    console.log("Hostname:", window.location.hostname);
-    console.log("É localhost:", window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     
     // Tentar criar um cookie de teste
     try {
       document.cookie = "testCookie=testValue; path=/";
-      const testCookieExists = document.cookie.includes("testCookie=testValue");
-      console.log("Pode criar cookies:", testCookieExists);
+      document.cookie.includes("testCookie=testValue");
+  
       
       // Limpar cookie de teste
       document.cookie = "testCookie=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
     } catch (error) {
-      console.log("❌ Erro ao criar cookie de teste:", error);
+      console.log(error)
     }
     
-    console.log("=============================================");
+
   }
 }
 

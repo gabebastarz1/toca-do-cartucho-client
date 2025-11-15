@@ -122,24 +122,24 @@ const SideBar: React.FC<SideBarProps> = ({ isOpen, onClose }) => {
                   Destaques
                 </h2>
                 <div className="flex flex-col space-y-3">
-                  <button
+                  {/* <button
                     onClick={() => handleNavigation("/mais-vendidos")}
                     className="text-[#0e0b0e] text-sm text-left hover:text-purple-600 transition-colors"
                   >
                     Mais Vendidos
-                  </button>
+                  </button> */}
                   <button
-                    onClick={() => handleNavigation("/novidades")}
+                    onClick={() => handleNavigation("/produtos")}
                     className="text-[#0e0b0e] text-sm text-left hover:text-purple-600 transition-colors"
                   >
                     Novidades na Toca do Cartucho
                   </button>
-                  <button
+                  {/* <button
                     onClick={() => handleNavigation("/produtos-em-alta")}
                     className="text-[#0e0b0e] text-sm text-left hover:text-purple-600 transition-colors"
                   >
                     Produtos em Alta
-                  </button>
+                  </button> */}
                 </div>
               </div>
 
@@ -152,12 +152,12 @@ const SideBar: React.FC<SideBarProps> = ({ isOpen, onClose }) => {
                   Venda na Toca do Cartucho
                 </h2>
                 <div className="flex flex-col space-y-3">
-                  <button
+                  {/* <button
                     onClick={() => handleNavigation("/minhas-vendas")}
                     className="text-[#0e0b0e] text-sm text-left hover:text-purple-600 transition-colors"
                   >
                     Minhas vendas
-                  </button>
+                  </button> */}
                   <button
                     onClick={() => handleNavigation("/criar-anuncio")}
                     className="text-[#0e0b0e] text-sm text-left hover:text-purple-600 transition-colors"
@@ -197,21 +197,21 @@ const SideBar: React.FC<SideBarProps> = ({ isOpen, onClose }) => {
               {/* Ajuda e Configurações */}
               <div>
                 <h2 className="text-[#0e0b0e] text-md font-semibold mb-3">
-                  Ajuda e Configurações
+                  Configurações
                 </h2>
                 <div className="flex flex-col space-y-3">
                   <button
-                    onClick={() => handleNavigation("/conta")}
+                    onClick={() => handleNavigation("/meu-perfil")}
                     className="text-[#0e0b0e] text-sm text-left hover:text-purple-600 transition-colors"
                   >
                     Sua Conta
                   </button>
-                  <button
+                  {/* <button
                     onClick={() => handleNavigation("/ajuda")}
                     className="text-[#0e0b0e] text-sm text-left hover:text-purple-600 transition-colors"
                   >
                     Ajuda
-                  </button>
+                  </button> */}
                   <button
                     onClick={handleLogout}
                     className="text-[#0e0b0e] text-sm text-left hover:text-red-600 transition-colors"

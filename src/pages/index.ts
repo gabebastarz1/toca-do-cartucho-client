@@ -18,3 +18,4 @@ export { default as Security } from './Security';
 export { default as ChangePassword } from './ChangePassword';
 export { default as CancelAccount } from './CancelAccount';
 export { default as MyProfile } from './MyProfile';
+export { default as Reports } from './Reports';

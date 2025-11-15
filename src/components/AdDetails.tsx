@@ -87,7 +87,7 @@ const AdDetails: React.FC<AdDetailsProps> = ({ advertisement }) => {
 
   // ✅ NOVO: Callback para quando uma variação for selecionada
   const handleVariationChange = (variation: AdvertisementDTO | undefined) => {
-    console.log("🔄 [AdDetails] Variação selecionada:", variation);
+    
     setSelectedVariation(variation);
   };
 

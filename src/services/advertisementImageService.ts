@@ -103,21 +103,30 @@ class AdvertisementImageService {
   isImageUrlExpired(image: AdvertisementImageDTO): boolean {
     if (!image.urlExpiresIn) return false;
     
-    const now = new Date().getTime();
-    const expiresAt = new Date(image.urlExpiresIn).getTime();
-    
-    return now >= expiresAt;
+    try {
+      // urlExpiresIn é um número que representa timestamp em milissegundos
+      const expiresAt = image.urlExpiresIn;
+      const now = new Date().getTime();
+      return now >= expiresAt;
+    } catch (error) {
+      // Se houver erro ao verificar, assumir que não expirou
+      console.warn('Erro ao verificar expiração da URL:', error);
+      return false;
+    }
   }
 
   // Obter URL válida para exibição
   getDisplayUrl(image: AdvertisementImageDTO): string {
-    // Se tem preSignedUrl e não expirou, usar preSignedUrl
-    if (image.preSignedUrl && !this.isImageUrlExpired(image)) {
-      return image.preSignedUrl;
+    // Priorizar preSignedUrl se disponível e não expirado
+    if (image.preSignedUrl) {
+      // Se não tem urlExpiresIn ou não expirou, usar preSignedUrl
+      if (!image.urlExpiresIn || !this.isImageUrlExpired(image)) {
+        return image.preSignedUrl;
+      }
     }
     
-    // Senão usar URL normal
-    return image.url;
+    // Fallback para URL normal (sempre disponível)
+    return image.url || "";
   }
 }
 

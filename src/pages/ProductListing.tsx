@@ -47,6 +47,7 @@ const ProductListing: React.FC = () => {
     label: "Mais Novo",
   });
 
+
   // Hook para buscar anúncios do backend
   const {
     advertisements,
@@ -73,8 +74,7 @@ const ProductListing: React.FC = () => {
 
   // Inicializar searchQuery e filtros a partir dos parâmetros da URL
   useEffect(() => {
-    console.log("=== URL EFFECT TRIGGERED ===");
-    console.log("location.search:", location.search);
+  
 
     const urlParams = new URLSearchParams(location.search);
 
@@ -82,11 +82,11 @@ const ProductListing: React.FC = () => {
     const searchParam = urlParams.get("search");
     if (searchParam) {
       const decodedSearch = decodeURIComponent(searchParam);
-      console.log("Setting search from URL:", decodedSearch);
+
       setSearchQuery(decodedSearch);
       setConfirmedSearchQuery(decodedSearch);
     } else {
-      console.log("No search param, clearing search");
+
       setSearchQuery("");
       setConfirmedSearchQuery("");
     }
@@ -98,21 +98,19 @@ const ProductListing: React.FC = () => {
     const genreParam = urlParams.get("genre");
     if (genreParam) {
       urlFilters.genre = genreParam.split(",");
-      console.log("Setting genre from URL:", urlFilters.genre);
+     
     }
 
     // Processar tema
     const themeParam = urlParams.get("theme");
     if (themeParam) {
       urlFilters.theme = themeParam.split(",");
-      console.log("Setting theme from URL:", urlFilters.theme);
     }
 
     // Processar condições
     const conditionsParam = urlParams.get("conditions");
     if (conditionsParam) {
       urlFilters.conditions = conditionsParam.split(",");
-      console.log("Setting conditions from URL:", urlFilters.conditions);
     }
 
     // Processar preço
@@ -120,21 +118,17 @@ const ProductListing: React.FC = () => {
     const maxPriceParam = urlParams.get("maxPrice");
     if (minPriceParam || maxPriceParam) {
       urlFilters.price = [minPriceParam || "", maxPriceParam || ""];
-      console.log("Setting price from URL:", {
-        min: minPriceParam,
-        max: maxPriceParam,
-      });
+      
       setPriceRange({ min: minPriceParam || "", max: maxPriceParam || "" });
     } else {
-      console.log("No price params, clearing price range");
+      
       setPriceRange({ min: "", max: "" });
     }
 
-    console.log("ProductListing - Final URL filters:", urlFilters);
-    console.log("Setting activeFilters to:", urlFilters);
+    
     setActiveFilters(urlFilters);
     setIsInitialized(true); // Marcar como inicializado após processar URL
-    console.log("=== URL EFFECT COMPLETED ===");
+
   }, [location.search]);
 
   // Refs para evitar loop (removido - não mais necessário)
@@ -155,7 +149,7 @@ const ProductListing: React.FC = () => {
 
   // Callback para limpar a pesquisa
   const handleClearSearch = useCallback(() => {
-    console.log("ProductListing - Limpando pesquisa");
+   
     setSearchQuery("");
     setConfirmedSearchQuery(""); // Também limpar o estado confirmado
     // Também limpar a URL
@@ -164,14 +158,14 @@ const ProductListing: React.FC = () => {
 
   // Callback para mudanças na pesquisa (apenas atualiza o estado interno)
   const handleSearchChange = useCallback((value: string) => {
-    console.log("ProductListing - Mudança na pesquisa:", value);
+    
     setSearchQuery(value);
     // NÃO atualiza confirmedSearchQuery aqui - só na confirmação
   }, []);
 
   const handleOrderingChange = useCallback(
     (ordering: { value: string; label: string }) => {
-      console.log("ProductListing - Mudando ordenação:", ordering);
+     
       setCurrentOrdering(ordering);
 
       // Aplicar nova ordenação no hook
@@ -184,7 +178,7 @@ const ProductListing: React.FC = () => {
 
   // Callback para confirmar a pesquisa (quando usuário pressiona Enter)
   const handleSearchConfirm = useCallback(() => {
-    console.log("ProductListing - Confirmando pesquisa:", searchQuery);
+   
     setConfirmedSearchQuery(searchQuery);
     // Atualizar a URL com a pesquisa confirmada
     if (searchQuery.trim()) {
@@ -197,37 +191,26 @@ const ProductListing: React.FC = () => {
   // Atualizar filtros e aplicar ao backend
   const handleFiltersChange = useCallback(
     (filters: Record<string, string[]>) => {
-      console.log("=== HANDLE FILTERS CHANGE ===");
-      console.log("ProductListing recebeu filtros:", filters);
+      
 
       // Verificar se os filtros realmente mudaram
       setActiveFilters((prev) => {
-        console.log("setActiveFilters - prev:", prev);
-        console.log("setActiveFilters - new:", filters);
-        console.log(
-          "setActiveFilters - são iguais?",
-          JSON.stringify(prev) === JSON.stringify(filters)
-        );
+        
 
         if (JSON.stringify(prev) === JSON.stringify(filters)) {
-          console.log("setActiveFilters - Filtros iguais, retornando prev");
           return prev;
         }
-        console.log("setActiveFilters - Filtros diferentes, atualizando");
         return filters;
       });
 
       // Atualizar filtro de preço separadamente para evitar múltiplas re-renderizações
       if (filters.price) {
         const [min, max] = filters.price;
-        console.log("Atualizando filtro de preço:", { min, max });
         setPriceRange({ min: min || "", max: max || "" });
       } else {
         // Limpar filtro de preço se não existir
-        console.log("Limpando filtro de preço no ProductListing");
         setPriceRange({ min: "", max: "" });
       }
-      console.log("=== HANDLE FILTERS CHANGE COMPLETED ===");
     },
     []
   );
@@ -235,13 +218,9 @@ const ProductListing: React.FC = () => {
   useEffect(() => {
     // Só aplicar filtros se já foi inicializado pela URL
     if (!isInitialized) {
-      console.log("=== FILTER EFFECT SKIPPED - NOT INITIALIZED ===");
       return;
     }
 
-    console.log("=== FILTER EFFECT TRIGGERED ===");
-    console.log("activeFilters:", activeFilters);
-    console.log("confirmedSearchQuery:", confirmedSearchQuery);
 
     const frontendFilters: FrontendFilters = activeFilters as FrontendFilters;
     const mapped = mapFrontendFiltersToBackend(
@@ -250,15 +229,6 @@ const ProductListing: React.FC = () => {
     );
     const cleaned = cleanBackendFilters(mapped);
 
-    console.log("=== FILTER DEBUG ===");
-    console.log("Frontend filters:", frontendFilters);
-    console.log("Search query in backend filters:", confirmedSearchQuery);
-    console.log("Mapped backend filters:", mapped);
-    console.log("Cleaned backend filters:", cleaned);
-    console.log("Conditions filter:", frontendFilters.conditions);
-    console.log("IsSale in mapped:", mapped.isSale);
-    console.log("IsTrade in mapped:", mapped.isTrade);
-    console.log("===================");
 
     // Garantir que sempre filtre apenas produtos e vendedores ativos
     const finalFilters = {
@@ -266,12 +236,9 @@ const ProductListing: React.FC = () => {
       status: "Active",
       sellerStatus: "Active",
     };
-    console.log("Setting backend filters:", finalFilters);
-    console.log("Aguardando resposta da API...");
 
     // Evitar atualizações desnecessárias - só aplicar se realmente mudou
     setBackendFilters(finalFilters);
-    console.log("=== FILTER EFFECT COMPLETED ===");
   }, [activeFilters, confirmedSearchQuery, setBackendFilters, isInitialized]);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);

@@ -144,18 +144,8 @@ const ProductCharacteristics: React.FC<ProductCharacteristicsProps> = ({
 
   const characteristics = getCharacteristics();
 
-  // ✅ Log para debug
-  console.log("🔍 [ProductCharacteristics] Debug:");
-  console.log("🔍 [ProductCharacteristics] advertisement:", advertisement);
-  console.log(
-    "🔍 [ProductCharacteristics] selectedVariation:",
-    selectedVariation
-  );
-  console.log(
-    "🔍 [ProductCharacteristics] dataSource:",
-    selectedVariation || advertisement
-  );
-  console.log("🔍 [ProductCharacteristics] characteristics:", characteristics);
+  
+
 
   return (
     <div id="product-characteristics" className="bg-white rounded-lg p-6 ">

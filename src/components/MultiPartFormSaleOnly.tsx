@@ -155,7 +155,7 @@ const MultiPartFormSaleOnly = () => {
 
     // Quando um jogo é selecionado, buscar dados específicos do jogo
     if (name === "jogo" && value) {
-      console.log(`🎮 Jogo selecionado: ${value}`);
+      
       fetchGameData(parseInt(value));
     } else if (name === "jogo" && !value) {
       // Se o jogo for desmarcado, limpar os dados específicos

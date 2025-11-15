@@ -20,7 +20,7 @@ api.interceptors.request.use(
                        || url.includes('/login')
                        || url.includes('/manage');
     
-    console.log(`🔐 [API] ${config.method?.toUpperCase()} ${config.url}`, config.params || '');
+
     
     if (token && !isAuthRoute) {
       config.headers.Authorization = `Bearer ${token}`;

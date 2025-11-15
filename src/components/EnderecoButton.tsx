@@ -81,8 +81,10 @@ const EnderecoButton: React.FC<EnderecoButtonProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   // Função para lidar com mudança de campo do novo endereço
-  const handleFieldChange = (field: string, value: string) => {
-    setNewAddress((prev) => ({ ...prev, [field]: value }));
+  const handleFieldChange = (field: string, value: string | boolean) => {
+    // Converter boolean para string se necessário
+    const stringValue = typeof value === "boolean" ? String(value) : value;
+    setNewAddress((prev) => ({ ...prev, [field]: stringValue }));
   };
 
   // Função para salvar novo endereço
