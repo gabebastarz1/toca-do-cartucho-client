@@ -92,7 +92,7 @@ const Profile: React.FC = () => {
                 <img
                   src={profileImageUrl}
                   alt={displayName}
-                  className="w-28 h-28 rounded-full object-cover mb-4 bg-gray-200"
+                  className="w-24 h-24 rounded-full object-cover mb-4 bg-gray-200"
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
                     e.currentTarget.nextElementSibling?.classList.remove(
@@ -102,7 +102,7 @@ const Profile: React.FC = () => {
                 />
               ) : null}
               <div
-                className={`w-28 h-28 rounded-full bg-gray-200 flex items-center justify-center mb-4 ${
+                className={`w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center mb-4 ${
                   profileImageUrl ? "hidden" : ""
                 }`}
               >
@@ -129,7 +129,7 @@ const Profile: React.FC = () => {
           </div>
 
           {/* Lista de opções */}
-          <div className="bg-[#f4f3f5] flex-1 max-h-screen pt-4">
+          <div className="bg-[#f4f3f5] flex-1 max-h-screen pt-4 pb-20">
             <div className="space-y-0">
               {/* Meu Perfil */}
               <button

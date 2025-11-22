@@ -2,11 +2,13 @@ import MultiPartForm from "../components/MultiPartForm";
 import TopBar from "../components/TopBar";
 import { useNavigate } from "react-router-dom";
 import React from "react";
+import AdvertisementCreationGuard from "../components/AdvertisementCreationGuard";
 
 export default function CreateAdvertisementOnlyTrade() {
   const navigate = useNavigate();
   return (
-    <div className="min-h-screen w-full bg-[#211C49] flex flex-col">
+    <AdvertisementCreationGuard>
+      <div className="min-h-screen w-full bg-[#211C49] flex flex-col">
       {/* Desktop Layout */}
       <div className="hidden md:block">
         <TopBar
@@ -24,6 +26,7 @@ export default function CreateAdvertisementOnlyTrade() {
           <MultiPartForm/>
         </div>
       </div>
-    </div>
+      </div>
+    </AdvertisementCreationGuard>
   );
 }

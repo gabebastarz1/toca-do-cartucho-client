@@ -9,10 +9,17 @@ interface ProductImageGalleryProps {
   images?: AdvertisementImageDTO[];
   fallbackImage?: string;
 }
+const fallbackimage = () => {
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-gray-200">
+      <span className="text-gray-400 text-xs">Sem imagem</span>
+    </div>
+  );
+};
 
 const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
   images = [],
-  fallbackImage = "/Logos/logo.svg",
+  fallbackImage = fallbackimage,
 }) => {
   const isMobile = useIsMobile();
   const location = useLocation();
@@ -92,12 +99,10 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
 
       if (variationImageIndex !== -1) {
         setCurrentIndex(variationImageIndex);
-        
       }
     } else {
       // Se não há variation na URL, mostrar primeira imagem do anúncio principal
       setCurrentIndex(0);
-      
     }
   }, [location.search, images]);
 
@@ -140,11 +145,15 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
         </button>
 
         {/* Imagem Principal */}
-        <img
-          src={selectedImage}
-          alt="Main Product"
-          className="w-full h-full object-contain bg-white rounded-lg shadow-md"
-        />
+        {typeof selectedImage === "string" ? (
+          <img
+            src={selectedImage}
+            alt="Main Product"
+            className="w-full h-full object-contain bg-white rounded-lg shadow-md"
+          />
+        ) : (
+          typeof selectedImage === "function" && selectedImage()
+        )}
 
         {/* Botão Próximo */}
         <button
@@ -188,38 +197,65 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
     <div className="flex flex-row gap-4 p-4 max-w-4xl mx-auto">
       {/* Coluna do Carrossel Vertical */}
       <div className="flex flex-col gap-2 overflow-y-auto pr-2 max-h-[420px]">
-        {allImages.map((image, index) => (
-          <img
-            key={index}
-            src={image}
-            alt={`Thumbnail ${index + 1}`}
-            className={`
-              w-16 h-16
-              object-contain
-              bg-white
-              rounded-md
-              border-2
-              cursor-pointer
-              transition-colors
-              hover:border-blue-400
-              ${
-                currentIndex === index
-                  ? "border-blue-500"
-                  : "border-transparent"
-              }
-            `}
-            onClick={() => handleImageClick(index)}
-          />
-        ))}
+        {allImages.map((image, index) =>
+          typeof image === "string" ? (
+            <img
+              key={index}
+              src={image}
+              alt={`Thumbnail ${index + 1}`}
+              className={`
+                w-16 h-16
+                object-contain
+                bg-white
+                rounded-md
+                border-2
+                cursor-pointer
+                transition-colors
+                hover:border-blue-400
+                ${
+                  currentIndex === index
+                    ? "border-blue-500"
+                    : "border-transparent"
+                }
+              `}
+              onClick={() => handleImageClick(index)}
+            />
+          ) : (
+            <div
+              key={index}
+              className={`
+                w-16 h-16
+                bg-white
+                rounded-md
+                border-2
+                cursor-pointer
+                transition-colors
+                hover:border-blue-400
+                ${
+                  currentIndex === index
+                    ? "border-blue-500"
+                    : "border-transparent"
+                }
+              `}
+              onClick={() => handleImageClick(index)}
+            >
+              {typeof image === "function" && image()}
+            </div>
+          )
+        )}
       </div>
 
       {/* Container da Imagem Principal */}
       <div className="flex-1 flex items-center justify-center">
-        <img
-          src={selectedImage}
-          alt="Main Product"
-          className="w-full h-auto max-h-[420px] object-contain rounded-lg shadow-md"
-        />
+        {typeof selectedImage === "string" ? (
+          <img
+            src={selectedImage}
+            alt="Main Product"
+            className="w-full h-auto max-h-[420px] object-contain rounded-lg shadow-md"
+          />
+        ) : (
+          typeof selectedImage === "function" && selectedImage()
+        )}
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import React from "react";
 import Head from "../components/Head";
 import BackButton from "../components/ui/BackButton";
+import AdvertisementCreationGuard from "../components/AdvertisementCreationGuard";
 
 function OptionCard({
   title,
@@ -34,7 +35,7 @@ function OptionCard({
 export default function CreateAdvertisementPp() {
   const navigate = useNavigate();
   return (
-    <>
+    <AdvertisementCreationGuard>
       <Head title="Cadastrar anúncio" />
 
       <div className="min-h-screen w-full bg-[#211C49] md:bg-[#f4f3f5] flex flex-col">
@@ -136,6 +137,6 @@ export default function CreateAdvertisementPp() {
           </div>
         </div>
       </div>
-    </>
+    </AdvertisementCreationGuard>
   );
 }

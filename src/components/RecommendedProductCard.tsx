@@ -114,18 +114,6 @@ const RecommendedProductCard: React.FC<ProductCardProps> = ({
     return labels[saleType as keyof typeof labels] || "";
   };
 
-  const getSaleTypeColor = (saleType?: string) => {
-    const colors = {
-      sale: "bg-green-100 text-green-800 border-green-200",
-      trade: "bg-blue-100 text-blue-800 border-blue-200",
-      "sale-trade": "bg-purple-100 text-purple-800 border-purple-200",
-    };
-    return (
-      colors[saleType as keyof typeof colors] ||
-      "bg-gray-100 text-gray-800 border-gray-200"
-    );
-  };
-
   const renderStars = (rating: number) => {
     // ✅ Validar e normalizar o rating
     const validRating = Math.max(0, Math.min(5, rating || 0));
@@ -146,9 +134,9 @@ const RecommendedProductCard: React.FC<ProductCardProps> = ({
       className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 cursor-pointer transform hover:scale-105 transition-transform relative"
       onClick={onClick}
     >
-      {/* ✅ Botão de favorito no canto superior direito */}
+      {/* ✅ Botão de favorito no canto inferior direito */}
       <div
-        className="absolute top-2 right-2 z-10"
+        className="absolute bottom-2 right-2 z-10"
         onClick={(e) => e.stopPropagation()} // ✅ Prevenir propagação do clique
       >
         <FavoriteButton
@@ -163,12 +151,19 @@ const RecommendedProductCard: React.FC<ProductCardProps> = ({
       {/* Desktop: Layout vertical */}
       <div className="block">
         {/* Imagem do produto */}
-        <div className="relative h-48 bg-gray-100 overflow-hidden rounded-t-lg">
+        {saleType && (
+          <span
+            className={`absolute z-50 top-3 right-0 px-3 py-1 inline-block text-xs bg-[#38307C] text-white shadow-xl`}
+          >
+            {getSaleTypeLabel(saleType)}
+          </span>
+        )}
+        <div className="relative h-48 bg-gray-100 overflow-hidden rounded-t-lg border-b border-white border-8 inner-border">
           {image && image.trim() !== "" ? (
             <img
               src={image}
               alt={title}
-              className="absolute inset-0 w-full h-full object-contain bg-white"
+              className="absolute inset-0 w-full h-full object-contain bg-white "
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -236,18 +231,9 @@ const RecommendedProductCard: React.FC<ProductCardProps> = ({
                   type
                 )}`}
               >
-                {type === "retro" ? "RETRÔ" : "REPRÔ"}
+                {type === "retro" ? "RETRÔ" : "REPRO"}
               </span>
             </Tooltip>
-            {saleType && (
-              <span
-                className={`px-2 py-1 inline-block text-xs rounded-full border ${getSaleTypeColor(
-                  saleType
-                )}`}
-              >
-                {getSaleTypeLabel(saleType)}
-              </span>
-            )}
           </div>
 
           {/* Localização */}

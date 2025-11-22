@@ -8,6 +8,7 @@ import { FormData, FormErrors } from "./types";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../../services/api";
 import { useIsMobile } from "../../hooks/useIsMobile";
+import GameControllerImage from "../../assets/controller.png";
 
 const initialFormData: FormData = {
   email: "",
@@ -287,19 +288,22 @@ const SignUpForm: React.FC = () => {
             </div>
           )}
         </form>
+        
       </div>
     );
   }
 
   // Layout Desktop
   return (
-    <div className="mx-auto my-10 p-8 md:bg-[#F8F8FC] md:p-10 md:shadow-lg rounded-lg text-white md:text-[#2B2560] w-full max-w-3xl">
+    <div className="">
+    <div className="relative z-10 mx-auto p-8 md:bg-[#F8F8FC] md:p-10 md:shadow-lg rounded-lg text-white md:text-[#2B2560] w-full max-w-3xl">
       <CustomAlert
         type={alertState.type}
         message={alertState.message}
         isVisible={alertState.isVisible}
         onClose={hideAlert}
       />
+
       <form onSubmit={handleSubmit} noValidate>
         <h2 className="text-2xl font-bold text-start mb-4">
           Verificamos que você ainda não tem um cadastro
@@ -314,6 +318,7 @@ const SignUpForm: React.FC = () => {
           </a>
         </p> */}
 
+      
         {step === 1 && (
           <StepOne
             formData={formData}
@@ -367,7 +372,14 @@ const SignUpForm: React.FC = () => {
             </button>
           </div>
         )}
+      
       </form>
+    <img
+      src={GameControllerImage}
+      alt="Controle"
+      className="absolute -bottom-24 left-[calc(42%-494px)] z-50 hidden w-72 transform md:block"
+      />
+    </div>
     </div>
   );
 };

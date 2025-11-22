@@ -37,7 +37,7 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
   const { genres, themes, loading, error } = useCategories();
 
   const categories = [
-    { id: "all", label: "All" },
+    //{ id: "all", label: "All" },
     { id: "generos", label: "Gêneros" },
     { id: "tematicas", label: "Temáticas" },
     { id: "sobre", label: "Sobre" },

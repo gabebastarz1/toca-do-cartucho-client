@@ -81,8 +81,11 @@ const MeusDados: React.FC = () => {
   const [cpfError, setCpfError] = useState<string | null>(null);
   const [nicknameError, setNicknameError] = useState<string | null>(null); // ✅ Novo estado para erro de nickname
   const [birthdayError, setBirthdayError] = useState<string | null>(null); // ✅ Novo estado para erro de data de nascimento
+  const [isLoadingCep, setIsLoadingCep] = useState(false); // ✅ Estado para indicar carregamento do CEP
+  const [cepError, setCepError] = useState<string | null>(null); // ✅ Estado para erro de CEP
 
   const debouncedNickname = useDebounce(formData.nomeUsuario, 500);
+  const debouncedCep = useDebounce(formData.cep, 500); // ✅ Debounce para CEP
 
   // detecta alterações nos campos
   const getChangedFields = () => {
@@ -181,18 +184,13 @@ const MeusDados: React.FC = () => {
   // Carregar dados do usuário quando o perfil for carregado
   useEffect(() => {
     if (userProfile) {
-      
-
       // Dados brutos do backend
       const rawCEP = userProfile.addresses?.[0]?.address?.zipCode || "";
       const rawCPF = userProfile.cpf || "";
 
-
       // Aplicar formatação aos dados do backend
       const formattedCEP = formatCEP(rawCEP);
       const formattedCPF = formatCPF(rawCPF);
-
-
 
       // Formatar telefone do backend
       const formattedPhone = formatPhone(userProfile.phoneNumber || "");
@@ -242,7 +240,6 @@ const MeusDados: React.FC = () => {
         cpf: formattedCPF,
       };
 
-     
       setFormData(formDataToSet);
       setOriginalData(originalDataToSet);
     }
@@ -273,6 +270,64 @@ const MeusDados: React.FC = () => {
     checkNickname();
   }, [debouncedNickname, userProfile]);
 
+  // ✅ Função para buscar CEP na API ViaCEP
+  const fetchCepData = async (cep: string) => {
+    // Remove formatação do CEP
+    const cleanCep = cep.replace(/\D/g, "");
+
+    // Verifica se tem 8 dígitos
+    if (cleanCep.length !== 8) {
+      setCepError(null);
+      return;
+    }
+
+    setIsLoadingCep(true);
+    setCepError(null);
+
+    try {
+      const response = await fetch(
+        `https://viacep.com.br/ws/${cleanCep}/json/`
+      );
+      const data = await response.json();
+
+      if (data.erro) {
+        setCepError("CEP não encontrado. Verifique o CEP informado.");
+        setIsLoadingCep(false);
+        return;
+      }
+
+      // Preencher campos automaticamente
+      setFormData((prev) => ({
+        ...prev,
+        rua: data.logradouro || "",
+        bairro: data.bairro || "",
+        cidade: data.localidade || "",
+        estado: data.uf || "",
+      }));
+
+      setCepError(null);
+    } catch (error) {
+      console.error("Erro ao buscar CEP:", error);
+      setCepError("Erro ao buscar CEP. Tente novamente.");
+    } finally {
+      setIsLoadingCep(false);
+    }
+  };
+
+  // ✅ useEffect para buscar CEP automaticamente quando digitado completamente
+  useEffect(() => {
+    if (!debouncedCep) return;
+
+    const cleanCep = debouncedCep.replace(/\D/g, "");
+    const originalCepClean = originalData.cep.replace(/\D/g, "");
+
+    // Só busca se tiver 8 dígitos e for diferente do CEP original
+    if (cleanCep.length === 8 && cleanCep !== originalCepClean) {
+      fetchCepData(debouncedCep);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedCep]);
+
   // Funções de formatação melhoradas com limite de caracteres
   const formatCEP = (value: string) => {
     if (!value) return "";
@@ -282,8 +337,6 @@ const MeusDados: React.FC = () => {
 
     // Limita a 8 dígitos (CEP brasileiro)
     const limitedNumbers = numbers.slice(0, 8);
-
-  
 
     // Se tem menos de 5 dígitos, retorna apenas os números
     if (limitedNumbers.length <= 5) {
@@ -334,8 +387,6 @@ const MeusDados: React.FC = () => {
 
     // Limita a 11 dígitos (CPF brasileiro)
     const limitedNumbers = numbers.slice(0, 11);
-
-    
 
     // Se tem menos de 4 dígitos, retorna apenas os números
     if (limitedNumbers.length <= 3) {
@@ -491,8 +542,6 @@ const MeusDados: React.FC = () => {
   };
 
   const handleInputChange = (field: string, value: string | boolean) => {
-
-
     // Limpar erros quando o usuário começar a digitar novamente
     if (field === "cpf" && cpfError) {
       setCpfError(null);
@@ -509,7 +558,6 @@ const MeusDados: React.FC = () => {
 
   const handleSave = async () => {
     if (!userProfile?.id) {
-      
       showError("Usuário não encontrado");
       return;
     }
@@ -526,12 +574,12 @@ const MeusDados: React.FC = () => {
       if (cpfNumbers.length === 11 && !isValidCPF(formData.cpf)) {
         setCpfError("CPF inválido. Verifique os dígitos informados.");
         showError("CPF inválido. Corrija o CPF antes de salvar.");
-        
+
         return;
       } else if (cpfNumbers.length > 0 && cpfNumbers.length < 11) {
         setCpfError("CPF deve ter 11 dígitos.");
         showError("CPF incompleto. Digite todos os 11 dígitos.");
-       
+
         return;
       }
     }
@@ -542,10 +590,9 @@ const MeusDados: React.FC = () => {
         "Data de nascimento inválida. Use o formato DD/MM/AAAA."
       );
       showError("Data de nascimento inválida. Corrija a data antes de salvar.");
-      
+
       return;
     }
-
 
     setIsSaving(true);
     setCpfError(null);
@@ -556,22 +603,14 @@ const MeusDados: React.FC = () => {
       const changedFields = getChangedFields();
 
       if (Object.keys(changedFields).length === 0) {
-        
-
         setIsSaving(false);
         return;
       }
 
-     
-  
-
       // Atualizar dados do usuário
       await api.patch(`/api/accounts/profile`, changedFields);
-      
 
-      
       await refetch();
-    
 
       //  Atualizar dados originais com os novos dados salvos
       const newOriginalData = {
@@ -591,7 +630,6 @@ const MeusDados: React.FC = () => {
         cpf: formData.cpf,
       };
       setOriginalData(newOriginalData);
-      
 
       // Mostrar alert de sucesso
       showSuccess("Dados salvos com sucesso!");
@@ -840,19 +878,37 @@ const MeusDados: React.FC = () => {
               <div className="space-y-4">
                 {/* CEP */}
                 <div>
-                  <label className="block text-sm font-normal text-black mb-1">
+                  <label className="block text-lg font-normal text-black">
                     CEP
                   </label>
-                  <input
-                    type="text"
-                    value={formData.cep}
-                    onChange={(e) => {
-                      const formatted = formatCEP(e.target.value);
-                      handleInputChange("cep", formatted);
-                    }}
-                    placeholder="00000-000"
-                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-black focus:outline-none focus:border-[#4A2C7C]"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={formData.cep}
+                      onChange={(e) => {
+                        const formatted = formatCEP(e.target.value);
+                        handleInputChange("cep", formatted);
+                        setCepError(null); // Limpa erro quando usuário digita
+                      }}
+                      placeholder="00000-000"
+                      className={`w-full px-3 py-2 bg-white border rounded-md text-black focus:outline-none focus:border-[#4A2C7C] ${
+                        cepError ? "border-red-500" : "border-gray-300"
+                      }`}
+                      disabled={isLoadingCep}
+                    />
+                    {isLoadingCep && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  {cepError && (
+                    <p className="mt-1 text-sm text-red-500">{cepError}</p>
+                  )}
+                  {!cepError &&
+                    formData.cep.replace(/\D/g, "").length === 8 &&
+                    !isLoadingCep 
+                    }
                 </div>
 
                 {/* Rua */}
@@ -1118,15 +1174,31 @@ const MeusDados: React.FC = () => {
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <FormattedField
-                  label="CEP"
-                  name="cep"
-                  value={formData.cep}
-                  onChange={handleInputChange}
-                  className="md:col-span-1"
-                  placeholder="00000-000"
-                  formatFunction={formatCEP}
-                />
+                <div className="flex flex-col gap-1 md:col-span-1">
+                  <label className="block text-lg font-normal text-black mb-1">
+                    CEP
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={formData.cep}
+                      onChange={(e) => {
+                        const formatted = formatCEP(e.target.value);
+                        handleInputChange("cep", formatted);
+                        setCepError(null); // Limpa erro quando usuário digita
+                      }}
+                      placeholder="00000-000"
+                      className={`w-full px-3 py-2 bg-white border rounded-md text-black focus:outline-none focus:border-[#4A2C7C] ${
+                        cepError ? "border-red-500" : "border-gray-300"
+                      }`}
+                      
+                    />
+                  {cepError && (
+                    <p className="mt-1 text-sm text-red-500">{cepError}</p>
+                  )}
+                  </div>
+                  
+                </div>
                 <FormField
                   label="Rua"
                   name="rua"

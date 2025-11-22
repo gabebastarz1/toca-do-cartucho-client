@@ -113,7 +113,69 @@ export interface ThemeDTO {
 export interface TradeDTO {
   id: number;
   price?: number;
-  updatedAt: string;
+  updatedAt?: string;
+  createdAt?: string;
+  acceptedGames?: Array<{
+    id: number;
+    createdAt?: string;
+    game?: {
+      id: number;
+      name: string;
+      slug: string;
+      summary?: string;
+      storyline?: string;
+      igdbUrl?: string;
+      totalRating?: number;
+      totalRatingCount?: number;
+      firstReleaseDate?: string;
+      themes?: Array<{ theme?: { id: number; name: string } } | { id: number; name: string }>;
+      genres?: Array<{ genre?: { id: number; name: string } } | { id: number; name: string }>;
+      gameGameModes?: Array<{ gameModes?: { id: number; name: string } } | { gameMode?: { id: number; name: string } } | { id: number; name: string }>;
+      franchises?: Array<{ franchise?: { id: number; name: string } } | { id: number; name: string }>;
+    };
+  }>;
+  acceptedCartridgeTypes?: Array<{
+    id: number;
+    createdAt?: string;
+    cartridgeType?: {
+      id: number;
+      name: string;
+      description?: string;
+    };
+  }>;
+  acceptedPreservationStates?: Array<{
+    id: number;
+    createdAt?: string;
+    preservationState?: {
+      id: number;
+      name: string;
+      description?: string;
+    };
+  }>;
+  acceptedLanguageSupports?: Array<{
+    id?: number;
+    createdAt?: string;
+    languageSupport?: {
+      language?: {
+        id: number;
+        name: string;
+      };
+      languageSupportType?: {
+        id: number;
+        name: string;
+      };
+    };
+  }>;
+  acceptedRegions?: Array<{
+    id?: number;
+    createdAt?: string;
+    region?: {
+      id: number;
+      name: string;
+      category?: string;
+      identifier?: string;
+    };
+  }>;
 }
 
 export interface FranchiseDTO {

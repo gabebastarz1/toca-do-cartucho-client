@@ -42,8 +42,8 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
       const currentAd = selectedVariation || advertisement;
 
       // Calcular preço com base em sale (da variação ou do principal)
-      const salePrice = currentAd.sale?.price || 0;
-      const originalPrice = currentAd.sale?.previousPrice || 0;
+      const salePrice = currentAd.sale?.price ?? 0;
+      const originalPrice = currentAd.sale?.previousPrice ?? 0;
       const displayDiscount = (currentAd.sale as { displayDiscount?: boolean })
         ?.displayDiscount;
       const discount =
@@ -226,24 +226,26 @@ const ProductInfo: React.FC<ProductInfoProps> = ({
         </span>
       </div>
 
-      <div className="mb-6">
-        {productData.originalPrice > 0 &&
-          productData.originalPrice > productData.price && (
-            <p className="text-sm text-gray-500 line-through">
-              R$ {productData.originalPrice.toFixed(2).replace(".", ",")}
-            </p>
-          )}
-        <p className="text-3xl font-bold text-gray-900">
-          R$ {productData.price.toFixed(2).replace(".", ",")}
-          {productData.discount > 0 &&
-            productData.displayDiscount !== false && (
-              <span className="text-green-600 text-base font-normal">
-                {" "}
-                {productData.discount}% OFF
-              </span>
+      {productData.price > 0 && productData.price !== null && (
+        <div className="mb-6">
+          {productData.originalPrice > 0 &&
+            productData.originalPrice > productData.price && (
+              <p className="text-sm text-gray-500 line-through">
+                R$ {productData.originalPrice.toFixed(2).replace(".", ",")}
+              </p>
             )}
-        </p>
-      </div>
+          <p className="text-3xl font-bold text-gray-900">
+            R$ {productData.price.toFixed(2).replace(".", ",")}
+            {productData.discount > 0 &&
+              productData.displayDiscount !== false && (
+                <span className="text-green-600 text-base font-normal">
+                  {" "}
+                  {productData.discount}% OFF
+                </span>
+              )}
+          </p>
+        </div>
+      )}
 
       <div className="text-sm text-gray-700">
         <h2 className="font-semibold mb-2">Informações:</h2>

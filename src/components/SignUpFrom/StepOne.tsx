@@ -123,6 +123,7 @@ const StepOne: React.FC<StepOneProps> = ({
         >
           Email
         </label>
+        
         <input
           type="email"
           id="email"

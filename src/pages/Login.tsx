@@ -441,13 +441,9 @@ const Login: React.FC = () => {
         onClose={hideAlert}
       />
       {/* Game controller is now hidden on mobile and appears on medium screens and up */}
-      <img
-        src={GameControllerImage}
-        alt="Controle"
-        className="absolute bottom-48 left-[calc(45%-492px)] z-50 hidden w-72 transform md:block"
-      />
 
       <main className="relative z-10 w-full max-w-3xl rounded-lg p-6 md:bg-[#F8F8FC] md:p-10 md:shadow-lg ">
+      
         <div className="text-start">
           <h1 className="text-2xl font-bold text-white md:text-[#2B2560]">
             Acesse sua conta ou cadastre-se{" "}
@@ -638,7 +634,11 @@ const Login: React.FC = () => {
 
           {/* Botão de submit foi movido para ao lado dos inputs em cada etapa */}
         </form>
-
+        <img
+        src={GameControllerImage}
+        alt="Controle"
+        className="absolute top-63 left-[calc(38%-495px)] z-50 hidden w-72 transform md:block"
+        />
         <div className="my-6 flex items-center">
           <hr className="flex-grow border-t border-gray-500 md:border-gray-300" />
           <span className="mx-4 text-xs text-gray-400 md:text-gray-500">

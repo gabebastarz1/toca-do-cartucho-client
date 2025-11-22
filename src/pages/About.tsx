@@ -1,13 +1,14 @@
 import React from "react";
 import TopBar from "../components/TopBar";
 import Footer from "../components/Footer";
+import BottomBar from "@/components/BottomBar";
 
 const About: React.FC = () => {
   return (
     <>
-      <TopBar logoPosition="left" showSearchBar={false} showUserMenu={true} />
+      <TopBar logoPosition="left" showSearchBar={true} showUserMenu={true} />
 
-      <div className="min-h-screen bg-[#f4f3f5] pt-20 pb-20">
+      <div className="min-h-screen bg-[#f4f3f5] pt-10 pb-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-lg shadow-sm p-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-6">
@@ -34,7 +35,6 @@ const About: React.FC = () => {
               </h2>
               <ul className="list-disc list-inside text-gray-600 mb-6 space-y-2">
                 <li>Catálogo completo de jogos retrô e repro</li>
-                <li>Sistema de avaliações de vendedores</li>
                 <li>Filtros avançados por gênero, tema e estado</li>
                 <li>Comunicação direta via WhatsApp</li>
                 <li>Interface intuitiva e responsiva</li>
@@ -65,7 +65,7 @@ const About: React.FC = () => {
           </div>
         </div>
       </div>
-
+      <BottomBar />
       <Footer showBackToTopButton={true} />
     </>
   );
