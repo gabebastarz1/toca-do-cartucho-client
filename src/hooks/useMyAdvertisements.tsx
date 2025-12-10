@@ -37,7 +37,6 @@ export const useMyAdvertisements = (): UseMyAdvertisementsReturn => {
     setError(null);
 
     try {
-      console.log("🔄 [useMyAdvertisements] Carregando meus anúncios...");
 
       const params = new URLSearchParams({
         page: page.toString(),
@@ -51,7 +50,6 @@ export const useMyAdvertisements = (): UseMyAdvertisementsReturn => {
         `/api/advertisements?${params.toString()}`
       );
 
-      console.log("✅ [useMyAdvertisements] Resposta da API:", response.data);
 
       if (response.data && Array.isArray(response.data.advertisements)) {
         setAdvertisements(response.data.advertisements || []);
@@ -65,7 +63,6 @@ export const useMyAdvertisements = (): UseMyAdvertisementsReturn => {
         setTotalPages(0);
       }
     } catch (err: unknown) {
-      console.error("❌ [useMyAdvertisements] Erro ao carregar anúncios:", err);
       setError("Erro ao carregar seus anúncios");
       setAdvertisements([]);
     } finally {
@@ -76,18 +73,15 @@ export const useMyAdvertisements = (): UseMyAdvertisementsReturn => {
   const deleteAdvertisement = useCallback(
     async (id: number): Promise<boolean> => {
       try {
-        console.log("🗑️ [useMyAdvertisements] Deletando anúncio:", id);
 
         await api.delete(`/api/advertisements/${id}`);
 
-        console.log("✅ [useMyAdvertisements] Anúncio deletado com sucesso");
 
         // Recarregar lista
         await refreshAdvertisements();
 
         return true;
       } catch (err: unknown) {
-        console.error("❌ [useMyAdvertisements] Erro ao deletar anúncio:", err);
         return false;
       }
     },
@@ -97,10 +91,7 @@ export const useMyAdvertisements = (): UseMyAdvertisementsReturn => {
   const updateAdvertisementStatus = useCallback(
     async (id: number, status: "Active" | "Inactive"): Promise<boolean> => {
       try {
-        console.log("📝 [useMyAdvertisements] Atualizando status:", {
-          id,
-          status,
-        });
+        
 
         const payload = {
           status: status,
@@ -116,32 +107,18 @@ export const useMyAdvertisements = (): UseMyAdvertisementsReturn => {
           acceptedTradeLanguageSupportIds: [],
           acceptedTradeRegionIds: [],
         };
-        console.log("📝 [useMyAdvertisements] Payload enviado:", payload);
+        
 
-        const response = await api.patch(`/api/advertisements/${id}`, payload);
+  await api.patch(`/api/advertisements/${id}`, payload);
 
-        console.log(
-          "✅ [useMyAdvertisements] Status atualizado com sucesso",
-          response.data
-        );
+       
 
         // Recarregar lista
         await refreshAdvertisements();
 
         return true;
       } catch (err: any) {
-        console.error(
-          "❌ [useMyAdvertisements] Erro ao atualizar status:",
-          err
-        );
-        console.error(
-          "❌ [useMyAdvertisements] Resposta da API:",
-          err?.response?.data
-        );
-        console.error(
-          "❌ [useMyAdvertisements] Status HTTP:",
-          err?.response?.status
-        );
+        
         return false;
       }
     },

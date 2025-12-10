@@ -228,18 +228,36 @@ const PublicProfile: React.FC = () => {
 
   // Mapear anúncios para ProductCard
   const products = advertisements.map((ad) => {
-    // Determinar o tipo de venda
-    let saleType: "sale" | "trade" | "sale-trade" | undefined;
-    const hasSale =
-      ad.sale && ad.sale.price !== null && ad.sale.price !== undefined;
-    const hasTrade = ad.trade !== null && ad.trade !== undefined;
+    // Determinar o tipo de venda baseado nos dados reais
+    // A API de paginação retorna Sale (maiúsculo) e IsTrade/isTrade (bool)
+    // A API de detalhes retorna sale (minúsculo) e trade (objeto)
+    const sale = (ad as any).Sale !== undefined ? (ad as any).Sale : ad.sale;
+    const trade =
+      (ad as any).Trade !== undefined ? (ad as any).Trade : ad.trade;
+    const isTrade =
+      (ad as any).IsTrade !== undefined
+        ? (ad as any).IsTrade
+        : (ad as any).isTrade !== undefined
+        ? (ad as any).isTrade
+        : null;
 
+    // Determinar o tipo de venda
+    // hasSale: existe objeto Sale/sale E tem price válido
+    const hasSale =
+      sale !== null &&
+      sale !== undefined &&
+      sale.price !== null &&
+      sale.price !== undefined;
+    const hasTrade =
+      isTrade === true || (trade !== null && trade !== undefined);
+
+    let saleType: "sale" | "trade" | "sale-trade" | undefined;
     if (hasSale && hasTrade) {
       saleType = "sale-trade";
-    } else if (hasSale) {
-      saleType = "sale";
     } else if (hasTrade) {
       saleType = "trade";
+    } else if (hasSale) {
+      saleType = "sale";
     }
 
     // Mapear condição
@@ -420,7 +438,6 @@ const PublicProfile: React.FC = () => {
                     </p>
                   </div>
                 ) : (
-                 
                   <div>
                     <h2 className="text-2xl font-semibold text-gray-900 mb-6">
                       Avaliações do Vendedor

@@ -10,7 +10,7 @@ export interface Product {
   originalPrice?: number;
   currentPrice: number;
   discount?: number;
-  displayDiscount?: boolean; // Se false, não mostra o desconto no card
+  displayDiscount?: boolean;
   condition: "new" | "semi-new" | "good" | "normal" | "damaged";
   type: "retro" | "repro";
   location: string;
@@ -23,12 +23,19 @@ export interface Product {
   interfaceLanguage: string;
   region: string;
   sellerId?: string;
-  parentAdvertisementId?: number;
+  parentAdvertisementId?: number; // Apenas o ID (primitivo) para evitar loop infinito
 }
 
-// Mapeamentos removidos - agora extraímos essas informações diretamente do título
+// Tipo para suportar tanto AdvertisementDTO quanto AdvertisementPaginatedDTO
+type AdvertisementLike = AdvertisementDTO & {
+  Sale?: any;
+  IsTrade?: boolean;
+  isTrade?: boolean;
+  Game?: any; // Suporte para capitalização diferente no backend
+  Trade?: any;
+};
 
-// Mapeamento de regiões do backend para frontend
+// Mapeamento de regiões
 const regionMapping: Record<string, string> = {
   "North America": "north-america",
   "Europe": "europe", 
@@ -38,7 +45,7 @@ const regionMapping: Record<string, string> = {
   "Korea": "korea"
 };
 
-// Mapeamento de idiomas do backend para frontend
+// Mapeamento de idiomas
 const languageMapping: Record<string, string> = {
   "English": "english",
   "Portuguese": "portuguese",
@@ -46,23 +53,42 @@ const languageMapping: Record<string, string> = {
 };
 
 /**
- * Converte um AdvertisementDTO do backend para o formato Product usado no frontend
+ * Converte um AdvertisementDTO para o formato Product do frontend.
+ * * ⚠️ IMPORTANTE: Esta função converte apenas dados primitivos ou planos.
+ * Ela NÃO mapeia recursivamente objetos como 'variations' ou 'parentAdvertisement'
+ * para evitar erros de "Maximum call stack size exceeded" (Loop Infinito).
  */
-export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Product => {
-  // Determinar o tipo de venda baseado nos dados reais
+export const mapAdvertisementToProduct = (advertisement: AdvertisementLike): Product => {
+  if (!advertisement) {
+    throw new Error("Tentativa de mapear anúncio nulo ou indefinido.");
+  }
+
+  // Normalização de dados (CamelCase vs PascalCase do Backend)
+  const sale = (advertisement as any).Sale ?? advertisement.sale;
+  const trade = (advertisement as any).Trade ?? advertisement.trade;
+  
+  // Lógica complexa para determinar se é troca (IsTrade, isTrade ou objeto trade existente)
+  const isTradeBool = (advertisement as any).IsTrade ?? (advertisement as any).isTrade;
+  const hasTradeObject = trade !== null && trade !== undefined;
+  const hasTrade = isTradeBool === true || hasTradeObject;
+
+  // Verifica se existe venda válida (objeto existe E tem preço)
+  const hasSale = sale !== null && sale !== undefined && (sale.price !== null && sale.price !== undefined);
+  
+  // Determina o tipo de transação
   let saleType: "sale" | "trade" | "sale-trade" = "sale";
-  if (advertisement.sale && advertisement.trade) {
+  if (hasSale && hasTrade) {
     saleType = "sale-trade";
-  } else if (advertisement.trade) {
+  } else if (hasTrade) {
     saleType = "trade";
-  } else if (advertisement.sale) {
+  } else if (hasSale) {
     saleType = "sale";
   }
 
+  // Tipo de cartucho (Retro vs Repro)
   const type = advertisement.cartridgeType?.name?.toLowerCase()?.includes('repro') ? "repro" : "retro";
-  const condition = mapPreservationState(advertisement.preservationState?.name);
-  
-  // Função para mapear estado de preservação
+
+  // Mapeamento de estado de preservação
   function mapPreservationState(stateName?: string): "new" | "semi-new" | "good" | "normal" | "damaged" {
     if (!stateName) return "normal";
     const state = stateName.toLowerCase();
@@ -73,108 +99,109 @@ export const mapAdvertisementToProduct = (advertisement: AdvertisementDTO): Prod
     if (state.includes('danificado')) return "damaged";
     return "normal";
   }
+  const condition = mapPreservationState(advertisement.preservationState?.name);
 
-
-  // Mapear região usando dados reais do backend
-  const region = advertisement.gameLocalization?.region?.name ? 
-    regionMapping[advertisement.gameLocalization.region.name] || "north-america" : 
-    "north-america";
+  // Mapeamento de Região e Idiomas
+  const regionName = advertisement.gameLocalization?.region?.name;
+  const region = regionName ? (regionMapping[regionName] || "north-america") : "north-america";
   
+  // Idiomas (Hardcoded por enquanto conforme original, mas preparado para dinâmica)
   const audioLanguage = "English";
   const subtitleLanguage = "English";
   const interfaceLanguage = "English";
 
-  // Mapear idiomas para formato do frontend
   const mappedAudioLanguage = languageMapping[audioLanguage] || "english";
   const mappedSubtitleLanguage = languageMapping[subtitleLanguage] || "english";
   const mappedInterfaceLanguage = languageMapping[interfaceLanguage] || "english";
 
-  const gameGenres = advertisement.game?.genres || [];
-  const gameThemes = advertisement.game?.themes || [];
+  // Dados do Jogo (Game)
+  const game = (advertisement as any).Game ?? advertisement.game;
+  const gameGenres = game?.genres || [];
+  const gameThemes = game?.themes || [];
   
-  const genre = gameGenres.length > 0 && gameGenres[0].name ? 
-    gameGenres[0].name.toLowerCase() : "action";
+  const genre = gameGenres.length > 0 && gameGenres[0].gameGenre?.name 
+    ? gameGenres[0].gameGenre.name.toLowerCase() 
+    : (gameGenres.length > 0 && gameGenres[0].name ? gameGenres[0].name.toLowerCase() : "action");
   
-  const theme = gameThemes.length > 0 && gameThemes[0].name ? 
-    gameThemes[0].name.toLowerCase() : "fantasia";
-  
-  // Determinar modo de jogo baseado nos dados do jogo
-  const gameModes = advertisement.game?.gameGameModes || [];
+  const theme = gameThemes.length > 0 && gameThemes[0].gameTheme?.name
+    ? gameThemes[0].gameTheme.name.toLowerCase() 
+    : (gameThemes.length > 0 && gameThemes[0].name ? gameThemes[0].name.toLowerCase() : "fantasia");
+
+  const gameModes = game?.gameGameModes || [];
   const gameMode = gameModes.length > 1 ? ["singleplayer", "multiplayer"] : ["singleplayer"];
 
-  // Extrair dados de preço do objeto sale
-  const saleData = advertisement.sale as { price?: number; previousPrice?: number; discountPercentage?: string; displayDiscount?: boolean } | undefined;
-  const currentPrice = saleData?.price || 0;
-  const previousPrice = saleData?.previousPrice;
-  const discountPercentage = saleData?.discountPercentage;
-  const displayDiscount = saleData?.displayDiscount;
+  // Dados Financeiros
+  const currentPrice = sale?.price || 0;
+  const previousPrice = sale?.previousPrice;
+  const discountPercentage = sale?.discountPercentage;
+  const displayDiscount = sale?.displayDiscount;
   
-  // Só mostrar preço original se ele existir e for maior que 0
   const originalPrice = previousPrice && previousPrice > 0 ? previousPrice : undefined;
   
-  // Converter desconto de string para número (remover % e converter)
-  const discount = discountPercentage && originalPrice ? parseInt(discountPercentage.replace('%', '')) : undefined;
+  const discount = discountPercentage && originalPrice 
+    ? typeof discountPercentage === 'string' 
+      ? parseInt(discountPercentage.replace('%', '')) 
+      : typeof discountPercentage === 'number'
+        ? discountPercentage
+        : undefined
+    : undefined;
 
-  const rating = 0;
-  const reviewCount = 0;
-
+  // Localização do Vendedor
   const getSellerLocation = () => {
-    if (advertisement.seller?.addresses && advertisement.seller.addresses.length > 0) {
-      // Encontrar o endereço primário
-      const primaryAddress = advertisement.seller.addresses.find(addr => addr.isPrimary) || 
-                             advertisement.seller.addresses[0];
-      
+    if (advertisement.seller?.addresses?.length) {
+      const primaryAddress = advertisement.seller.addresses.find(addr => addr.isPrimary) || advertisement.seller.addresses[0];
       if (primaryAddress?.address) {
         const { city, state } = primaryAddress.address;
         return `${city}, ${state}`;
       }
     }
-    
-    // Fallback para localização genérica
     return "Brasil";
   };
 
-  const sellerLocation = getSellerLocation();
-
-  const getImageUrl = () => {
-    if (advertisement.images && advertisement.images.length > 0) {
+  // Imagem Principal
+  const getImageUrl = (): string => {
+    if (advertisement.images?.length) {
       const firstImage = advertisement.images[0];
-      const imageUrl = firstImage?.preSignedUrl || firstImage?.url;
-      if (imageUrl) {
-        return imageUrl;
-      }
+      // Prioriza preSignedUrl, fallback para url
+      return firstImage?.preSignedUrl || firstImage?.url || "";
     }
+    return "";
   };
 
   return {
     id: advertisement.id.toString(),
     title: advertisement.title,
-    image: getImageUrl(),
-    rating: rating,
-    reviewCount: reviewCount,
-    originalPrice: originalPrice,
-    currentPrice: currentPrice,
-    discount: discount,
-    displayDiscount: displayDiscount,
-    condition: condition,
-    type: type,
-    location: sellerLocation,
-    genre: genre,
-    theme: theme,
-    saleType: saleType,
-    gameMode: gameMode,
+    image: getImageUrl(), // Agora retorna string garantida
+    rating: 0,
+    reviewCount: 0,
+    originalPrice,
+    currentPrice,
+    discount,
+    displayDiscount,
+    condition,
+    type,
+    location: getSellerLocation(),
+    genre,
+    theme,
+    saleType,
+    gameMode,
     audioLanguage: mappedAudioLanguage,
     subtitleLanguage: mappedSubtitleLanguage,
     interfaceLanguage: mappedInterfaceLanguage,
-    region: region,
+    region,
     sellerId: advertisement.seller?.id,
-    parentAdvertisementId: advertisement.parentAdvertisementId,
+    
+    // ✅ CORREÇÃO CRÍTICA:
+    // Mapeamos APENAS o ID. Não tente acessar advertisement.parentAdvertisement (objeto)
+    // aqui, pois isso causaria o loop infinito se o backend enviar dados circulares.
+    parentAdvertisementId: advertisement.parentAdvertisementId, 
   };
 };
 
 /**
  * Converte múltiplos AdvertisementDTOs para Products
  */
-export const mapAdvertisementsToProducts = (advertisements: AdvertisementDTO[]): Product[] => {
+export const mapAdvertisementsToProducts = (advertisements: AdvertisementLike[]): Product[] => {
+  if (!Array.isArray(advertisements)) return [];
   return advertisements.map(mapAdvertisementToProduct);
 };

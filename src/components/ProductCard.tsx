@@ -23,6 +23,7 @@ interface ProductCardProps {
   sellerId?: string;
   parentAdvertisementId?: number;
   onClick?: () => void;
+  priority?: boolean; // Para marcar imagens prioritárias (LCP)
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
@@ -41,6 +42,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   saleType,
   sellerId,
   onClick,
+  priority = false, // Por padrão, não é prioritária
 }) => {
   const { averageRating, totalRatings } = useSellerRatings(sellerId);
 
@@ -178,6 +180,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
               src={image}
               alt={title}
               className="max-w-full max-h-full object-contain bg-white"
+              loading={priority ? "eager" : "lazy"}
+              {...(priority && { fetchPriority: "high" as const })}
+              decoding="async"
+              width={96}
+              height={96}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -241,7 +248,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 type
               )}`}
             >
-              {type === "retro" ? "RETRÔ" : "REPRÔ"}
+              {type === "retro" ? "Retrô" : "Repro"}
             </span>
           </div>
 
@@ -269,6 +276,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
               src={image}
               alt={title}
               className="absolute inset-0 w-full h-full object-contain bg-white "
+              loading={priority ? "eager" : "lazy"}
+              {...(priority && { fetchPriority: "high" as const })}
+              decoding="async"
+              width={384}
+              height={192}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -340,7 +352,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   type
                 )}`}
               >
-                {type === "retro" ? "RETRÔ" : "REPRO"}
+                {type === "retro" ? "Retrô" : "Repro"}
               </span>
             </Tooltip>
           </div>

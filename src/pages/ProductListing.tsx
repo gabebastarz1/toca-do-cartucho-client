@@ -22,6 +22,9 @@ import {
 import Footer from "../components/Footer";
 import BottomBar from "@/components/BottomBar";
 import Head from "@/components/Head";
+import { AdvertisementFilteringDTO } from "@/services/advertisementService";
+import { useAuth } from "../hooks/useAuth";
+import { useFavorites } from "../hooks/useFavorites";
 
 // Removido mockProducts - agora usando dados do backend
 
@@ -30,6 +33,8 @@ const ProductListing: React.FC = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const { user, isLoading: authLoading } = useAuth();
+  const { refreshFavorites } = useFavorites();
 
   // Obter dados de categorias para validação (removido - não mais necessário)
   // Função para inicializar estado baseado na URL (removida - não mais necessária)
@@ -47,8 +52,6 @@ const ProductListing: React.FC = () => {
     label: "Mais Novo",
   });
 
-
-  // Hook para buscar anúncios do backend
   const {
     advertisements,
     loading,
@@ -72,68 +75,78 @@ const ProductListing: React.FC = () => {
     return mapAdvertisementsToProducts(advertisements);
   }, [advertisements]);
 
+  // ✅ Verificar autenticação e carregar favoritos apenas se logado
+  useEffect(() => {
+    // Aguardar carregamento da autenticação
+    if (authLoading) {
+      return;
+    }
+
+    // Se o usuário estiver logado, carregar favoritos
+    if (user) {
+      refreshFavorites().catch((error) => {
+        // Se der erro 401, significa que o usuário não está realmente autenticado
+        // Não fazer nada, apenas não carregar favoritos
+        if (error?.response?.status !== 401) {
+          console.error("Erro ao carregar favoritos:", error);
+        }
+      });
+    }
+  }, [user, authLoading, refreshFavorites]);
+
+  // Preload da primeira imagem para melhorar LCP
+  useEffect(() => {
+    if (products.length > 0 && products[0].image) {
+      const link = document.createElement("link");
+      link.rel = "preload";
+      link.as = "image";
+      link.href = products[0].image;
+      link.fetchPriority = "high";
+      document.head.appendChild(link);
+
+      return () => {
+        document.head.removeChild(link);
+      };
+    }
+  }, [products]);
+
   // Inicializar searchQuery e filtros a partir dos parâmetros da URL
   useEffect(() => {
-  
-
     const urlParams = new URLSearchParams(location.search);
 
-    // Processar pesquisa
     const searchParam = urlParams.get("search");
     if (searchParam) {
       const decodedSearch = decodeURIComponent(searchParam);
-
       setSearchQuery(decodedSearch);
       setConfirmedSearchQuery(decodedSearch);
     } else {
-
       setSearchQuery("");
       setConfirmedSearchQuery("");
     }
-
-    // Processar filtros da URL
     const urlFilters: Record<string, string[]> = {};
-
-    // Processar gênero
     const genreParam = urlParams.get("genre");
     if (genreParam) {
       urlFilters.genre = genreParam.split(",");
-     
     }
-
-    // Processar tema
     const themeParam = urlParams.get("theme");
     if (themeParam) {
       urlFilters.theme = themeParam.split(",");
     }
-
-    // Processar condições
     const conditionsParam = urlParams.get("conditions");
     if (conditionsParam) {
       urlFilters.conditions = conditionsParam.split(",");
     }
-
-    // Processar preço
     const minPriceParam = urlParams.get("minPrice");
     const maxPriceParam = urlParams.get("maxPrice");
     if (minPriceParam || maxPriceParam) {
       urlFilters.price = [minPriceParam || "", maxPriceParam || ""];
-      
       setPriceRange({ min: minPriceParam || "", max: maxPriceParam || "" });
     } else {
-      
       setPriceRange({ min: "", max: "" });
     }
-
-    
     setActiveFilters(urlFilters);
-    setIsInitialized(true); // Marcar como inicializado após processar URL
-
+    setIsInitialized(true);
   }, [location.search]);
-
-  // Refs para evitar loop (removido - não mais necessário)
-
-  // Atualizar estado quando a URL mudar (removido - usando comunicação direta)
 
   const handleProductClick = (
     productId: string,
@@ -149,7 +162,6 @@ const ProductListing: React.FC = () => {
 
   // Callback para limpar a pesquisa
   const handleClearSearch = useCallback(() => {
-   
     setSearchQuery("");
     setConfirmedSearchQuery(""); // Também limpar o estado confirmado
     // Também limpar a URL
@@ -158,14 +170,12 @@ const ProductListing: React.FC = () => {
 
   // Callback para mudanças na pesquisa (apenas atualiza o estado interno)
   const handleSearchChange = useCallback((value: string) => {
-    
     setSearchQuery(value);
     // NÃO atualiza confirmedSearchQuery aqui - só na confirmação
   }, []);
 
   const handleOrderingChange = useCallback(
     (ordering: { value: string; label: string }) => {
-     
       setCurrentOrdering(ordering);
 
       // Aplicar nova ordenação no hook
@@ -178,7 +188,6 @@ const ProductListing: React.FC = () => {
 
   // Callback para confirmar a pesquisa (quando usuário pressiona Enter)
   const handleSearchConfirm = useCallback(() => {
-   
     setConfirmedSearchQuery(searchQuery);
     // Atualizar a URL com a pesquisa confirmada
     if (searchQuery.trim()) {
@@ -191,12 +200,8 @@ const ProductListing: React.FC = () => {
   // Atualizar filtros e aplicar ao backend
   const handleFiltersChange = useCallback(
     (filters: Record<string, string[]>) => {
-      
-
       // Verificar se os filtros realmente mudaram
       setActiveFilters((prev) => {
-        
-
         if (JSON.stringify(prev) === JSON.stringify(filters)) {
           return prev;
         }
@@ -221,7 +226,6 @@ const ProductListing: React.FC = () => {
       return;
     }
 
-
     const frontendFilters: FrontendFilters = activeFilters as FrontendFilters;
     const mapped = mapFrontendFiltersToBackend(
       frontendFilters,
@@ -229,12 +233,17 @@ const ProductListing: React.FC = () => {
     );
     const cleaned = cleanBackendFilters(mapped);
 
-
     // Garantir que sempre filtre apenas produtos e vendedores ativos
-    const finalFilters = {
+    // IMPORTANTE: Preservar o title (pesquisa) se existir, não sobrescrever
+    const finalFilters: AdvertisementFilteringDTO = {
       ...cleaned,
       status: "Active",
       sellerStatus: "Active",
+      // Garantir que o título da pesquisa seja preservado
+      title:
+        confirmedSearchQuery && confirmedSearchQuery.trim()
+          ? confirmedSearchQuery.trim()
+          : cleaned.title, // Manter title se já existir em cleaned
     };
 
     // Evitar atualizações desnecessárias - só aplicar se realmente mudou

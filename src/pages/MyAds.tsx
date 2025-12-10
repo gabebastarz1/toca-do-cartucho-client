@@ -193,9 +193,28 @@ const MyAds: React.FC = () => {
   };
 
   const getAdvertisementType = (ad: AdvertisementDTO) => {
+    // Usar mesma lógica da página de favoritos
+    const adWithVariants = ad as AdvertisementDTO & {
+      Sale?: { price?: number | null };
+      Trade?: { [key: string]: unknown } | null;
+      IsTrade?: boolean;
+      isTrade?: boolean;
+    };
+
+    const sale = adWithVariants.Sale !== undefined ? adWithVariants.Sale : ad.sale;
+    const trade = adWithVariants.Trade !== undefined ? adWithVariants.Trade : ad.trade;
+    const isTrade = adWithVariants.IsTrade !== undefined ? adWithVariants.IsTrade : adWithVariants.isTrade;
+
+    // Verificar se realmente tem venda (precisa ter price válido)
     const hasSale =
-      ad.sale && ad.sale.price !== null && ad.sale.price !== undefined;
-    const hasTrade = ad.trade !== null && ad.trade !== undefined;
+      sale !== null &&
+      sale !== undefined &&
+      sale.price !== null &&
+      sale.price !== undefined;
+    
+    // Verificar se tem troca (objeto trade existe OU isTrade é true)
+    const hasTrade =
+      isTrade === true || (trade !== null && trade !== undefined);
 
     if (hasSale && hasTrade) {
       return "Venda e Troca";
@@ -373,6 +392,16 @@ const MyAds: React.FC = () => {
                         >
                           {ad.title}
                         </h3>
+                        {/* Label de Status */}
+                        <span
+                          className={`text-xs font-medium mt-1 inline-block ${
+                            ad.status === "Active"
+                              ? "text-green-600"
+                              : "text-gray-500"
+                          }`}
+                        >
+                          {getStatusLabel(ad.status)}
+                        </span>
                       </div>
 
                       {/* Menu de três pontos */}
@@ -462,6 +491,52 @@ const MyAds: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Modal de Confirmação */}
+        {showConfirmModal && confirmModalData && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-6 h-6 text-[#2B2560]" />
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Confirmar Ação
+                  </h3>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    setConfirmModalData(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 mb-6">
+                {confirmModalData.message}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    setConfirmModalData(null);
+                  }}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmAction}
+                  className="flex-1 px-4 py-2 bg-[#2B2560] text-white rounded-lg hover:bg-[#1f1a45] transition-colors"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <BottomBar />
       </>
     );

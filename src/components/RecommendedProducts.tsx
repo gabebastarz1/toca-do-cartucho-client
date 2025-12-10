@@ -18,42 +18,36 @@ const RecommendedProducts: React.FC<RecommendedProductsProps> = ({
   currentAdvertisement,
   maxProducts = 6,
 }) => {
-  // ✅ Buscar produtos relacionados baseado no anúncio atual
-  const getRelatedFilters = () => {
-    // Apenas produtos ativos, sem filtros complexos
-    return { status: "Active" };
-  };
-
-  // ✅ Hook para buscar produtos relacionados
-  const { advertisements, loading, error } = useAdvertisements({
-    initialFilters: getRelatedFilters(),
+  
+  // ✅ CORREÇÃO 1: Memoizar as configurações do hook
+  // Isso garante que o objeto { status: "Active" } seja sempre A MESMA referência na memória
+  // evitando que o useAdvertisements rode em loop infinito.
+  const hookOptions = React.useMemo(() => ({
+    initialFilters: { status: "Active" },
     initialPagination: { page: 1, pageSize: maxProducts },
-    initialOrdering: { ordering: "Newest" }, // ✅ Mostrar os mais recentes primeiro
-    autoFetch: true,
-  });
+    initialOrdering: { ordering: "Newest" },
+    autoFetch: true
+  }), [maxProducts]); // Só recria se maxProducts mudar
 
- 
+  // ✅ CORREÇÃO 2: Passar o objeto memoizado
+  const { advertisements, loading, error } = useAdvertisements(hookOptions);
 
   // ✅ Converter advertisements para produtos
   const recommendedProducts = React.useMemo(() => {
-   
+    // Se advertisements for undefined ou null, retorna array vazio para evitar erro no map
+    if (!advertisements) return []; 
 
     const products = mapAdvertisementsToProducts(advertisements);
-   
 
-    // Filtrar o produto atual se estiver na lista (opcional)
-    const filteredProducts = products.filter(
-      (product) =>
-        !currentAdvertisement ||
+    return products
+      .filter((product) => 
+        !currentAdvertisement || 
         product.id !== currentAdvertisement.id.toString()
-    );
- 
-
-    const finalProducts = filteredProducts.slice(0, maxProducts);
-   
-
-    return finalProducts;
-  }, [advertisements, currentAdvertisement, maxProducts]);
+      )
+      .slice(0, maxProducts);
+      
+  // Adicionei currentAdvertisement?.id para garantir que a dependência seja primitiva (segura)
+  }, [advertisements, currentAdvertisement?.id, maxProducts]);
 
   const showCarousel = recommendedProducts.length > 4;
   const scrollContainerRef = useRef<HTMLDivElement>(null);

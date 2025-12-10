@@ -7,7 +7,7 @@ import BottomBar from "@/components/BottomBar";
 import { useNavigate } from "react-router-dom";
 import { useFavorites } from "../hooks/useFavorites";
 import ProductGrid from "../components/ProductGrid";
-import { advertisementImageService } from "../services/advertisementImageService";
+import { AdvertisementDTO, AdvertisementImageDTO } from "../api/types";
 
 const Favorites: React.FC = () => {
   const navigate = useNavigate();
@@ -18,13 +18,36 @@ const Favorites: React.FC = () => {
 
   // ✅ Mapear os favoritos para o formato esperado pelo ProductGrid
   const products = favoritesList.map((advertisement) => {
+    // Determinar o tipo de venda (usando mesma lógica do advertisementMapper)
+    // A API pode retornar Sale/Trade (maiúsculo) ou sale/trade (minúsculo)
+    const ad = advertisement as AdvertisementDTO & {
+      Sale?: { price?: number | null };
+      Trade?: { [key: string]: unknown } | null;
+      IsTrade?: boolean;
+      isTrade?: boolean;
+    };
+
+    const sale = ad.Sale !== undefined ? ad.Sale : advertisement.sale;
+    const trade = ad.Trade !== undefined ? ad.Trade : advertisement.trade;
+    const isTrade = ad.IsTrade !== undefined ? ad.IsTrade : ad.isTrade;
+
+    // Verificar se realmente tem venda (precisa ter price válido)
+    const hasSale =
+      sale !== null &&
+      sale !== undefined &&
+      sale.price !== null &&
+      sale.price !== undefined;
+    // Verificar se tem troca (objeto trade existe OU isTrade é true)
+    const hasTrade =
+      isTrade === true || (trade !== null && trade !== undefined);
+
     // Determinar o tipo de venda
     let saleType: "sale" | "trade" | "sale-trade" | undefined;
-    if (advertisement.sale && advertisement.trade) {
+    if (hasSale && hasTrade) {
       saleType = "sale-trade";
-    } else if (advertisement.sale) {
+    } else if (hasSale) {
       saleType = "sale";
-    } else if (advertisement.trade) {
+    } else if (hasTrade) {
       saleType = "trade";
     }
 
@@ -57,22 +80,46 @@ const Favorites: React.FC = () => {
     const type: "retro" | "repro" =
       typeName === "repro" || typeName === "reprô" ? "repro" : "retro";
 
-    // ✅ Função para obter URL da imagem usando o serviço
+    // ✅ Função para obter URL da imagem (usando mesma lógica do advertisementMapper)
+    // Aceita tanto 'images' (minúsculo) quanto 'Images' (maiúsculo) para compatibilidade
     const getImageUrl = (): string => {
-      if (advertisement.images && advertisement.images.length > 0) {
-        const firstImage = advertisement.images[0];
-        // Usar o serviço para obter a URL de exibição correta
-        const imageUrl = advertisementImageService.getDisplayUrl(firstImage);
+      // Tentar acessar images (minúsculo) ou Images (maiúsculo) - API pode retornar em ambos os formatos
+      const ad = advertisement as AdvertisementDTO & {
+        Images?: AdvertisementImageDTO[];
+      };
+      const images = ad.images || ad.Images;
+
+      if (images && Array.isArray(images) && images.length > 0) {
+        const firstImage = images[0] as AdvertisementImageDTO & {
+          PreSignedUrl?: string;
+          Url?: string;
+        };
+        // Priorizar preSignedUrl (minúsculo), depois PreSignedUrl (maiúsculo), depois url (minúsculo), depois Url (maiúsculo)
+        // A API pode retornar em diferentes formatos (camelCase ou PascalCase)
+        const imageUrl =
+          firstImage?.preSignedUrl ||
+          firstImage?.PreSignedUrl ||
+          firstImage?.url ||
+          firstImage?.Url;
         if (imageUrl) {
           return imageUrl;
         }
+
+        // Log temporário para debug - verificar estrutura completa da imagem
+        console.log("Imagem encontrada mas URL vazia:", {
+          advertisementId: advertisement.id,
+          firstImage: firstImage,
+          firstImageKeys: Object.keys(firstImage || {}),
+          preSignedUrl: firstImage?.preSignedUrl,
+          url: firstImage?.url,
+          PreSignedUrl: firstImage?.PreSignedUrl,
+          Url: firstImage?.Url,
+        });
       }
       return ""; // Retorna string vazia se não houver imagem
     };
 
     const imageUrl = getImageUrl();
-
-    // Log para debug
 
     return {
       id: advertisement.id?.toString() || "0",
@@ -99,8 +146,6 @@ const Favorites: React.FC = () => {
 
   // ✅ Handler para clique no produto
   const handleProductClick = (productId: string) => {
-    ;
-
     const advertisement = favoritesList.find(
       (ad) => ad.id?.toString() === productId
     );
@@ -108,10 +153,7 @@ const Favorites: React.FC = () => {
     if (advertisement?.id) {
       navigate(`/anuncio/${advertisement.id}`);
     } else {
-      console.error(
-        
-        advertisement
-      );
+      console.error(advertisement);
     }
   };
 
@@ -119,7 +161,7 @@ const Favorites: React.FC = () => {
     return (
       <>
         <Head title="Favoritos" />
-        <TopBar logoPosition="left" showSearchBar={false} showUserMenu={true} />
+        <TopBar logoPosition="left" showSearchBar={true} showUserMenu={true} />
         <FilterTopBar />
         <div className="min-h-screen bg-[#f4f3f5] pt-20 pb-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -141,7 +183,7 @@ const Favorites: React.FC = () => {
     return (
       <>
         <Head title="Favoritos" />
-        <TopBar logoPosition="left" showSearchBar={false} showUserMenu={true} />
+        <TopBar logoPosition="left" showSearchBar={true} showUserMenu={true} />
         <FilterTopBar />
         <div className="min-h-screen bg-[#f4f3f5] pt-20 pb-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -172,7 +214,7 @@ const Favorites: React.FC = () => {
     return (
       <>
         <Head title="Favoritos" />
-        <TopBar logoPosition="left" showSearchBar={false} showUserMenu={true} />
+        <TopBar logoPosition="left" showSearchBar={true} showUserMenu={true} />
         <FilterTopBar />
         <div className="min-h-screen bg-[#f4f3f5] pt-20 pb-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -204,7 +246,7 @@ const Favorites: React.FC = () => {
   return (
     <>
       <Head title="Favoritos" />
-      <TopBar logoPosition="left" showSearchBar={false} showUserMenu={true} />
+      <TopBar logoPosition="left" showSearchBar={true} showUserMenu={true} />
       <FilterTopBar />
 
       <div className="min-h-screen bg-[#f4f3f5] md:pt-20 pt-10 pb-20">

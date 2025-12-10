@@ -22,39 +22,87 @@ class AdvertisementCreationService {
     advertisement: AdvertisementForCreationDTO
   ): Promise<AdvertisementCreationResponse> {
     try {
-      const response = await api.post(this.baseUrl, advertisement);
+      // ✅ Limpar valores undefined antes de enviar (axios pode não serializar corretamente)
+      const cleanedAdvertisement = JSON.parse(JSON.stringify(advertisement, (key, value) => {
+        // Remover propriedades undefined, mas manter null
+        if (value === undefined) {
+          return null;
+        }
+        // Garantir que arrays vazios sejam arrays, não null
+        if (Array.isArray(value) && value.length === 0 && key.includes('Trade')) {
+          return [];
+        }
+        return value;
+      }));
+
+      // ✅ Log detalhado do payload antes de enviar
+      console.log('=== PAYLOAD ENVIADO AO BACKEND ===');
+      console.log('Advertisement:', JSON.stringify(cleanedAdvertisement, null, 2));
+      console.log('===================================');
+      
+      const response = await api.post(this.baseUrl, cleanedAdvertisement);
       return response.data;
     } catch (error: unknown) {
-      // Verificar se é um erro do Axios
+      // ✅ Log detalhado do erro do backend
       if (
         error &&
         typeof error === "object" &&
         "response" in error &&
         error.response &&
-        typeof error.response === "object" &&
-        "data" in error.response
+        typeof error.response === "object"
       ) {
         const axiosError = error as {
-          response?: { data?: { error?: string } };
+          response?: { 
+            data?: any;
+            status?: number;
+            statusText?: string;
+          };
         };
 
-        if (axiosError.response?.data?.error) {
-          const backendError = axiosError.response.data.error;
+        console.error('=== ERRO DO BACKEND ===');
+        console.error('Status:', axiosError.response?.status);
+        console.error('Status Text:', axiosError.response?.statusText);
+        console.error('Response Data:', JSON.stringify(axiosError.response?.data, null, 2));
+        console.error('========================');
 
-          if (backendError.includes("CPF")) {
+        // Verificar diferentes formatos de erro do backend
+        const responseData = axiosError.response?.data;
+        let errorMessage = '';
+
+        if (typeof responseData === 'string') {
+          errorMessage = responseData;
+        } else if (responseData?.error) {
+          errorMessage = responseData.error;
+        } else if (responseData?.message) {
+          errorMessage = responseData.message;
+        } else if (responseData?.errors) {
+          // Erros de validação do ASP.NET Core
+          const validationErrors = Object.entries(responseData.errors || {})
+            .map(([field, messages]: [string, any]) => {
+              const msgArray = Array.isArray(messages) ? messages : [messages];
+              return `${field}: ${msgArray.join(', ')}`;
+            })
+            .join('; ');
+          errorMessage = validationErrors || 'Erro de validação';
+        } else if (responseData) {
+          errorMessage = JSON.stringify(responseData);
+        }
+
+        if (errorMessage) {
+          if (errorMessage.includes("CPF")) {
             throw new Error(
               "Para vender produtos, você precisa cadastrar seu CPF no perfil. Acesse a página de perfil para completar seu cadastro."
             );
           }
 
           if (
-            backendError.includes("authentication") ||
-            backendError.includes("unauthorized")
+            errorMessage.includes("authentication") ||
+            errorMessage.includes("unauthorized")
           ) {
             throw new Error("Sua sessão expirou. Faça login novamente.");
           }
 
-          throw new Error(backendError);
+          throw new Error(errorMessage);
         }
       }
 
@@ -66,10 +114,8 @@ class AdvertisementCreationService {
   async testAdvertisement(
     advertisement: AdvertisementForCreationDTO
   ): Promise<AdvertisementCreationResponse> {
-   
-      const response = await api.post(`${this.baseUrl}/test`, advertisement);
-      return response.data;
-    
+    const response = await api.post(`${this.baseUrl}/test`, advertisement);
+    return response.data;
   }
 
   // Criar anúncio com dados dos formulários existentes (MultiPartForm)
@@ -103,6 +149,8 @@ class AdvertisementCreationService {
         referenceData,
         gameLocalizationId,
         languageSupportsIds,
+        this.getLanguageSupportsIds.bind(this),
+        this.getGameLocalizationId.bind(this),
         this.getLanguageSupportsIds.bind(this)
       );
 
@@ -131,18 +179,14 @@ class AdvertisementCreationService {
           const variationImages = extractValidImages(frontendVariation.imagens);
 
           if (variationImages.length > 0) {
-           
-
             await this.uploadImages(createdVariation.id, variationImages);
           }
         }
-      } 
+      }
 
       return advertisement;
     } catch (error) {
-      console.error(
-        error
-      );
+      console.error(error);
       throw error;
     }
   }
@@ -211,20 +255,14 @@ class AdvertisementCreationService {
    * @param images - Um array de arquivos de imagem.
    */
   async uploadImages(advertisementId: number, images: File[]): Promise<void> {
+    const formData = new FormData();
+    images.forEach((image) => formData.append("images", image));
 
-      const formData = new FormData();
-      images.forEach((image) => formData.append("images", image));
+    const url = `${this.baseUrl}/${advertisementId}/images`;
 
-      const url = `${this.baseUrl}/${advertisementId}/images`;
-   
-
-   
-     
-      await api.post(url, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      
+    await api.post(url, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
   }
 
   // Upload de uma única imagem
@@ -273,43 +311,35 @@ class AdvertisementCreationService {
     interfaceLanguage?: string
   ): Promise<number[]> {
     try {
-
-
       const languageSupportsIds: number[] = [];
-      const languageSupportTypes = { audio: 1, subtitles: 2, interface: 3 };
 
+      // Os valores que vêm do formulário já são os IDs dos LanguageSupport (não dos Language)
+      // Então podemos usá-los diretamente
+      // Pode ser uma string única ou múltiplos IDs separados por vírgula
       if (audioLanguage) {
-        
-        const audioSupport = await this.findLanguageSupport(
-          gameId,
-          parseInt(audioLanguage),
-          languageSupportTypes.audio
-        );
-
-        if (audioSupport) languageSupportsIds.push(audioSupport.id);
+        const ids = audioLanguage
+          .split(",")
+          .map((id) => parseInt(id.trim()))
+          .filter((id) => !isNaN(id) && id > 0);
+        languageSupportsIds.push(...ids);
       }
       if (subtitleLanguage) {
-       
-        const subtitleSupport = await this.findLanguageSupport(
-          gameId,
-          parseInt(subtitleLanguage),
-          languageSupportTypes.subtitles
-        );
-     
-        if (subtitleSupport) languageSupportsIds.push(subtitleSupport.id);
+        const ids = subtitleLanguage
+          .split(",")
+          .map((id) => parseInt(id.trim()))
+          .filter((id) => !isNaN(id) && id > 0);
+        languageSupportsIds.push(...ids);
       }
       if (interfaceLanguage) {
-        
-        const interfaceSupport = await this.findLanguageSupport(
-          gameId,
-          parseInt(interfaceLanguage),
-          languageSupportTypes.interface
-        );
-        
-        if (interfaceSupport) languageSupportsIds.push(interfaceSupport.id);
+        const ids = interfaceLanguage
+          .split(",")
+          .map((id) => parseInt(id.trim()))
+          .filter((id) => !isNaN(id) && id > 0);
+        languageSupportsIds.push(...ids);
       }
 
-      return languageSupportsIds;
+      // Remover duplicatas
+      return [...new Set(languageSupportsIds)];
     } catch (error) {
       console.error(error);
       return [];
@@ -322,20 +352,14 @@ class AdvertisementCreationService {
     supportTypeId: number
   ): Promise<LanguageSupportDTO | null> {
     try {
-      
-
       const response = await api.get("/api/language-supports", {
         params: { GameId: gameId, LanguageSupportTypeId: supportTypeId },
       });
-
-     
-
 
       const result =
         response.data.find(
           (ls: LanguageSupportDTO) => ls.language.id === languageId
         ) || null;
-    
 
       return result;
     } catch (error) {
@@ -352,26 +376,20 @@ class AdvertisementCreationService {
     }
   ): Promise<number | undefined> {
     try {
-      
-
       // Se não há região selecionada (campo não visível), buscar sem filtro de região
       if (!regionValue || regionValue.trim() === "") {
-        
         const response = await api.get("/api/game-localizations", {
           params: {
             GameId: gameId,
           },
         });
 
-        
         const gameLocalizationId = response.data?.[0]?.id;
-       
 
         return gameLocalizationId;
       }
 
       if (!referenceData?.regions) {
-      
         return undefined;
       }
 
@@ -382,15 +400,12 @@ class AdvertisementCreationService {
           r.identifier === regionValue
       );
 
-     
       if (!region) {
-        
         return undefined;
       }
 
       const regionParam =
         region.identifier || region.name || region.id.toString();
-      
 
       const response = await api.get("/api/game-localizations", {
         params: {
@@ -399,10 +414,8 @@ class AdvertisementCreationService {
         },
       });
 
-      
-
       const gameLocalizationId = response.data?.[0]?.id;
-      
+
       return gameLocalizationId;
     } catch (error) {
       console.error(error);

@@ -29,7 +29,7 @@ const Security: React.FC = () => {
             <div className="flex bg-[#211C49] items-center px-4 py-4 pt-8">
               <button
                 onClick={() => navigate("/meu-perfil")}
-                className="p-2 -ml-2 focus:outline-none"
+                className="p-2 -ml-2 focus:outline-none hover:bg-[#3a2f6b] rounded transition-colors"
                 aria-label="Voltar"
               >
                 <ArrowLeft className="w-6 h-6 text-white" />
@@ -121,7 +121,7 @@ const Security: React.FC = () => {
 
           <div className="bg-white rounded-lg shadow-sm p-4">
             <button
-              className="px-10 py-4 w-full flex items-center gap-6"
+              className="px-10 py-4 w-full flex items-center gap-6 hover:bg-gray-50 transition-colors rounded-lg"
               onClick={() => navigate("/alterar-senha")}
             >
               <Lock className="w-8 h-8 text-[#1E1E1E]" />
@@ -135,7 +135,7 @@ const Security: React.FC = () => {
               </div>
             </button>
             <button
-              className="px-10 py-4 w-full flex items-center gap-6"
+              className="px-10 py-4 w-full flex items-center gap-6 hover:bg-gray-50 transition-colors rounded-lg"
               onClick={() => navigate("/autenticacao-2fa")}
             >
               <CircleCheckBig className="w-8 h-8 text-[#1E1E1E]" />
@@ -149,7 +149,7 @@ const Security: React.FC = () => {
               </div>
             </button>
             <button
-              className="px-10 py-4 w-full flex items-center gap-6"
+              className="px-10 py-4 w-full flex items-center gap-6 hover:bg-gray-50 transition-colors rounded-lg"
               onClick={() => navigate("/cancelar-conta")}
             >
               <CircleX className="w-8 h-8 text-[#1E1E1E]" />

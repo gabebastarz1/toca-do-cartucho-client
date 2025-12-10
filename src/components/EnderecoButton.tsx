@@ -102,7 +102,7 @@ const EnderecoButton: React.FC<EnderecoButtonProps> = ({
           zipCode: newAddress.zipCode.replace(/-/g, ""),
         },
       });
-      await api.api.patch("/api/accounts/profile", { addresses });
+      await api.api.patch("/api/auth/profile", { addresses });
       setShowNewAddressForm(false);
       setNewAddress({
         zipCode: "",

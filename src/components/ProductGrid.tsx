@@ -88,10 +88,11 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {products.map((product) => (
+      {products.map((product, index) => (
         <ProductCard
           key={product.id}
           {...product}
+          priority={index < 3} // Marcar as 3 primeiras imagens como prioritárias (LCP)
           onClick={() =>
             onProductClick?.(product.id, product.parentAdvertisementId)
           }

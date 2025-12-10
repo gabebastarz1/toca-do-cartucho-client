@@ -223,7 +223,7 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
               <ArrowLeft className="w-6 h-6 text-white" />
             </button>
             <h1 className="text-lg font-light ml-2">
-              {step === "setup" ? "Configurar 2FA" : "2FA Ativado"}
+              {step === "setup" ? "Autenticação de Dois Fatores" : "Autenticação Ativada"}
             </h1>
           </div>
         </div>

@@ -16,14 +16,14 @@ export interface FrontendFormData {
   condicoes: string;
   imagens: (File | null)[];
   
-  // Campos específicos para troca (se aplicável)
-  jogosTroca?: string;
-  tiposTroca?: string;
-  estadosTroca?: string;
-  regioesTroca?: string;
-  idiomasAudioTroca?: string;
-  idiomasLegendaTroca?: string;
-  idiomasInterfaceTroca?: string;
+  // Campos específicos para troca (se aplicável) - podem ser arrays ou strings para compatibilidade
+  jogosTroca?: string | string[];
+  tiposTroca?: string | string[];
+  estadosTroca?: string | string[];
+  regioesTroca?: string | string[];
+  idiomasAudioTroca?: string | string[];
+  idiomasLegendaTroca?: string | string[];
+  idiomasInterfaceTroca?: string | string[];
 }
 
 export interface FrontendVariationData {
@@ -82,7 +82,9 @@ export async function convertFormDataToBackend(
   },
   gameLocalizationId?: number,
   languageSupportsIds?: number[],
-  getTradeLanguageSupportIds?: (gameId: number, audioLanguage?: string, subtitleLanguage?: string, interfaceLanguage?: string) => Promise<number[]>
+  getTradeLanguageSupportIds?: (gameId: number, audioLanguage?: string, subtitleLanguage?: string, interfaceLanguage?: string) => Promise<number[]>,
+  getVariationGameLocalizationId?: (gameId: number, regionValue: string, referenceData?: { regions: Array<{ id: number; name?: string; identifier?: string }> }) => Promise<number | undefined>,
+  getVariationLanguageSupportsIds?: (gameId: number, audioLanguage?: string, subtitleLanguage?: string, interfaceLanguage?: string) => Promise<number[]>
 ): Promise<AdvertisementForCreationDTO> {
   console.log('=== INICIANDO CONVERSÃO DE DADOS ===');
   console.log('FormData recebido:', formData);
@@ -94,6 +96,25 @@ export async function convertFormDataToBackend(
   // Converter variações (processar de forma assíncrona)
   const backendVariations: AdvertisementVariationForCreationDTO[] = await Promise.all(
     variations.map(async (variation) => {
+      // ✅ Calcular gameLocalizationId e languageSupportsIds específicos para cada variação
+      // As variações usam o mesmo jogo do anúncio principal, mas podem ter região e idiomas diferentes
+      const variationGameLocalizationId = getVariationGameLocalizationId
+        ? await getVariationGameLocalizationId(
+            parseInt(formData.jogo), // Variações sempre usam o mesmo jogo do anúncio principal
+            variation.regiao || formData.regiao, // Usar região da variação, ou do principal se não houver
+            referenceData
+          )
+        : gameLocalizationId; // Fallback para o do anúncio principal se a função não for fornecida
+
+      const variationLanguageSupportsIds = getVariationLanguageSupportsIds
+        ? await getVariationLanguageSupportsIds(
+            parseInt(formData.jogo), // Variações sempre usam o mesmo jogo do anúncio principal
+            variation.idiomaAudio || formData.idiomaAudio,
+            variation.idiomaLegenda || formData.idiomaLegenda,
+            variation.idiomaInterface || formData.idiomaInterface
+          )
+        : languageSupportsIds || []; // Fallback para os do anúncio principal se a função não for fornecida
+
       // Processar dados de trade para variações (se aplicável)
       const acceptedTradeGameIds = isTrade && variation.jogosTroca ? [parseInt(variation.jogosTroca)] : [];
       const acceptedTradeCartridgeTypeIds = isTrade && variation.tiposTroca ? 
@@ -102,7 +123,17 @@ export async function convertFormDataToBackend(
         [referenceData ? convertStringToId(variation.estadosTroca, referenceData.preservationStates) || 0 : parseInt(variation.estadosTroca) || 0] : [];
       
       // Para regiões e idiomas de trade, precisamos buscar os IDs corretos
-      const acceptedTradeRegionIds = isTrade && variation.regioesTroca ? [parseInt(variation.regioesTroca)] : [];
+      // ✅ Filtrar valores null, undefined, NaN e strings vazias
+      let acceptedTradeRegionIds: number[] = [];
+      if (isTrade && variation.regioesTroca) {
+        const regionIds = Array.isArray(variation.regioesTroca) 
+          ? variation.regioesTroca 
+          : [variation.regioesTroca];
+        acceptedTradeRegionIds = regionIds
+          .filter(id => id !== null && id !== undefined && id !== '') // Filtrar null/undefined/strings vazias primeiro
+          .map(id => typeof id === 'string' ? parseInt(id) : id)
+          .filter(id => !isNaN(id) && id > 0) as number[]; // Filtrar NaN e valores <= 0
+      }
       
       // Para idiomas de trade nas variações, precisamos buscar os language_support IDs correspondentes
       let acceptedTradeLanguageSupportIds: number[] = [];
@@ -122,7 +153,7 @@ export async function convertFormDataToBackend(
 
       return {
         title: variation.titulo,
-        description: variation.descricao,
+        description: variation.descricao || undefined,
         availableStock: parseInt(variation.estoque) || 1,
         preservationStateId: referenceData ? 
           convertStringToId(variation.estadoPreservacao, referenceData.preservationStates) || 0 : 
@@ -130,39 +161,66 @@ export async function convertFormDataToBackend(
         cartridgeTypeId: referenceData ? 
           convertStringToId(variation.tipoCartucho, referenceData.cartridgeTypes) || 0 : 
           parseInt(variation.tipoCartucho) || 0,
-        gameLocalizationId: gameLocalizationId,
-        languageSupportsIds: languageSupportsIds || [],
+        gameLocalizationId: variationGameLocalizationId || undefined,
+        languageSupportsIds: variationLanguageSupportsIds || [],
         price: variation.preco ? parseFloat(variation.preco.replace(',', '.')) : undefined,
         isTrade: isTrade,
-        acceptedTradeGameIds: acceptedTradeGameIds,
-        acceptedTradeCartridgeTypeIds: acceptedTradeCartridgeTypeIds,
-        acceptedTradePreservationStateIds: acceptedTradePreservationStateIds,
-        acceptedTradeLanguageSupportIds: acceptedTradeLanguageSupportIds,
-        acceptedTradeRegionIds: acceptedTradeRegionIds,
+        // ✅ Enviar null para arrays de trade quando não há trade, ou arrays vazios quando há trade mas sem dados
+        // ✅ Garantir que arrays não contenham null ou valores inválidos
+        acceptedTradeGameIds: isTrade ? (acceptedTradeGameIds.length > 0 ? acceptedTradeGameIds.filter(id => id !== null && id !== undefined && !isNaN(id)) : []) : undefined,
+        acceptedTradeCartridgeTypeIds: isTrade ? (acceptedTradeCartridgeTypeIds.length > 0 ? acceptedTradeCartridgeTypeIds.filter(id => id !== null && id !== undefined && !isNaN(id)) : []) : undefined,
+        acceptedTradePreservationStateIds: isTrade ? (acceptedTradePreservationStateIds.length > 0 ? acceptedTradePreservationStateIds.filter(id => id !== null && id !== undefined && !isNaN(id)) : []) : undefined,
+        acceptedTradeLanguageSupportIds: isTrade ? (acceptedTradeLanguageSupportIds.length > 0 ? acceptedTradeLanguageSupportIds.filter(id => id !== null && id !== undefined && !isNaN(id)) : []) : undefined,
+        acceptedTradeRegionIds: isTrade ? (acceptedTradeRegionIds.length > 0 ? acceptedTradeRegionIds.filter(id => id !== null && id !== undefined && !isNaN(id)) : []) : undefined,
       };
     })
   );
 
   // Processar dados de trade para o formulário principal
-  const acceptedTradeGameIds = isTrade && formData.jogosTroca ? [parseInt(formData.jogosTroca)] : [];
-  const acceptedTradeCartridgeTypeIds = isTrade && formData.tiposTroca ? 
-    [referenceData ? convertStringToId(formData.tiposTroca, referenceData.cartridgeTypes) || 0 : parseInt(formData.tiposTroca) || 0] : [];
-  const acceptedTradePreservationStateIds = isTrade && formData.estadosTroca ? 
-    [referenceData ? convertStringToId(formData.estadosTroca, referenceData.preservationStates) || 0 : parseInt(formData.estadosTroca) || 0] : [];
+  // Verificar se os valores são arrays ou strings e processar adequadamente
+  const jogosTrocaArray = Array.isArray(formData.jogosTroca) ? formData.jogosTroca : (formData.jogosTroca ? [formData.jogosTroca] : []);
+  const tiposTrocaArray = Array.isArray(formData.tiposTroca) ? formData.tiposTroca : (formData.tiposTroca ? [formData.tiposTroca] : []);
+  const estadosTrocaArray = Array.isArray(formData.estadosTroca) ? formData.estadosTroca : (formData.estadosTroca ? [formData.estadosTroca] : []);
+  const regioesTrocaArray = Array.isArray(formData.regioesTroca) ? formData.regioesTroca : (formData.regioesTroca ? [formData.regioesTroca] : []);
+  const idiomasAudioTrocaArray = Array.isArray(formData.idiomasAudioTroca) ? formData.idiomasAudioTroca : (formData.idiomasAudioTroca ? [formData.idiomasAudioTroca] : []);
+  const idiomasLegendaTrocaArray = Array.isArray(formData.idiomasLegendaTroca) ? formData.idiomasLegendaTroca : (formData.idiomasLegendaTroca ? [formData.idiomasLegendaTroca] : []);
+  const idiomasInterfaceTrocaArray = Array.isArray(formData.idiomasInterfaceTroca) ? formData.idiomasInterfaceTroca : (formData.idiomasInterfaceTroca ? [formData.idiomasInterfaceTroca] : []);
+
+  const acceptedTradeGameIds = isTrade && jogosTrocaArray.length > 0 
+    ? jogosTrocaArray.map(id => parseInt(id)).filter(id => !isNaN(id))
+    : [];
+  
+  const acceptedTradeCartridgeTypeIds = isTrade && tiposTrocaArray.length > 0
+    ? tiposTrocaArray.map(id => referenceData ? convertStringToId(id, referenceData.cartridgeTypes) || 0 : parseInt(id) || 0).filter(id => id !== 0)
+    : [];
+  
+  const acceptedTradePreservationStateIds = isTrade && estadosTrocaArray.length > 0
+    ? estadosTrocaArray.map(id => referenceData ? convertStringToId(id, referenceData.preservationStates) || 0 : parseInt(id) || 0).filter(id => id !== 0)
+    : [];
   
   // Para regiões e idiomas de trade do formulário principal
-  const acceptedTradeRegionIds = isTrade && formData.regioesTroca ? [parseInt(formData.regioesTroca)] : [];
+  const acceptedTradeRegionIds = isTrade && regioesTrocaArray.length > 0
+    ? regioesTrocaArray.map(id => parseInt(id)).filter(id => !isNaN(id))
+    : [];
   
   // Para idiomas de trade, precisamos buscar os language_support IDs correspondentes
+  // Usar o primeiro jogo selecionado para buscar os language supports
   let acceptedTradeLanguageSupportIds: number[] = [];
-  if (isTrade && getTradeLanguageSupportIds && formData.jogosTroca) {
+  if (isTrade && getTradeLanguageSupportIds && jogosTrocaArray.length > 0) {
     try {
-      acceptedTradeLanguageSupportIds = await getTradeLanguageSupportIds(
-        parseInt(formData.jogosTroca),
-        formData.idiomasAudioTroca,
-        formData.idiomasLegendaTroca,
-        formData.idiomasInterfaceTroca
-      );
+      // Para múltiplos jogos, buscar language supports para cada um
+      const allLanguageSupportIds: number[] = [];
+      for (const jogoId of jogosTrocaArray) {
+        const languageSupportIds = await getTradeLanguageSupportIds(
+          parseInt(jogoId),
+          idiomasAudioTrocaArray.join(','),
+          idiomasLegendaTrocaArray.join(','),
+          idiomasInterfaceTrocaArray.join(',')
+        );
+        allLanguageSupportIds.push(...languageSupportIds);
+      }
+      // Remover duplicatas
+      acceptedTradeLanguageSupportIds = [...new Set(allLanguageSupportIds)];
     } catch (error) {
       console.error("Erro ao buscar language support IDs para trade:", error);
       acceptedTradeLanguageSupportIds = [];
@@ -172,7 +230,7 @@ export async function convertFormDataToBackend(
   // Construir dados principais
   const backendData: AdvertisementForCreationDTO = {
     title: formData.titulo,
-    description: formData.descricao,
+    description: formData.descricao || undefined,
     availableStock: parseInt(formData.estoque) || 1,
     preservationStateId: referenceData ? 
       convertStringToId(formData.estadoPreservacao, referenceData.preservationStates) || 0 : 
@@ -180,16 +238,18 @@ export async function convertFormDataToBackend(
     cartridgeTypeId: referenceData ? 
       convertStringToId(formData.tipoCartucho, referenceData.cartridgeTypes) || 0 : 
       parseInt(formData.tipoCartucho) || 0,
-    gameLocalizationId: gameLocalizationId,
+    gameLocalizationId: gameLocalizationId || undefined,
     languageSupportsIds: languageSupportsIds || [],
     gameId: parseInt(formData.jogo) || 0,
     price: formData.preco ? parseFloat(formData.preco.replace(',', '.')) : undefined,
     isTrade: isTrade,
-    acceptedTradeGameIds: acceptedTradeGameIds,
-    acceptedTradeCartridgeTypeIds: acceptedTradeCartridgeTypeIds,
-    acceptedTradePreservationStateIds: acceptedTradePreservationStateIds,
-    acceptedTradeLanguageSupportIds: acceptedTradeLanguageSupportIds,
-    acceptedTradeRegionIds: acceptedTradeRegionIds,
+        // ✅ Enviar null para arrays de trade quando não há trade, ou arrays vazios quando há trade mas sem dados
+        // ✅ Garantir que arrays não contenham null ou valores inválidos - filtrar antes de usar
+        acceptedTradeGameIds: isTrade ? (acceptedTradeGameIds.length > 0 ? acceptedTradeGameIds.filter(id => id !== null && id !== undefined && !isNaN(id) && id > 0) : []) : undefined,
+        acceptedTradeCartridgeTypeIds: isTrade ? (acceptedTradeCartridgeTypeIds.length > 0 ? acceptedTradeCartridgeTypeIds.filter(id => id !== null && id !== undefined && !isNaN(id) && id > 0) : []) : undefined,
+        acceptedTradePreservationStateIds: isTrade ? (acceptedTradePreservationStateIds.length > 0 ? acceptedTradePreservationStateIds.filter(id => id !== null && id !== undefined && !isNaN(id) && id > 0) : []) : undefined,
+        acceptedTradeLanguageSupportIds: isTrade ? (acceptedTradeLanguageSupportIds.length > 0 ? acceptedTradeLanguageSupportIds.filter(id => id !== null && id !== undefined && !isNaN(id) && id > 0) : []) : undefined,
+        acceptedTradeRegionIds: isTrade ? (acceptedTradeRegionIds.length > 0 ? acceptedTradeRegionIds.filter(id => id !== null && id !== undefined && !isNaN(id) && id > 0) : []) : undefined,
     variations: backendVariations,
   };
 

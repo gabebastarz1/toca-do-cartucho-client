@@ -72,7 +72,7 @@ const ChangePassword: React.FC = () => {
     setIsSaving(true);
 
     try {
-      await api.post("/api/accounts/profile", {
+      await api.post("/api/auth/profile", {
         newEmail: null,
         newPassword: newPassword,
         oldPassword: oldPassword,

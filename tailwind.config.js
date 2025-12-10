@@ -10,6 +10,7 @@ export default {
   		fontFamily: {
   			'vt323': ['VT323', 'monospace'],
   			'lexend': ['Lexend', 'sans-serif'],
+				'press-start': ['"Press Start 2P"', 'cursive'],
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
@@ -17,6 +18,19 @@ export default {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		colors: {
+				snes: {
+          dark: '#2d2d2d',
+          light: '#a7a4a4',
+          purple: '#4c3d8f', // Roxo clássico do console
+          red: '#ff2a2a',    // Botão A
+          yellow: '#ffcc00', // Botão B
+          blue: '#0066cc',   // Botão X
+          green: '#00cc33',  // Botão Y
+        },
+				backgroundImage: {
+					'scanlines': 'linear-gradient(to bottom, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.25) 50%)',
+				},
+				
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

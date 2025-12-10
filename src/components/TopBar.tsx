@@ -73,6 +73,13 @@ const TopBar: React.FC<TopBarProps> = ({
     (userProfile as UserWithProfileImage)?.profileImage?.preSignedUrl ||
     userAvatar;
 
+  // Key para forçar atualização da imagem quando o perfil mudar
+  const profileImageKey = userProfile?.profileImage?.preSignedUrl
+    ? `${userProfile.profileImage.preSignedUrl}-${
+        userProfile.profileImage.id || Date.now()
+      }`
+    : userAvatar || "default";
+
   let justifyLogo: string;
   switch (logoPosition) {
     case "center":
@@ -232,6 +239,7 @@ const TopBar: React.FC<TopBarProps> = ({
                 >
                   {profileImageUrl && profileImageUrl.trim() !== "" ? (
                     <img
+                      key={profileImageKey}
                       src={profileImageUrl}
                       alt={displayUserName}
                       className="w-10 h-10 rounded-full object-cover"

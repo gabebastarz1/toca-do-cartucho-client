@@ -40,15 +40,16 @@ export const mapFrontendFiltersToBackend = (
 ): AdvertisementFilteringDTO => {
   const backendFilters: AdvertisementFilteringDTO = {};
 
-  // Sempre filtrar apenas anúncios ativos
-  backendFilters.status = "Active";
-  // Sempre filtrar apenas vendedores ativos
-  backendFilters.sellerStatus = "Active";
-
+  // IMPORTANTE: Adicionar busca por título PRIMEIRO para garantir que não seja sobrescrita
   // Adicionar busca por título se houver query de pesquisa
   if (searchQuery && searchQuery.trim()) {
     backendFilters.title = searchQuery.trim();
   }
+
+  // Sempre filtrar apenas anúncios ativos
+  backendFilters.status = "Active";
+  // Sempre filtrar apenas vendedores ativos
+  backendFilters.sellerStatus = "Active";
 
   // Processar condições de venda
   if (frontendFilters.conditions?.length) {

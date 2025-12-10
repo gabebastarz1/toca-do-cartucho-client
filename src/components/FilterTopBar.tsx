@@ -48,18 +48,13 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
   const handleCategoryClick = (categoryId: string) => {
     setOpenDropdown(null);
 
-   
-
     // Se há callback de filtros, usar o mesmo método do FilterSidebar
     if (onFiltersChange) {
-     
-
       // LIMPAR TODOS OS FILTROS E APLICAR APENAS O NOVO FILTRO
       const newFilters: Record<string, string[]> = {};
 
       if (categoryId === "all") {
         // Para "All", manter apenas filtros vazios (status=Active será aplicado automaticamente)
-        
       } else {
         // Verificar se é um gênero ou tema válido
         const genre = genres.find((g) => g.id === categoryId);
@@ -68,23 +63,19 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
         if (genre) {
           // Aplicar apenas o gênero selecionado
           newFilters.genre = [categoryId];
-
         } else if (theme) {
           // Aplicar apenas o tema selecionado
           newFilters.theme = [categoryId];
-
         }
       }
 
       // Limpar a pesquisa também
       if (onClearSearch) {
-
         onClearSearch();
       }
 
       // Verificar se os filtros realmente mudaram antes de chamar o callback
       if (JSON.stringify(currentFilters) !== JSON.stringify(newFilters)) {
-        
         onFiltersChange(newFilters);
       }
 
@@ -148,13 +139,12 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
             <div className="flex items-center space-x-8">
               {categories.map((category) => (
                 <div key={category.id} className="relative flex items-center">
-                    {category.id === "all" && (
-                      <Menu className="h-4 w-4 text-white mr-1" />
-                    )}
+                  {category.id === "all" && (
+                    <Menu className="h-4 w-4 text-white mr-1" />
+                  )}
                   <button
                     onClick={() => {
                       if (category.id === "all") {
-                        
                         handleCategoryClick(category.id);
                       } else {
                         handleDropdownToggle(category.id);
@@ -224,22 +214,32 @@ const FilterTopBar: React.FC<FilterTopBarProps> = ({
                       {category.id === "sobre" && (
                         <>
                           <button
-                            onClick={() => handleCategoryClick("quem-somos")}
+                            onClick={() => {
+                              handleCategoryClick("/sobre");
+                              navigate("/sobre");
+                            }}
                             className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           >
                             Quem Somos
                           </button>
                           <button
-                            onClick={() => handleCategoryClick("contato")}
+                            onClick={() => {
+                              handleCategoryClick("contato");
+                              // Scroll suave para o footer
+                              setTimeout(() => {
+                                const footer =
+                                  document.getElementById("footer");
+                                if (footer) {
+                                  footer.scrollIntoView({
+                                    behavior: "smooth",
+                                    block: "start",
+                                  });
+                                }
+                              }, 100);
+                            }}
                             className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           >
                             Contato
-                          </button>
-                          <button
-                            onClick={() => handleCategoryClick("ajuda")}
-                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            Ajuda
                           </button>
                         </>
                       )}

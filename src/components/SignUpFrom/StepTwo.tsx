@@ -85,6 +85,8 @@ const StepTwo: React.FC<StepProps> = ({ formData, errors, handleChange }) => {
           placeholder="Digite sua data de nascimento"
           value={formData.dataNascimento}
           onChange={handleChange}
+          min="1920-01-01"
+          max="2025-12-31"
           className="w-full p-3 bg-brand-light border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-dark"
         />
         {errors.dataNascimento && (

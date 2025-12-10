@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import TopBar from "../components/TopBar";
 import { useNavigate } from "react-router-dom";
-import React from "react";
+import React, { useEffect } from "react";
 import Head from "../components/Head";
 import BackButton from "../components/ui/BackButton";
 import AdvertisementCreationGuard from "../components/AdvertisementCreationGuard";
@@ -34,6 +34,12 @@ function OptionCard({
 
 export default function CreateAdvertisementPp() {
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    // Limpar variações do localStorage ao entrar na página de criar anúncio
+    localStorage.removeItem("tcc-variations");
+  }, []);
+
   return (
     <AdvertisementCreationGuard>
       <Head title="Cadastrar anúncio" />

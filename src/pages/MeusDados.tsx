@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronRight,
@@ -6,6 +6,7 @@ import {
   HelpCircle,
   Loader2,
   ArrowLeft,
+  Camera,
 } from "lucide-react";
 import { useIsMobile } from "../hooks/useIsMobile";
 
@@ -33,7 +34,8 @@ import useDebounce from "../hooks/useDebounce";
 const MeusDados: React.FC = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { alertState, showSuccess, showError, hideAlert } = useCustomAlert();
+  const { alertState, showSuccess, showError, showWarning, hideAlert } =
+    useCustomAlert();
   const {
     userProfile,
     isLoading: profileLoading,
@@ -83,6 +85,10 @@ const MeusDados: React.FC = () => {
   const [birthdayError, setBirthdayError] = useState<string | null>(null); // ✅ Novo estado para erro de data de nascimento
   const [isLoadingCep, setIsLoadingCep] = useState(false); // ✅ Estado para indicar carregamento do CEP
   const [cepError, setCepError] = useState<string | null>(null); // ✅ Estado para erro de CEP
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageCacheBuster, setImageCacheBuster] = useState<number>(Date.now());
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const debouncedNickname = useDebounce(formData.nomeUsuario, 500);
   const debouncedCep = useDebounce(formData.cep, 500); // ✅ Debounce para CEP
@@ -314,6 +320,16 @@ const MeusDados: React.FC = () => {
     }
   };
 
+  // useEffect para limpar preview quando a imagem de perfil mudar
+  useEffect(() => {
+    if (userProfile?.profileImage?.preSignedUrl) {
+      // Limpar preview local para que a nova imagem do servidor seja exibida
+      setImagePreview(null);
+      // Atualizar cache buster para forçar atualização
+      setImageCacheBuster(Date.now());
+    }
+  }, [userProfile?.profileImage?.preSignedUrl]);
+
   // ✅ useEffect para buscar CEP automaticamente quando digitado completamente
   useEffect(() => {
     if (!debouncedCep) return;
@@ -327,6 +343,132 @@ const MeusDados: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedCep]);
+
+  // Obter a URL da foto de perfil diretamente (igual à página Meu Perfil)
+  const profileImageUrl = userProfile?.profileImage?.preSignedUrl;
+
+  // Função para obter as iniciais do usuário
+  const getInitials = () => {
+    const firstName = userProfile?.firstName || "";
+    const lastName = userProfile?.lastName || "";
+    const nickName = userProfile?.nickName || "";
+
+    if (firstName && lastName) {
+      return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+    }
+    if (nickName) {
+      return nickName.charAt(0).toUpperCase();
+    }
+    return "U";
+  };
+
+  // Função para fazer upload da foto de perfil
+  const handleImageUpload = async (file: File) => {
+    // Validações já foram feitas em handleFileSelect, mas mantemos aqui como segurança
+    // Validar tipo de arquivo
+    if (!file.type.startsWith("image/")) {
+      showError("Por favor, selecione um arquivo de imagem válido.");
+      setImagePreview(null);
+      return;
+    }
+
+    // Validar tamanho (máximo 3MB)
+    const maxSize = 3 * 1024 * 1024; // 3MB em bytes
+    if (file.size > maxSize) {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      // Usar showWarning com duração maior (10 segundos) para chamar mais atenção
+      showWarning(
+        `⚠️ Arquivo muito grande! A imagem selecionada tem ${fileSizeMB}MB. O tamanho máximo permitido é 3MB. Por favor, escolha uma imagem menor.`,
+        10000 // 10 segundos
+      );
+      setImagePreview(null);
+      return;
+    }
+
+    setIsUploadingImage(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("Image", file);
+
+      await api.post("/api/accounts/profile/image", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      // Aguardar um pouco antes de refetch para garantir que o backend processou
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Limpar cache e refetch para obter a nova URL da imagem
+      await refetch();
+
+      // Aguardar mais um pouco para garantir que o estado foi atualizado
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // Limpar o preview local para que a nova imagem do servidor seja exibida
+      // O useEffect vai atualizar o cache buster automaticamente quando userProfile mudar
+      setImagePreview(null);
+
+      showSuccess("Foto de perfil atualizada com sucesso!");
+    } catch (error: unknown) {
+      console.error("Erro ao fazer upload da foto:", error);
+      showError("Erro ao fazer upload da foto de perfil. Tente novamente.");
+      setImagePreview(null);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  // Função para lidar com seleção de arquivo
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo de arquivo ANTES de criar preview
+    if (!file.type.startsWith("image/")) {
+      showError("Por favor, selecione um arquivo de imagem válido.");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      return;
+    }
+
+    // Validar tamanho ANTES de criar preview (máximo 3MB)
+    const maxSize = 3 * 1024 * 1024; // 3MB em bytes
+    if (file.size > maxSize) {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      // Usar showWarning com duração maior (10 segundos) para chamar mais atenção
+      showWarning(
+        `⚠️ Arquivo muito grande! A imagem selecionada tem ${fileSizeMB}MB. O tamanho máximo permitido é 3MB. Por favor, escolha outra imagem.`,
+        10000 // 10 segundos
+      );
+      setImagePreview(null); // Garantir que não há preview
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      return;
+    }
+
+    // Criar preview apenas se passou nas validações
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    handleImageUpload(file);
+
+    // Resetar o input para permitir selecionar o mesmo arquivo novamente
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Função para abrir o seletor de arquivo
+  const handleChangePhotoClick = () => {
+    fileInputRef.current?.click();
+  };
 
   // Funções de formatação melhoradas com limite de caracteres
   const formatCEP = (value: string) => {
@@ -608,7 +750,7 @@ const MeusDados: React.FC = () => {
       }
 
       // Atualizar dados do usuário
-      await api.patch(`/api/accounts/profile`, changedFields);
+      await api.patch(`/api/auth/profile`, changedFields);
 
       await refetch();
 
@@ -661,7 +803,7 @@ const MeusDados: React.FC = () => {
     try {
       // Remove o endereço do array
       const newAddresses = userProfile.addresses.filter((_, i) => i !== index);
-      await api.patch(`/api/accounts/profile`, {
+      await api.patch(`/api/auth/profile`, {
         addresses: newAddresses,
       });
       await refetch();
@@ -768,6 +910,68 @@ const MeusDados: React.FC = () => {
 
           {/* Conteúdo */}
           <div className="bg-[#F4F3F5] min-h-screen pt-4 pb-20">
+            {/* Seção Foto de Perfil */}
+            <div className="px-4 mb-6">
+              <h2 className="text-lg font-bold text-black mb-4">
+                Foto de Perfil
+              </h2>
+              <div className="flex flex-col items-center gap-4 mb-4">
+                <div className="relative">
+                  <div className="w-24 h-24 bg-gray-500 rounded-full flex items-center justify-center overflow-hidden">
+                    {imagePreview ? (
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : profileImageUrl ? (
+                      <img
+                        key={imageCacheBuster}
+                        src={profileImageUrl}
+                        alt="Foto de perfil"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                          e.currentTarget.nextElementSibling?.classList.remove(
+                            "hidden"
+                          );
+                        }}
+                      />
+                    ) : null}
+                    <span
+                      className={`bg-gray-500 text-white text-2xl font-bold ${
+                        imagePreview || profileImageUrl ? "hidden" : ""
+                      }`}
+                    >
+                      {getInitials()}
+                    </span>
+                  </div>
+                  {isUploadingImage && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                      <Loader2 className="w-6 h-6 animate-spin text-white" />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={handleChangePhotoClick}
+                    disabled={isUploadingImage}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#3A2370] text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  >
+                    <Camera className="w-4 h-4" />
+                    {isUploadingImage ? "Enviando..." : "Trocar Foto"}
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* Seção Dados Pessoais */}
             <div className="px-4 mb-6">
               <h2 className="text-lg font-bold text-black mb-4">
@@ -907,8 +1111,7 @@ const MeusDados: React.FC = () => {
                   )}
                   {!cepError &&
                     formData.cep.replace(/\D/g, "").length === 8 &&
-                    !isLoadingCep 
-                    }
+                    !isLoadingCep}
                 </div>
 
                 {/* Rua */}
@@ -1061,7 +1264,7 @@ const MeusDados: React.FC = () => {
                 className={`w-full py-3 rounded-md text-base font-normal transition-colors flex items-center justify-center gap-2 ${
                   isSaving
                     ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                    : "bg-[#4A2C7C] text-white hover:bg-[#3a2370]"
+                    : "bg-[#3A2370] text-white hover:bg-[#3a2370]"
                 }`}
               >
                 {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -1076,7 +1279,7 @@ const MeusDados: React.FC = () => {
             message={alertState.message}
             isVisible={alertState.isVisible}
             onClose={hideAlert}
-            duration={5000}
+            duration={alertState.duration ?? 5000}
           />
         </div>
         <BottomBar />
@@ -1110,6 +1313,70 @@ const MeusDados: React.FC = () => {
           {/* 2. CARD DO FORMULÁRIO: Removido 'absolute', altura automática */}
           <div className="bg-white border border-[#a5a6cf] rounded-xl p-10 shadow-sm">
             <h1 className="text-2xl font-normal text-black mb-8">Meus Dados</h1>
+
+            {/* Seção Foto de Perfil */}
+            <section className="mb-8">
+              <h2 className="text-2xl font-normal text-black mb-6">
+                Foto de Perfil
+              </h2>
+              <div className="flex flex-col items-center gap-6">
+                <div className="relative">
+                  <div className="w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center overflow-hidden">
+                    {imagePreview ? (
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : profileImageUrl ? (
+                      <img
+                        key={imageCacheBuster}
+                        src={profileImageUrl}
+                        alt="Foto de perfil"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                          e.currentTarget.nextElementSibling?.classList.remove(
+                            "hidden"
+                          );
+                        }}
+                      />
+                    ) : null}
+                    <span
+                      className={`bg-gray-500 text-white text-3xl font-bold ${
+                        imagePreview || profileImageUrl ? "hidden" : ""
+                      }`}
+                    >
+                      {getInitials()}
+                    </span>
+                  </div>
+                  {isUploadingImage && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                      <Loader2 className="w-8 h-8 animate-spin text-white" />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={handleChangePhotoClick}
+                    disabled={isUploadingImage}
+                    className="flex items-center gap-2 px-6 py-2 bg-[#3A2370] text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Camera className="w-5 h-5" />
+                    {isUploadingImage ? "Enviando..." : "Trocar Foto"}
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <hr className="my-8 border-gray-200" />
 
             {/* Seções do Formulário */}
             <section className="space-y-6">
@@ -1191,13 +1458,11 @@ const MeusDados: React.FC = () => {
                       className={`w-full px-3 py-2 bg-white border rounded-md text-black focus:outline-none focus:border-[#4A2C7C] ${
                         cepError ? "border-red-500" : "border-gray-300"
                       }`}
-                      
                     />
-                  {cepError && (
-                    <p className="mt-1 text-sm text-red-500">{cepError}</p>
-                  )}
+                    {cepError && (
+                      <p className="mt-1 text-sm text-red-500">{cepError}</p>
+                    )}
                   </div>
-                  
                 </div>
                 <FormField
                   label="Rua"
@@ -1318,7 +1583,7 @@ const MeusDados: React.FC = () => {
           message={alertState.message}
           isVisible={alertState.isVisible}
           onClose={hideAlert}
-          duration={5000}
+          duration={alertState.duration ?? 5000}
         />
       </main>
 

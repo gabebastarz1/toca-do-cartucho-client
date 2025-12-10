@@ -176,12 +176,23 @@ export const CategoryDataProvider: React.FC<CategoryDataProviderProps> = ({
         api.get("/api/game-localizations"),
       ]);
 
-      const genresData: GenreDTO[] = genresResponse.data;
-      const themesData: ThemeDTO[] = themesResponse.data;
-      const gameModesData: GameModeDTO[] = gameModesResponse.data;
-      const languagesData: LanguageDTO[] = languagesResponse.data;
-      const gameLocalizationsData: GameLocalizationDTO[] =
-        gameLocalizationsResponse.data;
+      const genresData: GenreDTO[] = Array.isArray(genresResponse.data)
+        ? genresResponse.data
+        : [];
+      const themesData: ThemeDTO[] = Array.isArray(themesResponse.data)
+        ? themesResponse.data
+        : [];
+      const gameModesData: GameModeDTO[] = Array.isArray(gameModesResponse.data)
+        ? gameModesResponse.data
+        : [];
+      const languagesData: LanguageDTO[] = Array.isArray(languagesResponse.data)
+        ? languagesResponse.data
+        : [];
+      const gameLocalizationsData: GameLocalizationDTO[] = Array.isArray(
+        gameLocalizationsResponse.data
+      )
+        ? gameLocalizationsResponse.data
+        : [];
 
       // Extrair regiões únicas das localizações de jogos
       const regionsMap = new Map<number, ApiRegionDTO>();

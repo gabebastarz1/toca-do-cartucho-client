@@ -20,8 +20,10 @@ import {
   CancelAccount,
   MyProfile,
   Reports,
+  CartridgeGuide,
 } from "./pages";
 import ConfirmEmail from "./pages/ConfirmEmail";
+import ConfirmCPF from "./pages/ConfirmCPF";
 import ResetPassword from "./pages/ResetPassword";
 import MeusDados from "./pages/MeusDados";
 import About from "./pages/About";
@@ -48,6 +50,7 @@ function AppContent() {
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Register />} />
         <Route path="/confirmar-email" element={<ConfirmEmail />} />
+        <Route path="/confirmar-cpf" element={<ConfirmCPF />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/anuncio/:id" element={<Advertisement />} />
         <Route path="/anuncio/:id/editar" element={<EditarAnuncio />} />
@@ -76,6 +79,7 @@ function AppContent() {
           element={<CreateAdvertisementSaleOnly />}
         />
         <Route path="/produtos" element={<ProductListing />} />
+        <Route path="/guia-cartucho" element={<CartridgeGuide />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
 

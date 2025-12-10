@@ -17,7 +17,8 @@ interface AuthContextType {
     email: string,
     password: string,
     twoFactorCode?: string,
-    twoFactorRecoveryCode?: string
+    twoFactorRecoveryCode?: string,
+    rememberMe?: boolean
   ) => Promise<void>;
   register: (userData: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
@@ -52,29 +53,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        if (authService.isAuthenticated()) {
-          const currentUser = authService.getUser();
-          if (currentUser) {
-            
-            setUser(currentUser);
-          } else {
-            // Tentar obter usuário do servidor (pode haver cookie de sessão válido)
-            
+        // 1. Estratégia Otimista: Verificar LocalStorage
+        // Isso garante que a UI carregue logada instantaneamente se o usuário já logou antes
+        const storedUser = authService.getUser();
+        
+        if (storedUser) {
+          setUser(storedUser);
+          
+          // Opcional: Validar se a sessão no servidor ainda é válida em background
+          // Se der erro 401, o interceptor (agora configurado corretamente) lidará com isso
+          authService.getCurrentUser().catch(() => {
+             // Se falhar silenciosamente, ok. Se o token expirou, o interceptor
+             // cuidará do logout na próxima interação do usuário.
+          });
+        } else {
+          // 2. Estratégia de Persistência (Cookie):
+          // Se não tem nada no LocalStorage, pode ser que o usuário fechou o navegador
+          // mas o Cookie ainda está válido. Tentamos pegar o usuário silenciosamente.
+          try {
+            // Passamos 'true' para pular o interceptor e não gerar erros de console/redirects
+            // caso o usuário seja apenas um visitante anônimo.
             const serverUser = await authService.getCurrentUser();
-            if (serverUser) {
             
+            if (serverUser) {
               setUser(serverUser);
-              // Salvar dados do usuário no localStorage para próximas verificações
               authService.setAuthData("cookie-based-auth", serverUser);
-            } else {
-              
-              authService.logout();
             }
+          } catch {
+            // Visitante anônimo ou cookie expirado. Não fazemos nada.
           }
-        } 
+        }
       } catch (error) {
-        console.error(error);
-        authService.logout();
+        console.error("Erro na inicialização da autenticação:", error);
+        // Em caso de erro crítico, garantimos estado limpo
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -84,6 +96,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const check2FAStatus = async () => {
+    if (!user) return; // Não verifica se não estiver logado
+
     try {
       // Verificar se já mostrou o alerta nesta sessão
       const alreadyShown = sessionStorage.getItem(ALERT_SHOWN_KEY);
@@ -111,23 +125,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     email: string,
     password: string,
     twoFactorCode?: string,
-    twoFactorRecoveryCode?: string
+    twoFactorRecoveryCode?: string,
+    rememberMe?: boolean
   ) => {
+    // O authService.login agora já cuida do retry e da espera do cookie
     const response = await authService.login({
       email,
       password,
       twoFactorCode,
       twoFactorRecoveryCode,
+      rememberMe,
     });
+    
     setUser(response.user);
 
     // Verificar status de 2FA após login bem-sucedido
-    await check2FAStatus();
+    // Pequeno delay para garantir que estado propagou
+    setTimeout(() => check2FAStatus(), 1000);
   };
 
   const register = async (userData: RegisterRequest) => {
     const response = await authService.register(userData);
-    setUser(response.user);
+    // Se o registro retornar usuário (sem confirmação de email), setamos
+    if (response.user) {
+        setUser(response.user);
+    }
   };
 
   const logout = async () => {
@@ -139,14 +161,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const setCookieAuth = (cookieValue: string) => {
-    // O cookie já está definido pelo servidor, então apenas atualizamos o usuário
-    // O parâmetro cookieValue não é usado, mas é mantido para compatibilidade com a interface
+    // Atualiza o estado se for detectado login externo
     const user = authService.getUser();
     if (!user) {
-      // Se não há usuário no localStorage, tentar obter do servidor
       authService.getCurrentUser().then((serverUser) => {
         if (serverUser) {
           setUser(serverUser);
+          authService.setAuthData("cookie-based-auth", serverUser);
         }
       });
     } else {

@@ -1,5 +1,5 @@
-import React, { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useRef, useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { FaGoogle } from "react-icons/fa";
 import { Eye, EyeOff, ChevronLeft } from "lucide-react";
 import GameControllerImage from "../assets/controller.png";
@@ -7,12 +7,13 @@ import CustomCheckbox from "../components/ui/CustomCheckbox";
 import { useAuth } from "../hooks/useAuth";
 import { useCustomAlert } from "../hooks/useCustomAlert";
 import { CustomAlert } from "../components/ui/CustomAlert";
-import { handleGoogleLogin } from "../services/authService";
+import { handleGoogleLogin, authService } from "../services/authService";
 import { api } from "../services/api";
 import { useIsMobile } from "../hooks/useIsMobile";
 
 const Login: React.FC = () => {
   const isMobile = useIsMobile();
+  const [searchParams] = useSearchParams();
   const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,6 +30,78 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const { login: loginContext } = useAuth();
   const { alertState, showError, showSuccess, hideAlert } = useCustomAlert();
+
+  // Preencher email se vier da URL (após cadastro)
+  useEffect(() => {
+    const emailFromUrl = searchParams.get("email");
+    if (emailFromUrl) {
+      setEmail(decodeURIComponent(emailFromUrl));
+      // Limpar o parâmetro da URL para não ficar visível
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete("email");
+      navigate({ search: newSearchParams.toString() }, { replace: true });
+    }
+  }, [searchParams, navigate]);
+
+  // Verificar se o usuário já está autenticado e redirecionar para produtos
+  useEffect(() => {
+    const checkAuthAndRedirect = async () => {
+      // Verificar se há flag de logout em progresso - se sim, não verificar autenticação
+      const logoutInProgress = sessionStorage.getItem("logout_in_progress");
+      if (logoutInProgress === "true") {
+        return;
+      }
+
+      // Verificar se acabamos de receber um 401 (evitar loop)
+      // Se não há token no localStorage mas há cookie, pode ser cookie inválido
+      const hasToken = localStorage.getItem("authToken");
+      const hasUser = localStorage.getItem("user");
+
+      // Se não há dados no localStorage, não tentar verificar com servidor
+      // (isso evita loop quando cookie está presente mas inválido)
+      if (!hasToken && !hasUser) {
+        return;
+      }
+
+      // Verificação síncrona rápida (localStorage e cookies)
+      if (authService.isAuthenticated()) {
+        // Verificar com o servidor antes de redirecionar para garantir que a sessão é válida
+        try {
+          const user = await authService.getCurrentUser();
+          if (user) {
+            navigate("/produtos", { replace: true });
+          }
+        } catch (error) {
+          // Se falhar, limpar dados locais e manter na página de login
+          localStorage.removeItem("authToken");
+          localStorage.removeItem("user");
+        }
+        return;
+      }
+
+      // Aguardar um pouco para garantir que os cookies estejam disponíveis
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Verificar novamente após o delay apenas se houver dados no localStorage
+      if (hasToken || hasUser) {
+        if (authService.isAuthenticated()) {
+          try {
+            const user = await authService.getCurrentUser();
+            if (user) {
+              navigate("/produtos", { replace: true });
+            }
+          } catch (error) {
+            // Se falhar, limpar dados locais
+            localStorage.removeItem("authToken");
+            localStorage.removeItem("user");
+          }
+          return;
+        }
+      }
+    };
+
+    checkAuthAndRedirect();
+  }, [navigate]);
 
   const toggleShowPassword = () => setShowPassword(!showPassword);
 
@@ -65,7 +138,6 @@ const Login: React.FC = () => {
         );
       }, 2000);
     } catch {
-      
       showError(
         "Erro ao enviar email de recuperação. Verifique se o email está correto."
       );
@@ -81,7 +153,7 @@ const Login: React.FC = () => {
     try {
       if (stage === "email") {
         // Verificar existência do email
-        const resp = await api.get("/api/accounts/email-exists", {
+        const resp = await api.get("/api/auth/email-exists", {
           params: { email },
         });
 
@@ -106,20 +178,18 @@ const Login: React.FC = () => {
         email,
         password,
         !useRecoveryCode ? twoFactorCode : undefined,
-        useRecoveryCode ? twoFactorCode : undefined
+        useRecoveryCode ? twoFactorCode : undefined,
+        rememberMe
       );
-      navigate("/"); // Redireciona para a home page
+      // Recarregar a página para garantir que todas as requisições sejam feitas com autenticação
+      window.location.href = "/produtos";
     } catch (err: unknown) {
-
-
       const error = err as {
         status?: number;
         data?:
           | { detail?: string; title?: string; [key: string]: unknown }
           | string;
       };
-
-
 
       // Detectar se necessita de 2FA - verificar múltiplos formatos de resposta
       const dataString =
@@ -137,7 +207,6 @@ const Login: React.FC = () => {
             error.data.title.includes("RequiresTwoFactor")));
 
       if (requires2FADetected && !requires2FA) {
-      
         setRequires2FA(true);
         showError(
           "Esta conta possui autenticação de dois fatores. Por favor, insira seu código."
@@ -443,7 +512,6 @@ const Login: React.FC = () => {
       {/* Game controller is now hidden on mobile and appears on medium screens and up */}
 
       <main className="relative z-10 w-full max-w-3xl rounded-lg p-6 md:bg-[#F8F8FC] md:p-10 md:shadow-lg ">
-      
         <div className="text-start">
           <h1 className="text-2xl font-bold text-white md:text-[#2B2560]">
             Acesse sua conta ou cadastre-se{" "}
@@ -635,9 +703,9 @@ const Login: React.FC = () => {
           {/* Botão de submit foi movido para ao lado dos inputs em cada etapa */}
         </form>
         <img
-        src={GameControllerImage}
-        alt="Controle"
-        className="absolute top-63 left-[calc(38%-495px)] z-50 hidden w-72 transform md:block"
+          src={GameControllerImage}
+          alt="Controle"
+          className="absolute top-63 left-[calc(38%-495px)] z-50 hidden w-72 transform md:block"
         />
         <div className="my-6 flex items-center">
           <hr className="flex-grow border-t border-gray-500 md:border-gray-300" />

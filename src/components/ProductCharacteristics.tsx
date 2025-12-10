@@ -339,17 +339,17 @@ const ProductCharacteristics: React.FC<ProductCharacteristicsProps> = ({
         : "Não especificado";
 
     return [
-      { label: "Jogo", value: acceptedGameNamesStr },
+      { label: "Jogos", value: acceptedGameNamesStr },
       { label: "Gêneros", value: acceptedGenres },
       { label: "Temáticas", value: acceptedThemes },
-      { label: "Modo de Jogo", value: acceptedGameModes },
-      { label: "Franquia", value: acceptedFranchises },
-      { label: "Tipo de Cartucho", value: acceptedCartridgeTypes },
-      { label: "Estado de Preservação", value: acceptedPreservationStates },
-      { label: "Região", value: acceptedRegions },
-      { label: "Idiomas do Áudio", value: acceptedAudioLanguages },
-      { label: "Idiomas da Legenda", value: acceptedSubtitleLanguages },
-      { label: "Idiomas da Interface", value: acceptedInterfaceLanguages },
+      { label: "Modos de Jogo", value: acceptedGameModes },
+      { label: "Franquias", value: acceptedFranchises },
+      { label: "Tipos de Cartucho", value: acceptedCartridgeTypes },
+      { label: "Estados de Preservação", value: acceptedPreservationStates },
+      { label: "Regiões", value: acceptedRegions },
+      { label: "Idiomas de Áudio", value: acceptedAudioLanguages },
+      { label: "Idiomas de Legenda", value: acceptedSubtitleLanguages },
+      { label: "Idiomas de Interface", value: acceptedInterfaceLanguages },
     ];
   };
 
@@ -376,6 +376,18 @@ const ProductCharacteristics: React.FC<ProductCharacteristicsProps> = ({
   const tradeConditions = getTradeConditions();
   const advertisementType = getAdvertisementType();
 
+  // ✅ Filtrar campos com "Não informado" ou "Não especificado"
+  const filteredCharacteristics = characteristics.filter(
+    (item) =>
+      item.value !== "Não informado" && item.value !== "Não especificado"
+  );
+  const filteredTradeConditions = tradeConditions
+    ? tradeConditions.filter(
+        (item) =>
+          item.value !== "Não informado" && item.value !== "Não especificado"
+      )
+    : null;
+
   return (
     <div id="product-characteristics" className="bg-white rounded-lg p-6 ">
       <h2 className="text-xl font-semibold mb-6">
@@ -390,31 +402,33 @@ const ProductCharacteristics: React.FC<ProductCharacteristicsProps> = ({
       {/* Seção com duas tabelas lado a lado */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         {/* Detalhes técnicos */}
-        <div className="flex-1">
-          <h3 className="text-lg mb-4">Detalhes técnicos</h3>
-          <div className="border border-gray-200 rounded-md overflow-hidden">
-            {characteristics.map((item, index) => (
-              <div
-                key={item.label}
-                className={`flex p-4 py-2 ${
-                  index % 2 !== 0 ? "bg-white " : "bg-gray-100"
-                }`}
-              >
-                <div className="w-1/2 font-semibold text-gray-800">
-                  {item.label}:
+        {filteredCharacteristics.length > 0 && (
+          <div className="flex-1">
+            <h3 className="text-lg mb-4">Detalhes técnicos</h3>
+            <div className="border border-gray-200 rounded-md overflow-hidden">
+              {filteredCharacteristics.map((item, index) => (
+                <div
+                  key={item.label}
+                  className={`flex p-4 py-2 ${
+                    index % 2 !== 0 ? "bg-white " : "bg-gray-100"
+                  }`}
+                >
+                  <div className="w-1/2 font-semibold text-gray-800">
+                    {item.label}:
+                  </div>
+                  <div className="w-1/2 text-gray-600">{item.value}</div>
                 </div>
-                <div className="w-1/2 text-gray-600">{item.value}</div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Condições de Troca */}
-        {tradeConditions && (
+        {filteredTradeConditions && filteredTradeConditions.length > 0 && (
           <div className="flex-1">
             <h3 className="text-lg mb-4">Condições de Troca</h3>
             <div className="border border-gray-200 rounded-md overflow-hidden">
-              {tradeConditions.map((item, index) => (
+              {filteredTradeConditions.map((item, index) => (
                 <div
                   key={item.label}
                   className={`flex p-4 py-2 ${
@@ -433,15 +447,17 @@ const ProductCharacteristics: React.FC<ProductCharacteristicsProps> = ({
       </div>
 
       {/* Informações Adicionais */}
-      <div className="mt-6 w-1/2">
-        <h3 className="text-lg mb-4">Informações Adicionais</h3>
-        <div className="border border-gray-200 rounded-md overflow-hidden">
-          <div className="flex p-4 py-2 bg-white">
-            <div className="w-1/2 font-semibold text-gray-800">Condições:</div>
-            <div className="w-1/2 text-gray-600">{advertisementType}</div>
+      {advertisementType !== "Não informado" && (
+        <div className="mt-6 md:w-1/2 ">
+          <h3 className="text-lg mb-4">Informações Adicionais</h3>
+          <div className="border border-gray-200 rounded-md overflow-hidden">
+            <div className="flex p-4 py-2 bg-white">
+              <div className="w-1/2 font-semibold text-gray-800">Condições:</div>
+              <div className="w-1/2 text-gray-600">{advertisementType}</div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -14,8 +14,8 @@ const GoogleAuthCallback: React.FC = () => {
         const isPopup = window.opener !== null && window.opener !== window;
 
         if (!isPopup) {
-          // Se não estiver em popup, redirecionar normalmente
-          window.location.href = "/";
+          // Se não estiver em popup, recarregar a página para garantir que todas as requisições sejam feitas com autenticação
+          window.location.href = "/produtos";
           return;
         }
 

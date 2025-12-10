@@ -11,7 +11,7 @@ interface ProductImageGalleryProps {
 }
 const fallbackimage = () => {
   return (
-    <div className="w-full h-full flex items-center justify-center bg-gray-200">
+    <div className="w-full md:min-h-[350px] h-full flex items-center justify-center bg-gray-200">
       <span className="text-gray-400 text-xs">Sem imagem</span>
     </div>
   );
@@ -193,60 +193,68 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
   }
 
   // Renderiza a galeria com thumbnails verticais para desktop
+  const hasImages = imageUrls.length > 0;
+
   return (
     <div className="flex flex-row gap-4 p-4 max-w-4xl mx-auto">
-      {/* Coluna do Carrossel Vertical */}
-      <div className="flex flex-col gap-2 overflow-y-auto pr-2 max-h-[420px]">
-        {allImages.map((image, index) =>
-          typeof image === "string" ? (
-            <img
-              key={index}
-              src={image}
-              alt={`Thumbnail ${index + 1}`}
-              className={`
-                w-16 h-16
-                object-contain
-                bg-white
-                rounded-md
-                border-2
-                cursor-pointer
-                transition-colors
-                hover:border-blue-400
-                ${
-                  currentIndex === index
-                    ? "border-blue-500"
-                    : "border-transparent"
-                }
-              `}
-              onClick={() => handleImageClick(index)}
-            />
-          ) : (
-            <div
-              key={index}
-              className={`
-                w-16 h-16
-                bg-white
-                rounded-md
-                border-2
-                cursor-pointer
-                transition-colors
-                hover:border-blue-400
-                ${
-                  currentIndex === index
-                    ? "border-blue-500"
-                    : "border-transparent"
-                }
-              `}
-              onClick={() => handleImageClick(index)}
-            >
-              {typeof image === "function" && image()}
-            </div>
-          )
-        )}
-      </div>
+      {/* Coluna do Carrossel Vertical - só aparece se houver imagens */}
+      {hasImages && (
+        <div className="flex flex-col gap-2 overflow-y-auto pr-2 max-h-[420px]">
+          {allImages.map((image, index) =>
+            typeof image === "string" ? (
+              <img
+                key={index}
+                src={image}
+                alt={`Thumbnail ${index + 1}`}
+                className={`
+                  w-16 h-16
+                  object-contain
+                  bg-white
+                  rounded-md
+                  border-2
+                  cursor-pointer
+                  transition-colors
+                  hover:border-blue-400
+                  ${
+                    currentIndex === index
+                      ? "border-blue-500"
+                      : "border-transparent"
+                  }
+                `}
+                onClick={() => handleImageClick(index)}
+              />
+            ) : (
+              <div
+                key={index}
+                className={`
+                  w-16 h-16
+                  bg-white
+                  rounded-md
+                  border-2
+                  cursor-pointer
+                  transition-colors
+                  hover:border-blue-400
+                  ${
+                    currentIndex === index
+                      ? "border-blue-500"
+                      : "border-transparent"
+                  }
+                `}
+                onClick={() => handleImageClick(index)}
+              >
+                {typeof image === "function" && image()}
+              </div>
+            )
+          )}
+        </div>
+      )}
 
       {/* Container da Imagem Principal */}
-      <div className="flex-1 flex items-center justify-center">
+      <div
+        className={`flex-1 flex items-center justify-center ${
+          !hasImages ? "w-full" : ""
+        }`}
+      >
         {typeof selectedImage === "string" ? (
           <img
             src={selectedImage}

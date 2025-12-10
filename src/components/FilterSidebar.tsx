@@ -172,7 +172,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
         title: "Tipo do Cartucho",
         options: [
           { id: "retro", label: "Retrô" },
-          { id: "repro", label: "Reprô" },
+          { id: "repro", label: "Repro" },
         ],
       },
       {

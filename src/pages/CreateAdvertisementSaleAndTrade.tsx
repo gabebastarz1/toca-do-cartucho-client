@@ -1,11 +1,17 @@
 import MultiPartFormSaleAndTrade from "../components/MultiPartFormSaleAndTrade";
 import TopBar from "../components/TopBar";
 import { useNavigate } from "react-router-dom";
-import React from "react";
+import React, { useEffect } from "react";
 import AdvertisementCreationGuard from "../components/AdvertisementCreationGuard";
 
 export default function CreateAdvertisementSaleAndTrade() {
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    // Limpar variações do localStorage ao entrar na página de criar anúncio
+    localStorage.removeItem("tcc-variations");
+  }, []);
+
   return (
     <AdvertisementCreationGuard>
       <div className="min-h-screen w-full bg-[#211C49] flex flex-col">

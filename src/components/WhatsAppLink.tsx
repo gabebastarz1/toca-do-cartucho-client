@@ -87,7 +87,6 @@ Obrigado!`;
     return message;
   };
 
-  // Função para gerar o link do WhatsApp
   const generateWhatsAppLink = () => {
     if (!mainAdvertisement?.seller?.phoneNumber) {
       console.warn("Número do WhatsApp não disponível para este vendedor");
@@ -95,9 +94,8 @@ Obrigado!`;
     }
 
     const message = generateWhatsAppMessage();
-    const phoneNumber = mainAdvertisement.seller.phoneNumber.replace(/\D/g, ""); // Remove caracteres não numéricos
+    const phoneNumber = mainAdvertisement.seller.phoneNumber.replace(/\D/g, "");
 
-    // Formato do WhatsApp: https://wa.me/5511999999999?text=mensagem
     const encodedMessage = encodeURIComponent(message);
     return `https://wa.me/55${phoneNumber}?text=${encodedMessage}`;
   };

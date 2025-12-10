@@ -4,6 +4,7 @@ interface AlertState {
   type: "success" | "error" | "warning" | "info";
   message: string;
   isVisible: boolean;
+  duration?: number; // Duração customizada em ms
 }
 
 export const useCustomAlert = () => {
@@ -11,40 +12,45 @@ export const useCustomAlert = () => {
     type: "info",
     message: "",
     isVisible: false,
+    duration: undefined,
   });
 
-  const showAlert = useCallback((type: AlertState["type"], message: string) => {
-    setAlertState({
-      type,
-      message,
-      isVisible: true,
-    });
-  }, []);
+  const showAlert = useCallback(
+    (type: AlertState["type"], message: string, duration?: number) => {
+      setAlertState({
+        type,
+        message,
+        isVisible: true,
+        duration,
+      });
+    },
+    []
+  );
 
   const showSuccess = useCallback(
-    (message: string) => {
-      showAlert("success", message);
+    (message: string, duration?: number) => {
+      showAlert("success", message, duration);
     },
     [showAlert]
   );
 
   const showError = useCallback(
-    (message: string) => {
-      showAlert("error", message);
+    (message: string, duration?: number) => {
+      showAlert("error", message, duration);
     },
     [showAlert]
   );
 
   const showWarning = useCallback(
-    (message: string) => {
-      showAlert("warning", message);
+    (message: string, duration?: number) => {
+      showAlert("warning", message, duration);
     },
     [showAlert]
   );
 
   const showInfo = useCallback(
-    (message: string) => {
-      showAlert("info", message);
+    (message: string, duration?: number) => {
+      showAlert("info", message, duration);
     },
     [showAlert]
   );
@@ -66,5 +72,3 @@ export const useCustomAlert = () => {
     hideAlert,
   };
 };
-
-

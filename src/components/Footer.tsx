@@ -11,7 +11,7 @@ const Footer: React.FC<FooterProps> = ({
   onBackToTop,
 }) => {
   return (
-    <footer className="bg-[#211C49] text-white/80 pb-8 mt-16">
+    <footer id="footer" className="bg-[#211C49] text-white/80 pb-8 mt-16">
       {/* Botão Voltar ao Topo */}
       {showBackToTopButton && onBackToTop && (
         <div className="mt-8">

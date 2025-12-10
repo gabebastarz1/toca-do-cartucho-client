@@ -164,6 +164,10 @@ const RecommendedProductCard: React.FC<ProductCardProps> = ({
               src={image}
               alt={title}
               className="absolute inset-0 w-full h-full object-contain bg-white "
+              loading="lazy"
+              decoding="async"
+              width={384}
+              height={192}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -231,7 +235,7 @@ const RecommendedProductCard: React.FC<ProductCardProps> = ({
                   type
                 )}`}
               >
-                {type === "retro" ? "RETRÔ" : "REPRO"}
+                {type === "retro" ? "Retrô" : "Repro"}
               </span>
             </Tooltip>
           </div>

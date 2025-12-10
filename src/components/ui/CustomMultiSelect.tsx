@@ -17,7 +17,7 @@ const CustomMultiSelect: React.FC<CustomMultiSelectProps> = ({
   options,
   value = [],
   onChange,
-  placeholder = "Selecione...",
+  placeholder = "Selecione um ou mais itens...",
   className = "",
 }) => {
   const [isOpen, setIsOpen] = useState(false);

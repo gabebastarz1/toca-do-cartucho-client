@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Camera, ChevronDown, Edit, Trash2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Camera, ChevronDown, Edit, Trash2, BookOpen } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
 import InfoTooltip from "./InfoToolTip";
 import CustomSelect from "./ui/CustomSelect";
 import ConfirmButton from "./ui/ConfirmButton";
@@ -41,7 +41,6 @@ const MultiPartFormSaleOnly = () => {
     getPreservationStateById,
     getCartridgeTypeById,
     getRegionById,
-    getLanguageById,
   } = useReferenceData({
     autoLoad: true,
     onError: handleReferenceDataError,
@@ -150,16 +149,39 @@ const MultiPartFormSaleOnly = () => {
     imagens: Array(4).fill(null),
   });
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  // ✅ Ref para rastrear o jogo anterior
+  const previousJogoRef = useRef<string>(formData.jogo);
 
-    // Quando um jogo é selecionado, buscar dados específicos do jogo
-    if (name === "jogo" && value) {
-      
-      fetchGameData(parseInt(value));
-    } else if (name === "jogo" && !value) {
-      // Se o jogo for desmarcado, limpar os dados específicos
-      clearGameData();
+  const handleSelectChange = (name: string, value: string) => {
+    const previousJogo = previousJogoRef.current;
+
+    // Quando um jogo é selecionado ou alterado
+    if (name === "jogo") {
+      // Se o jogo mudou (não é apenas a primeira vez), limpar campos condicionais
+      if (previousJogo && previousJogo !== value) {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+          regiao: "",
+          idiomaAudio: "",
+          idiomaLegenda: "",
+          idiomaInterface: "",
+        }));
+      } else {
+        setFormData((prev) => ({ ...prev, [name]: value }));
+      }
+
+      // Atualizar a ref
+      previousJogoRef.current = value;
+
+      // Buscar dados específicos do jogo ou limpar
+      if (value) {
+        fetchGameData(parseInt(value));
+      } else {
+        clearGameData();
+      }
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
@@ -485,18 +507,41 @@ const MultiPartFormSaleOnly = () => {
   };
 
   const getRegionName = (regionId: string) => {
-    const region = getRegionById(parseInt(regionId));
-    return (
-      region?.name ||
-      region?.identifier ||
-      `Região ${regionId}` ||
-      "Não informado"
-    );
+    if (!regionId || regionId.trim() === "") {
+      return "Não informado";
+    }
+    const parsedId = parseInt(regionId);
+    if (isNaN(parsedId)) {
+      return "Não informado";
+    }
+    const region = getRegionById(parsedId);
+    return region?.name || region?.identifier || "Não informado";
   };
 
-  const getLanguageName = (languageId: string) => {
-    const language = getLanguageById(parseInt(languageId));
-    return language?.name || "Não informado";
+  const getLanguageName = (languageSupportId: string) => {
+    if (!languageSupportId || languageSupportId.trim() === "") {
+      return "Não informado";
+    }
+
+    // O ID que vem do formulário é o ID do LanguageSupport, não do Language
+    // Precisamos buscar o LanguageSupport e pegar o nome do Language associado
+    const languageSupportIdNum = parseInt(languageSupportId);
+    if (isNaN(languageSupportIdNum)) {
+      return "Não informado";
+    }
+
+    // Buscar em todos os language supports disponíveis
+    const allLanguageSupports = [
+      ...getAvailableAudioLanguages(),
+      ...getAvailableSubtitleLanguages(),
+      ...getAvailableInterfaceLanguages(),
+    ];
+
+    const languageSupport = allLanguageSupports.find(
+      (ls) => ls.id === languageSupportIdNum
+    );
+
+    return languageSupport?.name || "Não informado";
   };
 
   return (
@@ -646,8 +691,8 @@ const MultiPartFormSaleOnly = () => {
                 />
               </div>
               <div>
-                <div className="flex">
-                  <label className="block mb-1 text-sm font-semibold pr-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <label className="block text-sm font-semibold">
                     Tipo de Cartucho{" "}
                   </label>
                   <InfoTooltip
@@ -889,7 +934,12 @@ const MultiPartFormSaleOnly = () => {
 
               <p className="text-sm">
                 Acesse o guia{" "}
-                <a href="#" className="text-blue-600 underline">
+                <a
+                  href="/guia-cartucho"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline"
+                >
                   Como identificar as informações no seu cartucho
                 </a>{" "}
                 para descobrir onde encontrar as informações corretamente antes
@@ -2352,7 +2402,14 @@ const MultiPartFormSaleOnly = () => {
                           Preço
                         </label>
                         <p className="text-gray-800 font-medium">
-                          {formData.preco || "Não informado"}
+                          {formData.preco
+                            ? `R$ ${parseFloat(
+                                formData.preco.replace(",", ".")
+                              ).toLocaleString("pt-BR", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}`
+                            : "Não informado"}
                         </p>
                       </div>
                     </div>
@@ -2397,8 +2454,7 @@ const MultiPartFormSaleOnly = () => {
                               {getPreservationStateName(
                                 variation.estadoPreservacao
                               )}{" "}
-                              - {getRegionName(variation.regiao)} -{" "}
-                              {getLanguageName(variation.idiomaAudio)}
+                              - {getRegionName(variation.regiao)}
                             </p>
                             <p className="text-xs text-gray-500">
                               Estoque: {variation.estoque || "N/A"}
@@ -2496,7 +2552,7 @@ const MultiPartFormSaleOnly = () => {
                             Jogo
                           </label>
                           <p className="text-gray-800 font-medium">
-                            {variation.jogo || "Não informado"}
+                            {getGameName(formData.jogo)}
                           </p>
                         </div>
 
@@ -2577,10 +2633,20 @@ const MultiPartFormSaleOnly = () => {
                               Preço
                             </label>
                             <p className="text-gray-800 font-medium">
-                              R${" "}
-                              {variation.preco.toLocaleString("pt-BR", {
-                                minimumFractionDigits: 2,
-                              })}
+                              {typeof variation.preco === "string"
+                                ? `R$ ${parseFloat(
+                                    variation.preco.replace(",", ".")
+                                  ).toLocaleString("pt-BR", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}`
+                                : `R$ ${variation.preco.toLocaleString(
+                                    "pt-BR",
+                                    {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    }
+                                  )}`}
                             </p>
                           </div>
                         )}

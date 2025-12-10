@@ -253,21 +253,25 @@ class AdvertisementCreationService {
   ): Promise<number[]> {
     try {
       const languageSupportsIds: number[] = [];
-      const languageSupportTypes = { audio: 1, subtitles: 2, interface: 3 };
 
+      // Os valores que vêm do formulário já são os IDs dos LanguageSupport (não dos Language)
+      // Então podemos usá-los diretamente
+      // Pode ser uma string única ou múltiplos IDs separados por vírgula
       if (audioLanguage) {
-        const audioSupport = await this.findLanguageSupport(gameId, parseInt(audioLanguage), languageSupportTypes.audio);
-        if (audioSupport) languageSupportsIds.push(audioSupport.id);
+        const ids = audioLanguage.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id) && id > 0);
+        languageSupportsIds.push(...ids);
       }
       if (subtitleLanguage) {
-        const subtitleSupport = await this.findLanguageSupport(gameId, parseInt(subtitleLanguage), languageSupportTypes.subtitles);
-        if (subtitleSupport) languageSupportsIds.push(subtitleSupport.id);
+        const ids = subtitleLanguage.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id) && id > 0);
+        languageSupportsIds.push(...ids);
       }
       if (interfaceLanguage) {
-        const interfaceSupport = await this.findLanguageSupport(gameId, parseInt(interfaceLanguage), languageSupportTypes.interface);
-        if (interfaceSupport) languageSupportsIds.push(interfaceSupport.id);
+        const ids = interfaceLanguage.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id) && id > 0);
+        languageSupportsIds.push(...ids);
       }
-      return languageSupportsIds;
+      
+      // Remover duplicatas
+      return [...new Set(languageSupportsIds)];
     } catch (error) {
       console.error('Erro ao buscar LanguageSupports:', error);
       return [];

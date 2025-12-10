@@ -47,34 +47,17 @@ const MyProfile: React.FC = () => {
 
   const displayEmail = displayUser?.email || "";
 
-  // Verificar se o usuário é administrador
-  // Verificar tanto no user quanto no userProfile, pois podem ter origens diferentes
-  // Também usar authService.isAdmin() como fallback
   const userRoles = user?.roles || userProfile?.roles || [];
   const isAdminFromRoles = userRoles.includes("Administrator");
   const isAdminFromService = authService.isAdmin();
   const isAdmin = isAdminFromRoles || isAdminFromService;
 
-  // Debug: log para verificar roles (remover em produção)
-  if (user || userProfile) {
-    console.log("🔍 [MyProfile] Debug roles:", {
-      userRoles,
-      userHasRoles: !!user?.roles,
-      userProfileHasRoles: !!userProfile?.roles,
-      userRolesArray: user?.roles,
-      userProfileRolesArray: userProfile?.roles,
-      isAdminFromRoles,
-      isAdminFromService,
-      isAdmin,
-    });
-  }
 
   const displayInitial =
     displayUser?.firstName?.charAt(0) ||
     displayUser?.nickName?.charAt(0) ||
     "U";
 
-  // Usar foto do perfil se disponível
   const profileImageUrl = (displayUser as UserWithProfileImage)?.profileImage
     ?.preSignedUrl;
 
@@ -86,7 +69,7 @@ const MyProfile: React.FC = () => {
       .toUpperCase();
   };
 
-  // Layout Mobile - exatamente como a imagem
+  // Layout Mobile
   if (isMobile) {
     return (
       <>

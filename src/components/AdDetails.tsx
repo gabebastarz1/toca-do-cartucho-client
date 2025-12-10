@@ -87,7 +87,6 @@ const AdDetails: React.FC<AdDetailsProps> = ({ advertisement }) => {
 
   // ✅ NOVO: Callback para quando uma variação for selecionada
   const handleVariationChange = (variation: AdvertisementDTO | undefined) => {
-    
     setSelectedVariation(variation);
   };
 
@@ -249,10 +248,7 @@ const AdDetails: React.FC<AdDetailsProps> = ({ advertisement }) => {
               <div className="flex flex-col md:flex-row md:gap-2">
                 {/* Galeria de Imagens */}
                 <div className="w-full md:w-2/3">
-                  <ProductImageGallery
-                    images={allImages}
-                    fallbackImage="/Logos/logo.svg"
-                  />
+                  <ProductImageGallery images={allImages} />
                 </div>
 
                 {/* Informações do Produto (título, preço, etc.) */}
